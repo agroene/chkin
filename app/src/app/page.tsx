@@ -39,6 +39,16 @@ export default function Home() {
           </p>
         </Link>
       </div>
+
+      <div className="mt-8 text-center">
+        <p className="text-sm text-gray-500 mb-4">Healthcare staff?</p>
+        <Link
+          href="/login"
+          className="inline-block px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Sign in
+        </Link>
+      </div>
     </main>
   );
 }

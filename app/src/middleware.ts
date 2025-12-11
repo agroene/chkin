@@ -13,11 +13,21 @@ import { NextRequest, NextResponse } from "next/server";
  * Protected routes require valid session cookie
  */
 
-const publicRoutes = ["/", "/api/auth"];
+const publicRoutes = ["/", "/api/auth", "/login", "/register"];
 const protectedRoutes = ["/patient", "/provider", "/admin"];
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const sessionCookie = request.cookies.get("better-auth.session_token");
+  const isAuthenticated = !!sessionCookie;
+
+  // Auth pages: redirect authenticated users to dashboard
+  if (pathname === "/login" || pathname === "/register") {
+    if (isAuthenticated) {
+      return NextResponse.redirect(new URL("/provider", request.url));
+    }
+    return NextResponse.next();
+  }
 
   // Public routes don't need authentication
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
@@ -29,14 +39,9 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
-  if (isProtectedRoute) {
-    // Check for session cookie
-    const sessionCookie = request.cookies.get("better-auth.session_token");
-
-    if (!sessionCookie) {
-      // Redirect to home if no session
-      return NextResponse.redirect(new URL("/", request.url));
-    }
+  if (isProtectedRoute && !isAuthenticated) {
+    // Redirect to login if no session
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
