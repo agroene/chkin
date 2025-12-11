@@ -71,5 +71,6 @@ jobs:
       - name: Build application
         working-directory: app
         env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
           BETTER_AUTH_SECRET: "ci-build-secret-not-for-production-use"
         run: npm run build
