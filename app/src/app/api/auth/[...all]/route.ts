@@ -1,5 +1,8 @@
 import { auth } from "@/lib/auth";
 
+// Force dynamic rendering to prevent PrismaClient instantiation during build
+export const dynamic = "force-dynamic";
+
 /**
  * Better Auth API Route Handler
  *

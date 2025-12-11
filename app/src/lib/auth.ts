@@ -1,105 +1,76 @@
+/**
+ * Authentication Module
+ *
+ * Configures Better Auth for Chkin with:
+ * - Email/password authentication
+ * - Multi-tenancy via organizations (practices)
+ * - Role-based access control
+ *
+ * @module lib/auth
+ */
+
 import { betterAuth } from "better-auth";
-import { PrismaClient } from "@prisma/client";
 import { organization } from "better-auth/plugins";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { prisma } from "./db";
 
-// Singleton pattern for PrismaClient
-// Prevents multiple instances in development hot reload
-declare global {
-  // eslint-disable-next-line no-var
-  var prismaClient: PrismaClient;
-}
+// Re-export prisma for backwards compatibility
+export { prisma } from "./db";
 
-let prismaClientInstance: PrismaClient | undefined;
-
-export function getPrismaClient() {
-  if (global.prismaClient) {
-    return global.prismaClient;
-  }
-
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL environment variable is not set");
-  }
-
-  const pool = new Pool({
-    connectionString,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-  });
-
-  const client = new PrismaClient({
-    adapter: new PrismaPg(pool),
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["warn", "error"]
-        : ["error"],
-  });
-
-  if (process.env.NODE_ENV !== "production") {
-    global.prismaClient = client;
-  }
-
-  return client;
-}
-
-// Lazy initialization - only create when first accessed
-export const prisma = new Proxy({} as PrismaClient, {
-  get: (target, prop) => {
-    if (!prismaClientInstance) {
-      prismaClientInstance = getPrismaClient();
-    }
-    return (prismaClientInstance as any)[prop];
-  },
-}) as PrismaClient;
+// Configuration constants
+const MIN_PASSWORD_LENGTH = Number(process.env.MIN_PASSWORD_LENGTH) || 12;
+const SESSION_EXPIRY_DAYS = 30;
+const SESSION_UPDATE_DAYS = 1;
+const SESSION_ABSOLUTE_EXPIRY_DAYS = 365;
 
 /**
- * Chkin Authentication Configuration
+ * Better Auth Configuration
  *
- * Better Auth is configured with:
- * - Email/password authentication
- * - Database storage with PostgreSQL
- * - Organization plugin for multi-tenancy (practices)
- * - Role-based access control via member roles
- *
- * POPIA Compliance:
+ * POPIA Compliance Features:
  * - All sensitive operations logged to AuditLog table
  * - User consent and data access tracked
  * - Session management with IP/user agent tracking
  */
 export const auth = betterAuth({
+  // Authentication secret - REQUIRED in production
+  secret: process.env.BETTER_AUTH_SECRET,
+
+  // Database configuration
   database: {
     db: prisma,
     type: "prisma",
   },
+
+  // Email/password authentication
   emailAndPassword: {
     enabled: true,
-    // Password requirements for POPIA compliance
-    minPasswordLength: 12,
+    minPasswordLength: MIN_PASSWORD_LENGTH,
   },
-  // Enable organization plugin for multi-tenant (practice-based) access
+
+  // Multi-tenancy via organizations (practices)
   plugins: [
     organization({
-      // Only platform admins create organizations (practices)
+      // Only platform admins create organizations
       // Practice admins manage their own members
       allowUserToCreateOrganization: false,
     }),
   ],
+
+  // Application identity
   appName: "Chkin",
   trustedOrigins: [
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   ],
-  // Advanced options for production
+
+  // Session configuration (production settings)
   ...(process.env.NODE_ENV === "production" && {
     session: {
-      expiresIn: 60 * 60 * 24 * 30, // 30 days
-      updateAgeSession: 60 * 60 * 24, // Update session age every 24 hours
-      absoluteExpirationTime: 60 * 60 * 24 * 365, // Absolute expiry 365 days
+      expiresIn: 60 * 60 * 24 * SESSION_EXPIRY_DAYS,
+      updateAgeSession: 60 * 60 * 24 * SESSION_UPDATE_DAYS,
+      absoluteExpirationTime: 60 * 60 * 24 * SESSION_ABSOLUTE_EXPIRY_DAYS,
     },
   }),
 });
 
+// Type exports for use across the application
 export type Session = typeof auth.$Infer.Session;
 export type User = typeof auth.$Infer.Session.user;
