@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 
 /**
  * Chkin Route Protection Middleware
  *
- * Protects routes by:
- * 1. Checking session validity
- * 2. Verifying user role and organization access
- * 3. Logging access for audit trails
+ * Lightweight middleware that checks for valid session cookie
+ * Detailed auth checks are handled in API routes and server components
  *
  * Public routes (no auth required):
  * - / (landing page)
  * - /api/auth/* (auth endpoints)
  *
- * Protected routes require valid session
+ * Protected routes require valid session cookie
  */
 
 const publicRoutes = ["/", "/api/auth"];
+const protectedRoutes = ["/patient", "/provider", "/admin"];
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes don't need authentication
@@ -26,31 +24,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if user is authenticated
-  try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+  // Check if accessing protected routes
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
 
-    if (!session) {
-      // Redirect to login for authenticated routes
+  if (isProtectedRoute) {
+    // Check for session cookie
+    const sessionCookie = request.cookies.get("better-auth.session_token");
+
+    if (!sessionCookie) {
+      // Redirect to home if no session
       return NextResponse.redirect(new URL("/", request.url));
     }
-
-    // Add session to request headers for downstream use
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-user-id", session.user.id);
-    requestHeaders.set("x-session-id", session.session.id);
-
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  } catch (error) {
-    // Session check failed, redirect to login
-    return NextResponse.redirect(new URL("/", request.url));
   }
+
+  return NextResponse.next();
 }
 
 export const config = {
