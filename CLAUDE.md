@@ -236,16 +236,119 @@ All development on this project must adhere to these principles:
 - Structured logging
 - Log context for debugging
 
-### 13. CI/CD
+### 13. CI/CD Workflow
+
 - Automated tests on push
 - Linting enforced
 - Automated deployments (when ready)
+
+**After every `git push`, verify CI status:**
+
+1. Check GitHub Actions: `https://github.com/agroene/<repo>/actions`
+2. If failed:
+   - Review the error logs
+   - Fix locally
+   - Push fix and verify again
+3. Never merge or consider work "done" until CI passes
+
+**CI must pass before:**
+- Merging any PR
+- Deploying to production
+- Moving to next task
+
+**If using Claude Code**, after pushing ask:
+> "Check if the GitHub Action passed"
+
+Claude Code can check the workflow status and help fix failures.
 
 ### 14. Documentation
 - README.md: Getting started
 - CLAUDE.md: AI assistant context
 - API documentation
 - Update docs when code changes
+
+---
+
+## 15. UI/UX Design Standards
+
+### Design-First Principle
+
+**No UI code until design is approved.** The sequence is:
+
+1. **Requirements** → What problem are we solving?
+2. **User Research** → Who are the users? What are their goals?
+3. **Wireframes** → Low-fidelity layout and flow
+4. **Mockups** → High-fidelity visual design
+5. **Prototype** → Interactive clickable prototype (optional)
+6. **Approval** → Stakeholder sign-off
+7. **Implementation** → Now write code
+
+### Required Design Artifacts
+
+Before implementing any UI feature, ensure these exist:
+
+| Artifact | Purpose | Tool Suggestions |
+|----------|---------|------------------|
+| **User Personas** | Who are we designing for? | Markdown doc |
+| **User Flows** | How do users accomplish goals? | Mermaid diagrams, FigJam |
+| **Wireframes** | Layout and information architecture | Figma, Excalidraw, paper |
+| **Component Inventory** | Reusable UI elements | Figma, Storybook |
+| **Style Guide** | Colors, typography, spacing | Figma, Tailwind config |
+
+### Design Checklist
+
+Before coding any UI:
+
+- [ ] User persona identified for this feature?
+- [ ] User flow documented?
+- [ ] Wireframe/mockup exists and approved?
+- [ ] Mobile-first design (responsive)?
+- [ ] Accessibility considered (contrast, keyboard nav, screen readers)?
+- [ ] Loading states designed?
+- [ ] Error states designed?
+- [ ] Empty states designed?
+- [ ] Edge cases considered (long text, missing data)?
+
+### UI Implementation Standards
+
+Once design is approved:
+
+- [ ] Use existing components from component library first
+- [ ] Match design exactly (spacing, colors, typography)
+- [ ] Implement mobile breakpoint first, then scale up
+- [ ] Test on actual devices, not just browser resize
+- [ ] Verify accessibility (run Lighthouse, test keyboard nav)
+
+### Design-Dev Handoff
+
+Designers (or design phase) must provide:
+- Exportable assets (icons, images)
+- Exact spacing values
+- Color codes
+- Typography specs (font, size, weight, line-height)
+- Interaction notes (hover states, transitions)
+
+### When No Designer Available
+
+If working solo or without a dedicated designer:
+
+1. **Start with wireframes** — even hand-drawn sketches
+2. **Use a design system** — Tailwind UI, Shadcn, Material UI
+3. **Reference quality apps** — screenshot patterns you like
+4. **Get feedback early** — show wireframes before coding
+5. **Iterate in design tool, not code** — faster to change Figma than React
+
+### Tools
+
+| Purpose | Recommended |
+|---------|-------------|
+| Wireframes/Mockups | Figma (free tier), Excalidraw |
+| Prototyping | Figma, Framer |
+| User Flows | Mermaid (in markdown), FigJam |
+| Icons | Heroicons, Lucide, Phosphor |
+| Design System | Tailwind + Shadcn/ui |
+
+---
 
 ---
 
@@ -260,3 +363,7 @@ Before committing, verify:
 - [ ] Is this secure? Inputs validated? No hardcoded secrets?
 - [ ] Is the code readable without comments explaining "what"?
 - [ ] Documentation updated if needed?
+- [ ] Pushed to GitHub and CI workflow passed?
+- [ ] UI matches approved design/wireframe?
+- [ ] Mobile responsive?
+- [ ] Loading, error, and empty states implemented?

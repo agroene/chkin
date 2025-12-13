@@ -21,15 +21,17 @@ model User {
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
+  isSystemAdmin Boolean   @default(false)  // Platform administrator flag
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relationships
-  sessions      Session[]
-  accounts      Account[]
-  members       Member[]
-  invitations   Invitation[]
-  teamMembers   TeamMember[]
+  sessions                    Session[]
+  accounts                    Account[]
+  members                     Member[]
+  invitations                 Invitation[]
+  teamMembers                 TeamMember[]
+  pendingProviderRegistration PendingProviderRegistration?
 
   @@map("user")
 }
@@ -103,6 +105,19 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Provider registration fields
+  status          String   @default("pending")  // pending, approved, rejected
+  practiceNumber  String?                       // Optional practice registration number
+  phone           String?
+  industryType    String?                       // General Practice, Specialist, Dental, etc.
+  address         String?
+  city            String?
+  postalCode      String?
+  website         String?
+  rejectionReason String?                       // Reason if rejected by admin
+  approvedAt      DateTime?
+  approvedBy      String?                       // userId of admin who approved
+
   // Relationships
   members     Member[]
   invitations Invitation[]
@@ -110,6 +125,26 @@ model Organization {
   roles       OrganizationRole[]
 
   @@map("organization")
+}
+
+// Pending provider registrations - stores form data until email is verified
+model PendingProviderRegistration {
+  id              String   @id @default(cuid())
+  userId          String   @unique // One pending registration per user
+  practiceName    String
+  practiceNumber  String?
+  phone           String
+  industryType    String
+  address         String
+  city            String
+  postalCode      String
+  website         String?
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime @default(dbgenerated("NOW() + interval '24 hours'")) // Expire after 24 hours
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pending_provider_registration")
 }
 
 // Members link users to organizations with roles

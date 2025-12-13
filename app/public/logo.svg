@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100">
+  <!-- Circular arrow icon -->
+  <g transform="translate(10, 10)">
+    <!-- Outer circle with arrow -->
+    <path d="M40 5 A35 35 0 1 1 5 40" stroke="#009688" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <!-- Arrow head -->
+    <polygon points="40,0 50,10 40,15" fill="#009688" transform="rotate(-10, 40, 5)"/>
+    <!-- Inner share icon -->
+    <circle cx="40" cy="25" r="5" fill="#009688"/>
+    <circle cx="25" cy="50" r="5" fill="#009688"/>
+    <circle cx="55" cy="50" r="5" fill="#009688"/>
+    <line x1="40" y1="25" x2="25" y2="50" stroke="#009688" stroke-width="3"/>
+    <line x1="40" y1="25" x2="55" y2="50" stroke="#009688" stroke-width="3"/>
+  </g>
+  <!-- Text "Chkin" -->
+  <text x="100" y="60" font-family="Arial, sans-serif" font-size="55" font-weight="bold" fill="#009688">Chkin</text>
+</svg>

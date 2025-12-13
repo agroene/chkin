@@ -21,10 +21,11 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get("better-auth.session_token");
   const isAuthenticated = !!sessionCookie;
 
-  // Auth pages: redirect authenticated users to dashboard
+  // Auth pages: redirect authenticated users to patient portal (default)
+  // The login page will call /api/auth/redirect for role-based routing
   if (pathname === "/login" || pathname === "/register") {
     if (isAuthenticated) {
-      return NextResponse.redirect(new URL("/provider", request.url));
+      return NextResponse.redirect(new URL("/patient", request.url));
     }
     return NextResponse.next();
   }

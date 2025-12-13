@@ -7,6 +7,7 @@ This file tracks known technical debt, incomplete features, and future improveme
 ## High Priority
 
 ### Security
+- [ ] Resolve npm audit high severity vulnerability (detected 2025-12-13)
 - [ ] Add rate limiting to auth endpoints
 - [ ] Implement CSRF protection validation
 - [ ] Add input sanitization middleware
@@ -29,7 +30,6 @@ This file tracks known technical debt, incomplete features, and future improveme
 ## Medium Priority
 
 ### Authentication Enhancements
-- [ ] Implement email verification flow
 - [ ] Implement password reset flow
 - [ ] Add session revocation endpoint
 - [ ] Add account lockout after failed attempts
@@ -45,6 +45,9 @@ This file tracks known technical debt, incomplete features, and future improveme
 - [ ] Add database seeding scripts
 - [ ] Create development environment setup script
 - [ ] Add structured logging (replace console.error)
+- [ ] Fix sessionStorage limitation in provider registration (form data lost if email verified in different browser/device)
+- [ ] Resolve multiple lockfile warnings (Turbopack root configuration)
+- [ ] Migrate middleware to "proxy" convention (Next.js 16 deprecation)
 
 ---
 
@@ -68,9 +71,13 @@ This file tracks known technical debt, incomplete features, and future improveme
 
 1. **Middleware doesn't validate session tokens** — Currently only checks cookie existence, not validity. Detailed auth checks happen in API routes.
 
-2. **No email service configured** — Nodemailer setup exists but no SMTP credentials configured.
+2. **Audit logging not integrated** — `logAuditEvent` function exists but not called from mutations yet.
 
-3. **Audit logging not integrated** — `logAuditEvent` function exists but not called from mutations yet.
+3. **sessionStorage data loss in provider registration** — Form data stored in sessionStorage (line 146 in provider/register/page.tsx) is lost if user verifies email in different browser/device. Consider storing in database instead.
+
+4. **Multiple lockfiles warning** — Turbopack detects multiple `package-lock.json` files causing build warnings. Need to consolidate or set `turbopack.root` in next.config.js.
+
+5. **Next.js middleware deprecation** — Middleware file convention is deprecated. Next.js 16+ recommends using "proxy" instead (see warning at build time).
 
 ---
 
@@ -80,3 +87,4 @@ This file tracks known technical debt, incomplete features, and future improveme
 - [x] Add BETTER_AUTH_SECRET to auth configuration
 - [x] Fix edge runtime compatibility in middleware
 - [x] Add comprehensive JSDoc to auth utilities
+- [x] Implement Resend email service for verification emails (2025-12-13)

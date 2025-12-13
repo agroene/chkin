@@ -1,0 +1,59 @@
+/**
+ * Sidebar State Hook
+ *
+ * Manages sidebar open/close state with automatic closing on navigation
+ * and escape key press.
+ *
+ * @module hooks/use-sidebar
+ */
+
+import { useState, useCallback, useEffect } from "react";
+import { usePathname } from "next/navigation";
+
+interface UseSidebarReturn {
+  isOpen: boolean;
+  open: () => void;
+  close: () => void;
+  toggle: () => void;
+}
+
+export function useSidebar(defaultOpen = false): UseSidebarReturn {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const pathname = usePathname();
+
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
+  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
+
+  // Close sidebar on route change (mobile navigation)
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  // Close sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen]);
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  return { isOpen, open, close, toggle };
+}

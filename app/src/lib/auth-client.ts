@@ -8,6 +8,7 @@
  */
 
 import { createAuthClient } from "better-auth/react";
+import { organizationClient, inferAdditionalFields } from "better-auth/client/plugins";
 
 const baseURL =
   typeof window !== "undefined"
@@ -16,6 +17,17 @@ const baseURL =
 
 export const authClient = createAuthClient({
   baseURL,
+  plugins: [
+    organizationClient(),
+    inferAdditionalFields({
+      user: {
+        isSystemAdmin: {
+          type: "boolean",
+          required: false,
+        },
+      },
+    }),
+  ],
 });
 
 export const {
@@ -24,4 +36,8 @@ export const {
   signOut,
   useSession,
   getSession,
+  organization,
+  useActiveOrganization,
+  useListOrganizations,
+  sendVerificationEmail,
 } = authClient;
