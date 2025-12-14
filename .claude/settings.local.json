@@ -40,7 +40,10 @@
       "Bash(npm run seed:*)",
       "Bash(npx tsx:*)",
       "Bash(docker exec:*)",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(curl:*)",
+      "Bash(powershell -Command:*)"
     ]
   },
   "outputStyle": "default"

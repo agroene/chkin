@@ -10,6 +10,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { hashPassword } from "better-auth/crypto";
 import "dotenv/config";
+import { seedFields } from "./seed-fields";
 
 // Initialize Prisma with PostgreSQL adapter (same as db.ts)
 const pool = new Pool({
@@ -20,9 +21,12 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("🌱 Starting database seed...");
+  console.log("🌱 Starting database seed...\n");
 
-  // Create initial system admin user
+  // =========================================================================
+  // 1. Create initial system admin user
+  // =========================================================================
+  console.log("--- Admin User ---");
   const adminEmail = "admin@chkin.co.za";
   const adminPassword = "Admin@Chkin123!";
 
@@ -41,9 +45,9 @@ async function main() {
           isSystemAdmin: true,
         },
       });
-      console.log(`✓ Updated system admin user: ${adminEmail} (emailVerified: true)`);
+      console.log(`Updated system admin user: ${adminEmail} (emailVerified: true)`);
     } else {
-      console.log(`✓ System admin user already exists and is verified: ${adminEmail}`);
+      console.log(`System admin user already exists and is verified: ${adminEmail}`);
     }
   } else {
     // Hash password using Better Auth's hashing function
@@ -65,12 +69,18 @@ async function main() {
       },
     });
 
-    console.log(`✓ Created system admin user: ${admin.email}`);
+    console.log(`Created system admin user: ${admin.email}`);
     console.log(`  Default password: ${adminPassword}`);
-    console.log(`  ⚠️  Change this password immediately in production!`);
+    console.log(`  WARNING: Change this password immediately in production!`);
   }
 
-  console.log("✅ Seed completed successfully!");
+  // =========================================================================
+  // 2. Seed field library
+  // =========================================================================
+  console.log("\n--- Field Library ---");
+  await seedFields(prisma);
+
+  console.log("\n✅ Seed completed successfully!");
 }
 
 main()

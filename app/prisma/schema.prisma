@@ -119,10 +119,11 @@ model Organization {
   approvedBy      String?                       // userId of admin who approved
 
   // Relationships
-  members     Member[]
-  invitations Invitation[]
-  teams       Team[]
-  roles       OrganizationRole[]
+  members       Member[]
+  invitations   Invitation[]
+  teams         Team[]
+  roles         OrganizationRole[]
+  formTemplates FormTemplate[]
 
   @@map("organization")
 }
@@ -226,6 +227,180 @@ model OrganizationRole {
 
   @@unique([organizationId, role])
   @@map("organization_role")
+}
+
+// =============================================================================
+// FIELD LIBRARY MODELS (Dynamic Form Fields)
+// =============================================================================
+
+// Global field definitions managed by platform admin
+// These are the "standard field library" that providers pick from
+model FieldDefinition {
+  id          String   @id @default(cuid())
+  name        String   // Internal canonical name (e.g., "firstName", "dateOfBirth")
+  label       String   // Default display label (e.g., "First Name")
+  description String   // Clear description of what the field means and should be used for
+  fieldType   String   // text, email, phone, date, datetime, select, multiselect, checkbox, radio, textarea, number, file, signature, country, currency
+
+  // Category for organizing fields in the library
+  // Core: personal, identity, contact, address, emergency, responsible, preferences
+  // Industry: medical, insurance, education, employment, events, membership, legal, financial, consent
+  category    String
+
+  // Field configuration (stored as JSON)
+  // For select/multiselect/radio: { options: [{ value: "male", label: "Male" }, ...] }
+  // For text: { minLength: 1, maxLength: 100, pattern: "regex", placeholder: "..." }
+  // For number: { min: 0, max: 200, step: 1, decimalPlaces: 0 }
+  // For file: { allowedTypes: ["image/*", "application/pdf"], maxSizeMB: 10 }
+  // For country: { defaultCountry: "ZA" }
+  // For currency: { currencyCode: "ZAR", decimalPlaces: 2 }
+  config      String?  // JSON configuration
+
+  // Validation rules (stored as JSON)
+  // { required: false, customMessage: "Please enter valid email" }
+  validation  String?  // JSON validation rules
+
+  // Display order within category
+  sortOrder   Int      @default(0)
+
+  // Whether this field is available for use
+  isActive    Boolean  @default(true)
+
+  // POPIA compliance flags
+  specialPersonalInfo  Boolean  @default(false)  // POPIA special personal info (race, religion, health, biometrics, etc.)
+  requiresExplicitConsent Boolean @default(false)  // Requires separate explicit consent
+
+  // Audit fields
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?  // Admin who created this field
+
+  // Relationships
+  formFields  FormField[]
+
+  @@unique([name])
+  @@index([category, isActive])
+  @@index([specialPersonalInfo])
+  @@map("field_definition")
+}
+
+// Form templates created by providers
+model FormTemplate {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String   // Form display name
+  description    String?  // Form purpose/description
+
+  // Consent configuration
+  consentClause  String?  // Consent text (can be long)
+
+  // Form status
+  isActive       Boolean  @default(true)
+  version        Int      @default(1)
+
+  // Audit fields
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?  // User who created this form
+
+  // Relationships
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fields         FormField[]
+  qrCodes        QRCode[]
+  submissions    Submission[]
+
+  @@index([organizationId, isActive])
+  @@map("form_template")
+}
+
+// Fields used in a specific form (junction table with customization)
+model FormField {
+  id                String   @id @default(cuid())
+  formTemplateId    String
+  fieldDefinitionId String
+
+  // Field customization for this form
+  labelOverride     String?  // Override the default label
+  helpText          String?  // Form-specific help text
+  isRequired        Boolean  @default(false)
+
+  // Display configuration
+  sortOrder         Int      @default(0)
+  section           String?  // Group fields into sections (e.g., "Patient Details")
+
+  // Visibility rules (JSON)
+  // { showWhen: { field: "hasMedicalAid", equals: true } }
+  visibilityRules   String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relationships
+  formTemplate      FormTemplate    @relation(fields: [formTemplateId], references: [id], onDelete: Cascade)
+  fieldDefinition   FieldDefinition @relation(fields: [fieldDefinitionId], references: [id], onDelete: Restrict)
+
+  @@unique([formTemplateId, fieldDefinitionId])
+  @@index([formTemplateId, sortOrder])
+  @@map("form_field")
+}
+
+// QR codes linked to forms
+model QRCode {
+  id             String   @id @default(cuid())
+  formTemplateId String
+
+  // QR code data
+  shortCode      String   @unique // Short URL code (e.g., "abc123")
+
+  // Status
+  isActive       Boolean  @default(true)
+
+  // Audit fields
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+
+  // Relationships
+  formTemplate   FormTemplate @relation(fields: [formTemplateId], references: [id], onDelete: Cascade)
+
+  @@index([shortCode])
+  @@map("qr_code")
+}
+
+// Form submissions from patients
+model Submission {
+  id             String   @id @default(cuid())
+  formTemplateId String
+  organizationId String
+  userId         String?  // Null for anonymous/guest submissions
+
+  // Submission data (JSON with field values)
+  data           String   // JSON payload of form values
+
+  // Consent tracking
+  consentToken   String?  @unique
+  consentGiven   Boolean  @default(false)
+  consentAt      DateTime?
+
+  // Status
+  status         String   @default("pending") // pending, completed, expired
+
+  // Source tracking
+  source         String   @default("web") // web, app
+  ipAddress      String?
+  userAgent      String?
+
+  // Audit fields
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relationships
+  formTemplate   FormTemplate @relation(fields: [formTemplateId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt])
+  @@index([formTemplateId, status])
+  @@index([userId])
+  @@map("submission")
 }
 
 // =============================================================================
