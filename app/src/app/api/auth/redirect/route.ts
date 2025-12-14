@@ -61,6 +61,16 @@ export async function GET() {
       }
     }
 
+    // Check for pending provider registration (needs to complete org setup)
+    const pendingRegistration = await prisma.pendingProviderRegistration.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (pendingRegistration) {
+      // User has pending provider registration - send to pending page to complete setup
+      return NextResponse.json({ redirect: "/provider/pending" });
+    }
+
     // Default: regular user goes to patient portal
     return NextResponse.json({ redirect: "/patient" });
   } catch (error) {
