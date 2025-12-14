@@ -43,7 +43,8 @@
       "Bash(docker ps:*)",
       "Bash(docker-compose up:*)",
       "Bash(curl:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(npm run lint)"
     ]
   },
   "outputStyle": "default"

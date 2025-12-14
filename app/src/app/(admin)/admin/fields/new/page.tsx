@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, Button, Input } from "@/components/ui";
 import { PageHeader } from "@/components/layout";
 
@@ -129,12 +130,12 @@ export default function NewFieldPage() {
         title="Add New Field"
         description="Create a new canonical field definition"
         breadcrumb={
-          <a
+          <Link
             href="/admin/fields"
             className="text-teal-600 hover:text-teal-700"
           >
             Field Library
-          </a>
+          </Link>
         }
       />
 

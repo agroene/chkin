@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { Card, Button, Input, StatusBadge } from "@/components/ui";
 import { PageHeader } from "@/components/layout";
 
@@ -259,12 +260,12 @@ export default function FieldDetailPage() {
         title={field.label}
         description={`Canonical name: ${field.name}`}
         breadcrumb={
-          <a
+          <Link
             href="/admin/fields"
             className="text-teal-600 hover:text-teal-700"
           >
             Field Library
-          </a>
+          </Link>
         }
       />
 
