@@ -102,11 +102,15 @@ export default function FormPreview({
         return (
           <select className={baseInputClasses} disabled>
             <option value="">Select {label.toLowerCase()}...</option>
-            {config.options?.map((opt: string, i: number) => (
-              <option key={i} value={opt}>
-                {opt}
-              </option>
-            ))}
+            {config.options?.map((opt: string | { value: string; label: string }, i: number) => {
+              const optValue = typeof opt === "string" ? opt : opt.value;
+              const optLabel = typeof opt === "string" ? opt : opt.label;
+              return (
+                <option key={i} value={optValue}>
+                  {optLabel}
+                </option>
+              );
+            })}
           </select>
         );
 
@@ -128,17 +132,20 @@ export default function FormPreview({
         return (
           <div className="mt-2 space-y-2">
             {(config.options || ["Option 1", "Option 2"]).map(
-              (opt: string, i: number) => (
-                <label key={i} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name={field.id}
-                    className="h-4 w-4 border-gray-300 text-teal-600 focus:ring-teal-500"
-                    disabled
-                  />
-                  <span className="text-sm text-gray-700">{opt}</span>
-                </label>
-              )
+              (opt: string | { value: string; label: string }, i: number) => {
+                const optLabel = typeof opt === "string" ? opt : opt.label;
+                return (
+                  <label key={i} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name={field.id}
+                      className="h-4 w-4 border-gray-300 text-teal-600 focus:ring-teal-500"
+                      disabled
+                    />
+                    <span className="text-sm text-gray-700">{optLabel}</span>
+                  </label>
+                );
+              }
             )}
           </div>
         );
