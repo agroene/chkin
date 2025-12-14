@@ -16,7 +16,7 @@ This document compares the original MVP at www.chkin.co.za against our current i
 | **Multi-tenant Support** | Yes | Yes | Schema ready |
 | **Mobile Responsive** | Yes | Partial | Landing page only |
 | **POPIA Consent Flow** | Yes | No | Schema ready, no UI |
-| **Audit Logging** | Unknown | Partial | Function exists, not integrated |
+| **Audit Logging** | Unknown | Yes | ✅ Complete (2025-12-14) - Admin UI + APIs |
 
 ---
 

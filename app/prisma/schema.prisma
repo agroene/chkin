@@ -32,6 +32,7 @@ model User {
   invitations                 Invitation[]
   teamMembers                 TeamMember[]
   pendingProviderRegistration PendingProviderRegistration?
+  auditLogs                   AuditLog[]
 
   @@map("user")
 }
@@ -124,6 +125,7 @@ model Organization {
   teams         Team[]
   roles         OrganizationRole[]
   formTemplates FormTemplate[]
+  auditLogs     AuditLog[]
 
   @@map("organization")
 }
@@ -409,19 +411,22 @@ model Submission {
 
 // Audit trail for all sensitive data access and modifications
 model AuditLog {
-  id             String   @id @default(cuid())
-  userId         String?  // Who performed the action
-  organizationId String?  // Which practice
-  action         String   // e.g., "VIEW_PATIENT_DATA", "UPDATE_CONSENT"
-  resourceType   String   // e.g., "Patient", "Consent", "Form"
-  resourceId     String?  // ID of the affected resource
+  id             String        @id @default(cuid())
+  userId         String?       // Who performed the action
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizationId String?       // Which practice
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  action         String        // e.g., "VIEW_PATIENT_DATA", "UPDATE_CONSENT"
+  resourceType   String        // e.g., "Patient", "Consent", "Form"
+  resourceId     String?       // ID of the affected resource
   ipAddress      String?
   userAgent      String?
-  metadata       String?  // JSON with additional context
-  createdAt      DateTime @default(now())
+  metadata       String?       // JSON with additional context
+  createdAt      DateTime      @default(now())
 
   @@index([userId, createdAt])
   @@index([organizationId, createdAt])
   @@index([resourceType, resourceId])
+  @@index([action])
   @@map("audit_log")
 }
