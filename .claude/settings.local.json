@@ -44,7 +44,9 @@
       "Bash(docker-compose up:*)",
       "Bash(curl:*)",
       "Bash(powershell -Command:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(powershell -ExecutionPolicy Bypass -File ./start-local.ps1)",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"cd ''C:\\Users\\agroenew\\OneDrive\\dev-projects\\chkin\\app''; .\\start-local.ps1\")"
     ]
   },
   "outputStyle": "default"

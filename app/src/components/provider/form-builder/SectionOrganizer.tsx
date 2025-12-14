@@ -13,7 +13,7 @@ interface FormField {
   fieldDefinitionId: string;
   fieldDefinition: {
     id: string;
-    canonicalName: string;
+    name: string;
     label: string;
     description: string | null;
     fieldType: string;

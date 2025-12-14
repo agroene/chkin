@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from "react";
 
 interface FieldDefinition {
   id: string;
-  canonicalName: string;
+  name: string;
   label: string;
   description: string | null;
   fieldType: string;
@@ -53,7 +53,7 @@ export default function FieldPicker({ onAddField, selectedFieldIds }: FieldPicke
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await fetch("/api/admin/fields/categories");
+        const response = await fetch("/api/provider/fields/categories");
         if (response.ok) {
           const data = await response.json();
           setCategories(data.categories || []);
@@ -75,7 +75,7 @@ export default function FieldPicker({ onAddField, selectedFieldIds }: FieldPicke
       if (selectedCategory) params.set("category", selectedCategory);
       if (search) params.set("search", search);
 
-      const response = await fetch(`/api/admin/fields?${params}`);
+      const response = await fetch(`/api/provider/fields?${params}`);
       if (response.ok) {
         const data = await response.json();
         setFields(data.fields || []);
