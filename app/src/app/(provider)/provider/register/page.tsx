@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
-import { signUp, organization, sendVerificationEmail } from "@/lib/auth-client";
+import { signUp, sendVerificationEmail } from "@/lib/auth-client";
+import { AddressAutocomplete, type AddressComponents } from "@/components/ui";
 
 type RegistrationState = "form" | "check-email" | "submitted";
 
@@ -27,7 +28,9 @@ export default function ProviderRegisterPage() {
     phone: "",
     industryType: "",
     address: "",
+    suburb: "",
     city: "",
+    province: "",
     postalCode: "",
     website: "",
     password: "",
@@ -35,16 +38,6 @@ export default function ProviderRegisterPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [addressSuggestions, setAddressSuggestions] = useState<Array<{
-    display_name: string;
-    address: {
-      road?: string;
-      suburb?: string;
-      city?: string;
-      postcode?: string;
-    };
-  }>>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
@@ -72,42 +65,16 @@ export default function ProviderRegisterPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
-  // Address autocomplete using Nominatim (OpenStreetMap)
-  async function handleAddressSearch(value: string) {
-    setFormData((prev) => ({ ...prev, address: value }));
-
-    if (value.length < 3) {
-      setAddressSuggestions([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&countrycodes=za&q=${encodeURIComponent(value)}&addressdetails=1&limit=5`,
-        {
-          headers: {
-            "User-Agent": "Chkin/1.0",
-          },
-        }
-      );
-      const data = await response.json();
-      setAddressSuggestions(data);
-      setShowSuggestions(true);
-    } catch {
-      // Silently fail - autocomplete is a nice-to-have
-      setAddressSuggestions([]);
-    }
-  }
-
-  function selectAddress(suggestion: typeof addressSuggestions[0]) {
+  // Handle address selection from Google Places autocomplete
+  function handleAddressSelect(addressComponents: AddressComponents) {
     setFormData((prev) => ({
       ...prev,
-      address: suggestion.address.road || suggestion.display_name.split(",")[0],
-      city: suggestion.address.city || suggestion.address.suburb || prev.city,
-      postalCode: suggestion.address.postcode || prev.postalCode,
+      address: addressComponents.streetAddress || prev.address,
+      suburb: addressComponents.suburb || prev.suburb,
+      city: addressComponents.city || prev.city,
+      province: addressComponents.province || prev.province,
+      postalCode: addressComponents.postalCode || prev.postalCode,
     }));
-    setShowSuggestions(false);
-    setAddressSuggestions([]);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -398,42 +365,44 @@ export default function ProviderRegisterPage() {
               <h3 className="text-sm font-medium text-gray-700 mb-3">Address</h3>
 
               <div className="space-y-4">
-                <div className="relative">
+                <div>
                   <label
                     htmlFor="address"
                     className="block text-sm font-medium text-gray-700"
                   >
                     Street address *
                   </label>
-                  <input
+                  <AddressAutocomplete
                     id="address"
                     name="address"
-                    type="text"
-                    required
                     value={formData.address}
-                    onChange={(e) => handleAddressSearch(e.target.value)}
-                    onFocus={() => setShowSuggestions(addressSuggestions.length > 0)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 text-gray-900"
-                    placeholder="Start typing for suggestions..."
-                    autoComplete="off"
+                    onChange={(value) => setFormData((prev) => ({ ...prev, address: value }))}
+                    onSelect={handleAddressSelect}
+                    placeholder="Start typing an address..."
+                    required
+                    className="mt-1"
                   />
-                  {showSuggestions && addressSuggestions.length > 0 && (
-                    <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
-                      {addressSuggestions.map((suggestion, index) => (
-                        <li
-                          key={index}
-                          onClick={() => selectAddress(suggestion)}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                        >
-                          {suggestion.display_name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="suburb"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Suburb
+                    </label>
+                    <input
+                      id="suburb"
+                      name="suburb"
+                      type="text"
+                      value={formData.suburb}
+                      onChange={handleChange}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 text-gray-900"
+                      placeholder="Gardens"
+                    />
+                  </div>
+
                   <div>
                     <label
                       htmlFor="city"
@@ -450,6 +419,27 @@ export default function ProviderRegisterPage() {
                       onChange={handleChange}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 text-gray-900"
                       placeholder="Cape Town"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="province"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Province *
+                    </label>
+                    <input
+                      id="province"
+                      name="province"
+                      type="text"
+                      required
+                      value={formData.province}
+                      onChange={handleChange}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 text-gray-900"
+                      placeholder="Western Cape"
                     />
                   </div>
 

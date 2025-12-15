@@ -7,6 +7,7 @@
  * import { Button, Card, Input, Modal } from "@/components/ui";
  */
 
+export { default as AddressAutocomplete, type AddressComponents } from "./AddressAutocomplete";
 export { default as Button } from "./Button";
 export { default as Card } from "./Card";
 export { default as DataTable, type Column } from "./DataTable";
