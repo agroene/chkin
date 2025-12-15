@@ -8,8 +8,15 @@
  */
 
 import { useSession } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, ReactNode } from "react";
+
+// Routes that don't require authentication or org approval
+const PUBLIC_ROUTES = [
+  "/provider/register",
+  "/provider/pending",
+  "/provider/rejected",
+];
 
 interface ProviderGuardProps {
   children: ReactNode;
@@ -25,8 +32,12 @@ interface OrgStatus {
 export default function ProviderGuard({ children }: ProviderGuardProps) {
   const { data: session, isPending: sessionPending } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const [orgStatus, setOrgStatus] = useState<OrgStatus | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Check if current route is public (no auth required)
+  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname?.startsWith(route));
 
   // Fetch organization status
   useEffect(() => {
@@ -81,6 +92,11 @@ export default function ProviderGuard({ children }: ProviderGuardProps) {
       }
     }
   }, [session, isPending, router, orgStatus]);
+
+  // Public routes bypass all guards
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
 
   // Loading state
   if (isPending) {

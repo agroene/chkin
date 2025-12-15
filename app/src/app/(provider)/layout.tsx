@@ -5,14 +5,23 @@
  *
  * Wraps all provider pages with responsive navigation and authentication guard.
  * Uses AppShell for mobile-first sidebar handling.
+ * Public routes (register, pending, rejected) render without the sidebar.
  *
  * @module app/(provider)/layout
  */
 
 import { ReactNode, useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { ProviderGuard, ProviderSidebar } from "@/components/provider";
 import { AppShell } from "@/components/layout";
 import { useSession } from "@/lib/auth-client";
+
+// Routes that render without the AppShell sidebar
+const PUBLIC_ROUTES = [
+  "/provider/register",
+  "/provider/pending",
+  "/provider/rejected",
+];
 
 interface ProviderLayoutProps {
   children: ReactNode;
@@ -27,7 +36,10 @@ interface OrgStatus {
 
 export default function ProviderLayout({ children }: ProviderLayoutProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [orgStatus, setOrgStatus] = useState<OrgStatus | null>(null);
+
+  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname?.startsWith(route));
 
   useEffect(() => {
     async function fetchOrgStatus() {
@@ -46,6 +58,11 @@ export default function ProviderLayout({ children }: ProviderLayoutProps) {
 
     fetchOrgStatus();
   }, [session]);
+
+  // Public routes render without AppShell
+  if (isPublicRoute) {
+    return <ProviderGuard>{children}</ProviderGuard>;
+  }
 
   return (
     <ProviderGuard>
