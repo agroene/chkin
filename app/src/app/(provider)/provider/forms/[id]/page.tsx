@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout";
 import FieldPicker from "@/components/provider/form-builder/FieldPicker";
@@ -47,7 +47,6 @@ interface FormTemplate {
 }
 
 export default function FormDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const formId = params.id as string;
 
@@ -255,7 +254,7 @@ export default function FormDetailPage() {
     return (
       <div className="py-12 text-center">
         <h1 className="text-xl font-semibold text-gray-900">{error}</h1>
-        <p className="mt-2 text-gray-600">The form you're looking for could not be found.</p>
+        <p className="mt-2 text-gray-600">The form you are looking for could not be found.</p>
         <Link
           href="/provider/forms"
           className="mt-4 inline-block text-teal-600 hover:text-teal-700"
