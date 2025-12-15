@@ -292,50 +292,56 @@ export default function FieldsPage() {
       </PageHeader>
 
       {/* Category Tiles */}
-      <div className="mb-4 sm:mb-6">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8 sm:gap-3">
-          {/* All Fields tile */}
-          <button
-            onClick={() => handleCategoryChange("")}
-            className={`rounded-lg border p-3 text-left transition-colors ${
-              categoryFilter === ""
-                ? "border-teal-500 bg-teal-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
-            }`}
-          >
-            <div className="text-lg font-semibold text-gray-900">
-              {pagination?.totalCount || "..."}
-            </div>
-            <div className="text-sm text-gray-600">All Fields</div>
-          </button>
-
-          {/* Core category tiles */}
-          {coreCategories.map((cat) => (
+      <div className="mb-4 sm:mb-6 space-y-4">
+        {/* Core Categories */}
+        <div>
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+            Core Categories
+          </h3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8 sm:gap-3">
+            {/* All Fields tile */}
             <button
-              key={cat.key}
-              onClick={() => handleCategoryChange(cat.key)}
+              onClick={() => handleCategoryChange("")}
               className={`rounded-lg border p-3 text-left transition-colors ${
-                categoryFilter === cat.key
+                categoryFilter === ""
                   ? "border-teal-500 bg-teal-50"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
               <div className="text-lg font-semibold text-gray-900">
-                {cat.activeFieldCount}
+                {pagination?.totalCount || "..."}
               </div>
-              <div className="truncate text-sm text-gray-600">
-                {cat.displayName}
-              </div>
+              <div className="text-sm text-gray-600">All Fields</div>
             </button>
-          ))}
+
+            {/* Core category tiles */}
+            {coreCategories.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => handleCategoryChange(cat.key)}
+                className={`rounded-lg border p-3 text-left transition-colors ${
+                  categoryFilter === cat.key
+                    ? "border-teal-500 bg-teal-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="text-lg font-semibold text-gray-900">
+                  {cat.activeFieldCount}
+                </div>
+                <div className="truncate text-sm text-gray-600">
+                  {cat.displayName}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Industry categories (collapsible on mobile) */}
-        <details className="mt-3 sm:open">
-          <summary className="cursor-pointer text-sm font-medium text-gray-600 sm:hidden">
-            Industry Extensions ({industryCategories.length} categories)
-          </summary>
-          <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-3 sm:grid-cols-4 lg:grid-cols-8 sm:gap-3">
+        {/* Industry Categories */}
+        <div>
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+            Industry Extensions
+          </h3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8 sm:gap-3">
             {industryCategories.map((cat) => (
               <button
                 key={cat.key}
@@ -362,7 +368,7 @@ export default function FieldsPage() {
               </button>
             ))}
           </div>
-        </details>
+        </div>
       </div>
 
       {/* Search and Filters */}
