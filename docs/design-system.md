@@ -27,6 +27,7 @@ Using Tailwind's default breakpoints:
 src/
 ├── components/
 │   ├── ui/                    # Design system primitives
+│   │   ├── AddressAutocomplete.tsx  # Google Places autocomplete
 │   │   ├── Button.tsx
 │   │   ├── Card.tsx
 │   │   ├── DataTable.tsx
@@ -42,7 +43,14 @@ src/
 │   │   ├── sidebar-overlay.tsx
 │   │   └── index.ts
 │   ├── admin/                 # Admin-specific components
-│   └── provider/              # Provider-specific components
+│   ├── provider/              # Provider-specific components
+│   │   └── form-builder/      # Form builder components
+│   │       ├── FieldPicker.tsx
+│   │       ├── FormPreview.tsx
+│   │       ├── SectionOrganizer.tsx
+│   │       └── index.ts
+│   └── forms/                 # Form rendering components
+│       └── FormRenderer.tsx
 ├── hooks/
 │   ├── use-mobile.ts
 │   ├── use-sidebar.ts
@@ -359,3 +367,137 @@ Stack form elements vertically, use full-width inputs:
   <Button>Submit</Button>
 </form>
 ```
+
+## Form Builder Components
+
+### FormPreview
+
+Live preview of form as patients will see it. Supports desktop and mobile views.
+
+```tsx
+import FormPreview from "@/components/provider/form-builder/FormPreview";
+
+<FormPreview
+  title="Patient Registration"
+  description="Please fill out the form"
+  fields={fields}
+  sections={sections}
+  consentClause="I consent to..."
+  mobileView={false}
+/>
+```
+
+**Props:**
+- `title` - Form title
+- `description` - Form description
+- `fields` - Array of form fields with columnSpan
+- `sections` - Array of section names
+- `consentClause` - Consent text
+- `mobileView` - Toggle mobile preview (boolean)
+
+**Features:**
+- **Desktop view**: 8-column CSS grid layout
+- **Mobile view**: iPhone-style frame with fixed 600px viewport and scrolling
+- Fields respect `columnSpan` property (1-8)
+
+### 8-Column Grid Layout
+
+Forms use an 8-column grid for flexible field layouts:
+
+```tsx
+// Field with columnSpan property
+interface FormField {
+  id: string;
+  columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // Column width
+  // ... other properties
+}
+```
+
+**Column Span Examples:**
+- `1` = 1/8 width (12.5%)
+- `2` = 2/8 width (25%)
+- `4` = 4/8 width (50%) - two fields side by side
+- `8` = Full width (100%) - default
+
+**Usage:**
+```tsx
+// Grid container
+<div className="grid grid-cols-8 gap-4">
+  <div className="col-span-4">First Name</div>
+  <div className="col-span-4">Last Name</div>
+  <div className="col-span-8">Email (full width)</div>
+</div>
+```
+
+### SectionOrganizer
+
+Organize form fields into sections with drag-and-drop support.
+
+```tsx
+import SectionOrganizer from "@/components/provider/form-builder/SectionOrganizer";
+
+<SectionOrganizer
+  sections={sections}
+  fields={fields}
+  activeSection={activeSection}
+  onSetActiveSection={setActiveSection}
+  onAddSection={handleAddSection}
+  onRemoveSection={handleRemoveSection}
+  onUpdateField={handleUpdateField}
+  onRemoveField={handleRemoveField}
+  onReorderFields={handleReorderFields}
+/>
+```
+
+**Features:**
+- **Active section targeting**: Click section header to select target for new fields
+- **Visual indicator**: Teal border and "Adding here" badge on active section
+- **Column width selector**: 1-8 buttons for setting field width
+- **Drag-and-drop**: Reorder fields within and between sections
+- **Inline editing**: Edit labels, help text, required status
+
+### FieldPicker
+
+Browse and search fields from the field library.
+
+```tsx
+import FieldPicker from "@/components/provider/form-builder/FieldPicker";
+
+<FieldPicker
+  onAddField={handleAddField}
+  selectedFieldIds={fields.map(f => f.fieldDefinitionId)}
+/>
+```
+
+**Features:**
+- **Category filtering**: All categories shown with scrollable container
+- **Search**: Filter by field label or description
+- **Type badges**: Color-coded field type indicators
+- **Duplicate prevention**: Already-added fields shown as disabled
+
+### AddressAutocomplete
+
+Google Places address autocomplete with linked field auto-population.
+
+```tsx
+import { AddressAutocomplete } from "@/components/ui";
+
+<AddressAutocomplete
+  value={address}
+  onChange={setAddress}
+  onSelect={handlePlaceSelect}
+  placeholder="Start typing an address..."
+  linkedFields={{
+    streetNumber: "streetNumberField",
+    route: "streetNameField",
+    locality: "cityField",
+    // ... more linked fields
+  }}
+/>
+```
+
+**Features:**
+- Google Places Autocomplete API integration
+- Auto-populate linked form fields from selected address
+- Support for unit/complex name, street number, suburb, city, postal code, etc.
+- South Africa region bias by default

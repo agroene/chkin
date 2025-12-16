@@ -20,8 +20,8 @@ This file tracks known technical debt, incomplete features, and future improveme
 - [ ] Add E2E tests for critical user journeys
 
 ### CI/CD
-- [ ] Add GitHub Actions workflow for linting
-- [ ] Add GitHub Actions workflow for type checking
+- [x] Add GitHub Actions workflow for linting
+- [x] Add GitHub Actions workflow for type checking
 - [ ] Add GitHub Actions workflow for tests
 - [ ] Set up pre-commit hooks (Husky + lint-staged)
 
@@ -42,7 +42,7 @@ This file tracks known technical debt, incomplete features, and future improveme
 
 ### Developer Experience
 - [ ] Add API documentation (OpenAPI/Swagger)
-- [ ] Add database seeding scripts
+- [x] Add database seeding scripts
 - [ ] Create development environment setup script
 - [ ] Add structured logging (replace console.error)
 - [ ] Fix sessionStorage limitation in provider registration (form data lost if email verified in different browser/device)
@@ -79,6 +79,8 @@ This file tracks known technical debt, incomplete features, and future improveme
 
 5. **Next.js middleware deprecation** — Middleware file convention is deprecated. Next.js 16+ recommends using "proxy" instead (see warning at build time).
 
+6. **Pre-existing ESLint warnings** — 10 warnings exist (unused vars, `<img>` elements). Should be cleaned up.
+
 ---
 
 ## Completed
@@ -88,3 +90,35 @@ This file tracks known technical debt, incomplete features, and future improveme
 - [x] Fix edge runtime compatibility in middleware
 - [x] Add comprehensive JSDoc to auth utilities
 - [x] Implement Resend email service for verification emails (2025-12-13)
+- [x] Form builder live preview (2025-12-14)
+- [x] Form builder field picker with category filtering (2025-12-14)
+- [x] Form builder section organizer with drag-drop (2025-12-14)
+- [x] Form edit page (`/provider/forms/[id]`) (2025-12-14)
+- [x] Fix React key prop warning in audit log (2025-12-16)
+- [x] Form builder active section targeting (2025-12-16)
+- [x] Form builder show all field categories (2025-12-16)
+- [x] Form builder 8-column grid layout support (2025-12-16)
+- [x] Form builder iPhone-style mobile preview (2025-12-16)
+- [x] Google Places address autocomplete (2025-12-16)
+
+---
+
+## Future Features (Not Started)
+
+### Phase 4: QR Code Generation
+- [ ] QR code generation API
+- [ ] QR code management page
+- [ ] Short URL system for QR codes
+
+### Phase 5: Patient Portal
+- [ ] Form rendering from templates (with 8-col grid support)
+- [ ] Form validation
+- [ ] Submission API
+- [ ] Consent collection with timestamps
+- [ ] Success confirmation page
+
+### Phase 6: Submissions
+- [ ] Submission list view
+- [ ] Submission detail view
+- [ ] Mark as reviewed functionality
+- [ ] Export submissions (CSV/PDF)
