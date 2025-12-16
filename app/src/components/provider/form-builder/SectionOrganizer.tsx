@@ -25,7 +25,7 @@ interface FormField {
   isRequired: boolean;
   sortOrder: number;
   section: string | null;
-  columnSpan: 1 | 2 | 3; // 1 = 1/3 width, 2 = 2/3 width, 3 = full width
+  columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // Column span out of 8 (8 = full width)
 }
 
 interface SectionOrganizerProps {
@@ -301,30 +301,26 @@ export default function SectionOrganizer({
                             </div>
                             <div>
                               <label className="text-xs font-medium text-gray-500">
-                                Column Width
+                                Column Width (out of 8)
                               </label>
-                              <div className="mt-1 flex gap-2">
-                                {[
-                                  { value: 1, label: "1/3", title: "One third width" },
-                                  { value: 2, label: "2/3", title: "Two thirds width" },
-                                  { value: 3, label: "Full", title: "Full width" },
-                                ].map((opt) => (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {[1, 2, 3, 4, 5, 6, 7, 8].map((value) => (
                                   <button
-                                    key={opt.value}
+                                    key={value}
                                     type="button"
                                     onClick={() =>
                                       onUpdateField(field.id, {
-                                        columnSpan: opt.value as 1 | 2 | 3,
+                                        columnSpan: value as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8,
                                       })
                                     }
-                                    title={opt.title}
-                                    className={`flex-1 rounded border px-2 py-1 text-xs font-medium transition-colors ${
-                                      field.columnSpan === opt.value
+                                    title={value === 8 ? "Full width" : `${value}/8 width`}
+                                    className={`min-w-[32px] rounded border px-2 py-1 text-xs font-medium transition-colors ${
+                                      field.columnSpan === value
                                         ? "border-teal-500 bg-teal-50 text-teal-700"
                                         : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
                                     }`}
                                   >
-                                    {opt.label}
+                                    {value === 8 ? "Full" : value}
                                   </button>
                                 ))}
                               </div>
@@ -345,9 +341,9 @@ export default function SectionOrganizer({
                               <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
                                 {field.fieldDefinition.fieldType}
                               </span>
-                              {field.columnSpan !== 3 && (
+                              {field.columnSpan !== 8 && (
                                 <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-600">
-                                  {field.columnSpan === 1 ? "1/3" : "2/3"}
+                                  {field.columnSpan}/8
                                 </span>
                               )}
                             </div>

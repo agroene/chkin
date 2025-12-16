@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
             isRequired: field.isRequired ?? false,
             sortOrder: field.sortOrder ?? index,
             section: field.section || null,
-            columnSpan: field.columnSpan ?? 3,
+            columnSpan: field.columnSpan ?? 8,
             visibilityRules: field.visibilityRules || null,
           })),
         });

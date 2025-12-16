@@ -26,7 +26,7 @@ interface FormField {
   isRequired: boolean;
   sortOrder: number;
   section: string | null;
-  columnSpan: 1 | 2 | 3; // 1 = 1/3 width, 2 = 2/3 width, 3 = full width
+  columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // Column span out of 8 (8 = full width)
 }
 
 interface FormPreviewProps {
@@ -382,12 +382,17 @@ export default function FormPreview({
             if (!sectionFields?.length) return null;
 
             // Helper to get column span class
-            const getColSpanClass = (span: 1 | 2 | 3) => {
+            const getColSpanClass = (span: number) => {
               switch (span) {
                 case 1: return "col-span-1";
                 case 2: return "col-span-2";
                 case 3: return "col-span-3";
-                default: return "col-span-3";
+                case 4: return "col-span-4";
+                case 5: return "col-span-5";
+                case 6: return "col-span-6";
+                case 7: return "col-span-7";
+                case 8: return "col-span-8";
+                default: return "col-span-8";
               }
             };
 
@@ -398,7 +403,7 @@ export default function FormPreview({
                     {section}
                   </h2>
                 )}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-8 gap-4">
                   {sectionFields.map((field) => (
                     <div key={field.id} className={getColSpanClass(field.columnSpan)}>
                       <label className="block font-medium text-gray-700">

@@ -31,7 +31,7 @@ interface FormField {
   isRequired: boolean;
   sortOrder: number;
   section: string | null;
-  columnSpan: 1 | 2 | 3; // 1 = 1/3 width, 2 = 2/3 width, 3 = full width
+  columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // Column span out of 8 (8 = full width)
 }
 
 interface FormTemplate {
@@ -98,7 +98,7 @@ export default function FormDetailPage() {
         const loadedFields = formData.fields.map((f) => ({
           ...f,
           id: f.id,
-          columnSpan: (f.columnSpan || 3) as 1 | 2 | 3,
+          columnSpan: (f.columnSpan || 8) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8,
         }));
         setFields(loadedFields);
 
@@ -171,7 +171,7 @@ export default function FormDetailPage() {
       isRequired: false,
       sortOrder: maxSortOrder,
       section: targetSection,
-      columnSpan: 3, // Default to full width
+      columnSpan: 8, // Default to full width
     };
     setFields((prev) => [...prev, newField]);
   }, [fields, sections, activeSection]);

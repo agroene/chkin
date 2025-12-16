@@ -192,7 +192,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
               isRequired: field.isRequired ?? false,
               sortOrder: field.sortOrder ?? index,
               section: field.section || null,
-              columnSpan: field.columnSpan ?? 3,
+              columnSpan: field.columnSpan ?? 8,
               visibilityRules: field.visibilityRules || null,
             })),
           });

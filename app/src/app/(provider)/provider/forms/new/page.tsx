@@ -31,7 +31,7 @@ interface FormField {
   isRequired: boolean;
   sortOrder: number;
   section: string | null;
-  columnSpan: 1 | 2 | 3; // 1 = 1/3 width, 2 = 2/3 width, 3 = full width
+  columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // Column span out of 8 (8 = full width)
 }
 
 export default function NewFormPage() {
@@ -66,7 +66,7 @@ export default function NewFormPage() {
       isRequired: false,
       sortOrder: maxSortOrder,
       section: targetSection,
-      columnSpan: 3, // Default to full width
+      columnSpan: 8, // Default to full width
     };
     setFields((prev) => [...prev, newField]);
   }, [fields, sections, activeSection]);
