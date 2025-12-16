@@ -182,6 +182,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
               isRequired?: boolean;
               sortOrder?: number;
               section?: string;
+              columnSpan?: number;
               visibilityRules?: string;
             }, index: number) => ({
               formTemplateId: id,
@@ -191,6 +192,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
               isRequired: field.isRequired ?? false,
               sortOrder: field.sortOrder ?? index,
               section: field.section || null,
+              columnSpan: field.columnSpan ?? 3,
               visibilityRules: field.visibilityRules || null,
             })),
           });

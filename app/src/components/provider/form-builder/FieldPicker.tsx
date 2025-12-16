@@ -165,31 +165,33 @@ export default function FieldPicker({ onAddField, selectedFieldIds }: FieldPicke
             </svg>
           </div>
 
-          {/* Category Pills */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                selectedCategory === null
-                  ? "bg-teal-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              All
-            </button>
-            {categories.slice(0, 8).map((cat) => (
+          {/* Category Pills - Scrollable to show all */}
+          <div className="mt-4 max-h-24 overflow-y-auto">
+            <div className="flex flex-wrap gap-2">
               <button
-                key={cat.name}
-                onClick={() => setSelectedCategory(cat.name)}
+                onClick={() => setSelectedCategory(null)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  selectedCategory === cat.name
+                  selectedCategory === null
                     ? "bg-teal-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                {cat.label}
+                All ({categories.reduce((sum, c) => sum + c.count, 0)})
               </button>
-            ))}
+              {categories.map((cat) => (
+                <button
+                  key={cat.name}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    selectedCategory === cat.name
+                      ? "bg-teal-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {cat.label} ({cat.count})
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Fields List */}

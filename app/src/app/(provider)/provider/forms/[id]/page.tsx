@@ -31,6 +31,7 @@ interface FormField {
   isRequired: boolean;
   sortOrder: number;
   section: string | null;
+  columnSpan: 1 | 2 | 3; // 1 = 1/3 width, 2 = 2/3 width, 3 = full width
 }
 
 interface FormTemplate {
@@ -67,6 +68,7 @@ export default function FormDetailPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("General");
 
   // Fetch form data
   useEffect(() => {
@@ -92,10 +94,11 @@ export default function FormDetailPage() {
         setConsentClause(formData.consentClause || "");
         setIsActive(formData.isActive);
 
-        // Process fields
+        // Process fields (add default columnSpan if not present)
         const loadedFields = formData.fields.map((f) => ({
           ...f,
           id: f.id,
+          columnSpan: (f.columnSpan || 3) as 1 | 2 | 3,
         }));
         setFields(loadedFields);
 
@@ -148,8 +151,17 @@ export default function FormDetailPage() {
     );
   }, [form, title, description, consentClause, isActive, fields]);
 
-  // Add field to form
+  // Add field to form - adds to the active section
   const handleAddField = useCallback((fieldDefinition: FormField["fieldDefinition"]) => {
+    // Determine target section - use activeSection if it exists in sections
+    const targetSection = sections.includes(activeSection) ? activeSection : sections[0] || "General";
+
+    // Calculate sort order for this section (add to end of section)
+    const sectionFields = fields.filter(f => f.section === targetSection);
+    const maxSortOrder = sectionFields.length > 0
+      ? Math.max(...sectionFields.map(f => f.sortOrder)) + 1
+      : fields.length;
+
     const newField: FormField = {
       id: `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       fieldDefinitionId: fieldDefinition.id,
@@ -157,11 +169,12 @@ export default function FormDetailPage() {
       labelOverride: null,
       helpText: null,
       isRequired: false,
-      sortOrder: fields.length,
-      section: sections[0] || "General",
+      sortOrder: maxSortOrder,
+      section: targetSection,
+      columnSpan: 3, // Default to full width
     };
     setFields((prev) => [...prev, newField]);
-  }, [fields.length, sections]);
+  }, [fields, sections, activeSection]);
 
   // Remove field from form
   const handleRemoveField = useCallback((fieldId: string) => {
@@ -180,10 +193,11 @@ export default function FormDetailPage() {
     setFields(newFields.map((f, i) => ({ ...f, sortOrder: i })));
   }, []);
 
-  // Add section
+  // Add section - automatically makes it active
   const handleAddSection = useCallback((sectionName: string) => {
     if (!sections.includes(sectionName)) {
       setSections((prev) => [...prev, sectionName]);
+      setActiveSection(sectionName); // Auto-select new section
     }
   }, [sections]);
 
@@ -221,6 +235,7 @@ export default function FormDetailPage() {
             isRequired: f.isRequired,
             sortOrder: f.sortOrder,
             section: f.section,
+            columnSpan: f.columnSpan,
           })),
         }),
       });
@@ -395,6 +410,8 @@ export default function FormDetailPage() {
               <SectionOrganizer
                 sections={sections}
                 fields={fields}
+                activeSection={activeSection}
+                onSetActiveSection={setActiveSection}
                 onAddSection={handleAddSection}
                 onRemoveSection={handleRemoveSection}
                 onUpdateField={handleUpdateField}

@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
             isRequired?: boolean;
             sortOrder?: number;
             section?: string;
+            columnSpan?: number;
             visibilityRules?: string;
           }, index: number) => ({
             formTemplateId: newForm.id,
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
             isRequired: field.isRequired ?? false,
             sortOrder: field.sortOrder ?? index,
             section: field.section || null,
+            columnSpan: field.columnSpan ?? 3,
             visibilityRules: field.visibilityRules || null,
           })),
         });

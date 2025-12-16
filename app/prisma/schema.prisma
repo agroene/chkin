@@ -329,6 +329,7 @@ model FormField {
   // Display configuration
   sortOrder         Int      @default(0)
   section           String?  // Group fields into sections (e.g., "Patient Details")
+  columnSpan        Int      @default(3)  // Column span: 1=1/3, 2=2/3, 3=full width
 
   // Visibility rules (JSON)
   // { showWhen: { field: "hasMedicalAid", equals: true } }

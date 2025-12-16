@@ -26,6 +26,7 @@ interface FormField {
   isRequired: boolean;
   sortOrder: number;
   section: string | null;
+  columnSpan: 1 | 2 | 3; // 1 = 1/3 width, 2 = 2/3 width, 3 = full width
 }
 
 interface FormPreviewProps {
@@ -218,21 +219,139 @@ export default function FormPreview({
     }
   };
 
-  const containerClasses = mobileView
-    ? "mx-auto max-w-[375px] rounded-3xl border-8 border-gray-800 bg-white p-4 shadow-xl"
-    : "rounded-lg border border-gray-200 bg-white p-6 shadow-sm";
+  // Mobile view simulates an iPhone-sized screen with fixed height and scrolling
+  if (mobileView) {
+    return (
+      <div className="mx-auto max-w-[375px]">
+        {/* Phone Frame */}
+        <div className="rounded-[2.5rem] border-[14px] border-gray-800 bg-gray-800 p-1 shadow-xl">
+          {/* Notch */}
+          <div className="relative">
+            <div className="absolute left-1/2 top-0 z-10 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-gray-800" />
+          </div>
+          {/* Screen */}
+          <div className="h-[600px] overflow-y-auto rounded-[2rem] bg-white">
+            <div className="p-4 pt-8">
+              {/* Header */}
+              <div className="mb-6 border-b border-gray-200 pb-4">
+                <h1 className="text-xl font-bold text-gray-900">
+                  {title || "Untitled Form"}
+                </h1>
+                {description && (
+                  <p className="mt-1 text-sm text-gray-600">{description}</p>
+                )}
+              </div>
 
+              {/* Form Content */}
+              {fields.length === 0 ? (
+                <div className="py-12 text-center">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <p className="mt-2 text-sm text-gray-400">
+                    Add fields to see the preview
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {sections.map((section) => {
+                    const sectionFields = fieldsBySection[section];
+                    if (!sectionFields?.length) return null;
+
+                    return (
+                      <div key={section}>
+                        {sections.length > 1 && (
+                          <h2 className="mb-4 text-base font-semibold text-gray-800">
+                            {section}
+                          </h2>
+                        )}
+                        <div className="space-y-4">
+                          {sectionFields.map((field) => (
+                            <div key={field.id}>
+                              <label className="block text-sm font-medium text-gray-700">
+                                {field.labelOverride || field.fieldDefinition.label}
+                                {field.isRequired && (
+                                  <span className="ml-1 text-red-500">*</span>
+                                )}
+                              </label>
+                              {field.helpText && (
+                                <p className="mt-0.5 text-xs text-gray-500">
+                                  {field.helpText}
+                                </p>
+                              )}
+                              {renderFieldInput(field)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Consent Clause */}
+                  {consentClause && (
+                    <div className="border-t border-gray-200 pt-6">
+                      <h2 className="mb-3 text-base font-semibold text-gray-800">
+                        Consent
+                      </h2>
+                      <div className="rounded-lg bg-gray-50 p-4 text-xs">
+                        <p className="whitespace-pre-wrap text-gray-700">
+                          {consentClause}
+                        </p>
+                      </div>
+                      <label className="mt-4 flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                          disabled
+                        />
+                        <span className="text-sm text-gray-700">
+                          I have read and agree to the above terms and consent to the
+                          collection of my personal information.
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <div className="pt-4 pb-8">
+                    <button
+                      disabled
+                      className="w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-medium text-white"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Home Indicator */}
+        <div className="mx-auto mt-2 h-1 w-32 rounded-full bg-gray-300" />
+      </div>
+    );
+  }
+
+  // Desktop view
   return (
-    <div className={containerClasses}>
+    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       {/* Header */}
       <div className="mb-6 border-b border-gray-200 pb-4">
-        <h1 className={`font-bold text-gray-900 ${mobileView ? "text-xl" : "text-2xl"}`}>
+        <h1 className="text-2xl font-bold text-gray-900">
           {title || "Untitled Form"}
         </h1>
         {description && (
-          <p className={`mt-1 text-gray-600 ${mobileView ? "text-sm" : ""}`}>
-            {description}
-          </p>
+          <p className="mt-1 text-gray-600">{description}</p>
         )}
       </div>
 
@@ -262,17 +381,27 @@ export default function FormPreview({
             const sectionFields = fieldsBySection[section];
             if (!sectionFields?.length) return null;
 
+            // Helper to get column span class
+            const getColSpanClass = (span: 1 | 2 | 3) => {
+              switch (span) {
+                case 1: return "col-span-1";
+                case 2: return "col-span-2";
+                case 3: return "col-span-3";
+                default: return "col-span-3";
+              }
+            };
+
             return (
               <div key={section}>
                 {sections.length > 1 && (
-                  <h2 className={`mb-4 font-semibold text-gray-800 ${mobileView ? "text-base" : "text-lg"}`}>
+                  <h2 className="mb-4 text-lg font-semibold text-gray-800">
                     {section}
                   </h2>
                 )}
-                <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
                   {sectionFields.map((field) => (
-                    <div key={field.id}>
-                      <label className={`block font-medium text-gray-700 ${mobileView ? "text-sm" : ""}`}>
+                    <div key={field.id} className={getColSpanClass(field.columnSpan)}>
+                      <label className="block font-medium text-gray-700">
                         {field.labelOverride || field.fieldDefinition.label}
                         {field.isRequired && (
                           <span className="ml-1 text-red-500">*</span>
@@ -294,10 +423,10 @@ export default function FormPreview({
           {/* Consent Clause */}
           {consentClause && (
             <div className="border-t border-gray-200 pt-6">
-              <h2 className={`mb-3 font-semibold text-gray-800 ${mobileView ? "text-base" : "text-lg"}`}>
+              <h2 className="mb-3 text-lg font-semibold text-gray-800">
                 Consent
               </h2>
-              <div className={`rounded-lg bg-gray-50 p-4 ${mobileView ? "text-xs" : "text-sm"}`}>
+              <div className="rounded-lg bg-gray-50 p-4 text-sm">
                 <p className="whitespace-pre-wrap text-gray-700">
                   {consentClause}
                 </p>
@@ -308,7 +437,7 @@ export default function FormPreview({
                   className="mt-0.5 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                   disabled
                 />
-                <span className={`text-gray-700 ${mobileView ? "text-sm" : ""}`}>
+                <span className="text-gray-700">
                   I have read and agree to the above terms and consent to the
                   collection of my personal information.
                 </span>
@@ -320,9 +449,7 @@ export default function FormPreview({
           <div className="pt-4">
             <button
               disabled
-              className={`w-full rounded-lg bg-teal-600 font-medium text-white ${
-                mobileView ? "px-4 py-3 text-sm" : "px-6 py-3"
-              }`}
+              className="w-full rounded-lg bg-teal-600 px-6 py-3 font-medium text-white"
             >
               Submit
             </button>

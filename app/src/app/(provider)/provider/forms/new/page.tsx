@@ -31,6 +31,7 @@ interface FormField {
   isRequired: boolean;
   sortOrder: number;
   section: string | null;
+  columnSpan: 1 | 2 | 3; // 1 = 1/3 width, 2 = 2/3 width, 3 = full width
 }
 
 export default function NewFormPage() {
@@ -40,6 +41,7 @@ export default function NewFormPage() {
   const [consentClause, setConsentClause] = useState("");
   const [fields, setFields] = useState<FormField[]>([]);
   const [sections, setSections] = useState<string[]>(["General"]);
+  const [activeSection, setActiveSection] = useState<string>("General");
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"fields" | "consent">("fields");
   const [previewMode, setPreviewMode] = useState(false);
@@ -47,8 +49,14 @@ export default function NewFormPage() {
   // Mobile preview toggle
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
-  // Add field to form
+  // Add field to form - adds to the active section
   const handleAddField = useCallback((fieldDefinition: FormField["fieldDefinition"]) => {
+    const targetSection = sections.includes(activeSection) ? activeSection : sections[0] || "General";
+    const sectionFields = fields.filter(f => f.section === targetSection);
+    const maxSortOrder = sectionFields.length > 0
+      ? Math.max(...sectionFields.map(f => f.sortOrder)) + 1
+      : fields.length;
+
     const newField: FormField = {
       id: `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       fieldDefinitionId: fieldDefinition.id,
@@ -56,11 +64,12 @@ export default function NewFormPage() {
       labelOverride: null,
       helpText: null,
       isRequired: false,
-      sortOrder: fields.length,
-      section: sections[0] || "General",
+      sortOrder: maxSortOrder,
+      section: targetSection,
+      columnSpan: 3, // Default to full width
     };
     setFields((prev) => [...prev, newField]);
-  }, [fields.length, sections]);
+  }, [fields, sections, activeSection]);
 
   // Remove field from form
   const handleRemoveField = useCallback((fieldId: string) => {
@@ -79,10 +88,11 @@ export default function NewFormPage() {
     setFields(newFields.map((f, i) => ({ ...f, sortOrder: i })));
   }, []);
 
-  // Add section
+  // Add section - automatically makes it active
   const handleAddSection = useCallback((sectionName: string) => {
     if (!sections.includes(sectionName)) {
       setSections((prev) => [...prev, sectionName]);
+      setActiveSection(sectionName);
     }
   }, [sections]);
 
@@ -125,6 +135,7 @@ export default function NewFormPage() {
             isRequired: f.isRequired,
             sortOrder: f.sortOrder,
             section: f.section,
+            columnSpan: f.columnSpan,
           })),
         }),
       });
@@ -281,6 +292,8 @@ export default function NewFormPage() {
               <SectionOrganizer
                 sections={sections}
                 fields={fields}
+                activeSection={activeSection}
+                onSetActiveSection={setActiveSection}
                 onAddSection={handleAddSection}
                 onRemoveSection={handleRemoveSection}
                 onUpdateField={handleUpdateField}

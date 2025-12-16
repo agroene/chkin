@@ -25,11 +25,14 @@ interface FormField {
   isRequired: boolean;
   sortOrder: number;
   section: string | null;
+  columnSpan: 1 | 2 | 3; // 1 = 1/3 width, 2 = 2/3 width, 3 = full width
 }
 
 interface SectionOrganizerProps {
   sections: string[];
   fields: FormField[];
+  activeSection: string;
+  onSetActiveSection: (section: string) => void;
   onAddSection: (name: string) => void;
   onRemoveSection: (name: string) => void;
   onUpdateField: (fieldId: string, updates: Partial<FormField>) => void;
@@ -40,6 +43,8 @@ interface SectionOrganizerProps {
 export default function SectionOrganizer({
   sections,
   fields,
+  activeSection,
+  onSetActiveSection,
   onAddSection,
   onRemoveSection,
   onUpdateField,
@@ -151,38 +156,70 @@ export default function SectionOrganizer({
       </div>
 
       {/* Sections */}
-      {sections.map((section) => (
+      {sections.map((section) => {
+        const isActive = activeSection === section;
+        return (
         <div
           key={section}
-          className="rounded-lg border border-gray-200 bg-white"
+          className={`rounded-lg border-2 bg-white transition-colors ${
+            isActive ? "border-teal-500 ring-1 ring-teal-500" : "border-gray-200"
+          }`}
           onDragOver={handleDragOver}
           onDrop={() => handleDropOnSection(section)}
         >
-          {/* Section Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
-            <h3 className="font-medium text-gray-900">{section}</h3>
-            {sections.length > 1 && (
-              <button
-                onClick={() => onRemoveSection(section)}
-                className="text-gray-400 hover:text-red-500"
-                title="Remove section"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+          {/* Section Header - Clickable to set as target */}
+          <button
+            type="button"
+            onClick={() => onSetActiveSection(section)}
+            className={`flex w-full items-center justify-between border-b px-4 py-3 text-left transition-colors ${
+              isActive
+                ? "border-teal-200 bg-teal-50"
+                : "border-gray-200 bg-gray-50 hover:bg-gray-100"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {isActive && (
+                <span className="flex h-2 w-2 rounded-full bg-teal-500" title="New fields will be added here">
+                  <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-teal-400 opacity-75"></span>
+                </span>
+              )}
+              <h3 className={`font-medium ${isActive ? "text-teal-900" : "text-gray-900"}`}>
+                {section}
+              </h3>
+              {isActive && (
+                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700">
+                  Adding here
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {sections.length > 1 && (
+                <span
+                  role="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveSection(section);
+                  }}
+                  className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                  title="Remove section"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            )}
-          </div>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </span>
+              )}
+            </div>
+          </button>
 
           {/* Fields */}
           <div className="min-h-[60px] p-4">
@@ -262,6 +299,36 @@ export default function SectionOrganizer({
                                 className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
                               />
                             </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-500">
+                                Column Width
+                              </label>
+                              <div className="mt-1 flex gap-2">
+                                {[
+                                  { value: 1, label: "1/3", title: "One third width" },
+                                  { value: 2, label: "2/3", title: "Two thirds width" },
+                                  { value: 3, label: "Full", title: "Full width" },
+                                ].map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() =>
+                                      onUpdateField(field.id, {
+                                        columnSpan: opt.value as 1 | 2 | 3,
+                                      })
+                                    }
+                                    title={opt.title}
+                                    className={`flex-1 rounded border px-2 py-1 text-xs font-medium transition-colors ${
+                                      field.columnSpan === opt.value
+                                        ? "border-teal-500 bg-teal-50 text-teal-700"
+                                        : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                             <button
                               onClick={() => setEditingField(null)}
                               className="text-xs text-teal-600 hover:text-teal-700"
@@ -278,6 +345,11 @@ export default function SectionOrganizer({
                               <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
                                 {field.fieldDefinition.fieldType}
                               </span>
+                              {field.columnSpan !== 3 && (
+                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-600">
+                                  {field.columnSpan === 1 ? "1/3" : "2/3"}
+                                </span>
+                              )}
                             </div>
                             {field.helpText && (
                               <p className="mt-0.5 text-xs text-gray-500">
@@ -358,7 +430,8 @@ export default function SectionOrganizer({
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {/* Empty State */}
       {fields.length === 0 && (
