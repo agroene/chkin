@@ -3,26 +3,35 @@
 /**
  * Address Autocomplete Component
  *
- * Uses Google Places Autocomplete API with session tokens for cost efficiency.
+ * Uses Google Places API (New) with AutocompleteSuggestion for cost efficiency.
  * Biased to South African addresses.
+ *
+ * Note: As of March 1st, 2025, the legacy AutocompleteService is not available
+ * to new customers. This component uses the new AutocompleteSuggestion API.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// Extend Window interface for Google Maps callback
-declare global {
-  interface Window {
-    initGooglePlaces?: () => void;
-  }
-}
-
 export interface AddressComponents {
-  streetAddress: string;
-  suburb: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  country: string;
+  // Building/Complex details
+  complexName: string;      // premise - estate, complex, building name
+  unitNumber: string;       // subpremise - apartment, unit, suite number
+  floor: string;            // floor number
+
+  // Street address
+  streetNumber: string;     // street_number
+  streetName: string;       // route
+  streetAddress: string;    // combined street number + route
+
+  // Area/Region
+  neighborhood: string;     // neighborhood
+  suburb: string;           // sublocality
+  city: string;             // locality
+  province: string;         // administrative_area_level_1
+  postalCode: string;       // postal_code
+  country: string;          // country
+
+  // Full address and coordinates
   formattedAddress: string;
   lat?: number;
   lng?: number;
@@ -62,8 +71,13 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
     // Start loading
     isScriptLoading = true;
 
-    // Set up callback
-    window.initGooglePlaces = () => {
+    // Create script element - using the new API requires importing the places library
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
       isScriptLoaded = true;
       isScriptLoading = false;
       resolve();
@@ -71,11 +85,6 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
       scriptLoadCallbacks.length = 0;
     };
 
-    // Create script element
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGooglePlaces`;
-    script.async = true;
-    script.defer = true;
     script.onerror = () => {
       isScriptLoading = false;
       reject(new Error("Failed to load Google Maps script"));
@@ -83,6 +92,13 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
 
     document.head.appendChild(script);
   });
+}
+
+interface Suggestion {
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
+  placePrediction: google.maps.places.PlacePrediction;
 }
 
 export default function AddressAutocomplete({
@@ -100,7 +116,7 @@ export default function AddressAutocomplete({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
   const hasApiKey = Boolean(apiKey);
 
-  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(
@@ -109,8 +125,7 @@ export default function AddressAutocomplete({
   const [isApiReady, setIsApiReady] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesService = useRef<google.maps.places.PlacesService | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -125,10 +140,6 @@ export default function AddressAutocomplete({
     loadGoogleMapsScript(apiKey)
       .then(() => {
         if (isMounted && window.google?.maps?.places) {
-          autocompleteService.current = new window.google.maps.places.AutocompleteService();
-          // Create a dummy element for PlacesService
-          const dummyElement = document.createElement("div");
-          placesService.current = new window.google.maps.places.PlacesService(dummyElement);
           sessionToken.current = new window.google.maps.places.AutocompleteSessionToken();
           setIsApiReady(true);
         }
@@ -145,37 +156,46 @@ export default function AddressAutocomplete({
     };
   }, [apiKey]);
 
-  // Fetch suggestions with debounce
+  // Fetch suggestions with the new AutocompleteSuggestion API
   const fetchSuggestions = useCallback(
-    (input: string) => {
-      if (!autocompleteService.current || !sessionToken.current || input.length < 3) {
+    async (input: string) => {
+      if (!window.google?.maps?.places || !sessionToken.current || input.length < 3) {
         setSuggestions([]);
         return;
       }
 
       setIsLoading(true);
 
-      autocompleteService.current.getPlacePredictions(
-        {
+      try {
+        const { AutocompleteSuggestion } = window.google.maps.places;
+
+        const { suggestions: results } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
           input,
           sessionToken: sessionToken.current,
-          componentRestrictions: { country: "za" }, // Restrict to South Africa
-          types: ["address"], // Only return addresses
-        },
-        (predictions, status) => {
-          setIsLoading(false);
+          includedRegionCodes: ["za"], // Restrict to South Africa
+          // Note: Don't use includedPrimaryTypes for addresses - Table B types
+          // (street_address, premise, etc.) are response-only and can't be used as filters
+        });
 
-          if (status === window.google?.maps.places.PlacesServiceStatus.OK && predictions) {
-            setSuggestions(predictions);
-            setShowSuggestions(true);
-          } else if (status === window.google?.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-            setSuggestions([]);
-          } else {
-            console.error("Autocomplete error:", status);
-            setSuggestions([]);
-          }
-        }
-      );
+        const formattedSuggestions: Suggestion[] = results
+          .filter((s): s is google.maps.places.AutocompleteSuggestion & { placePrediction: google.maps.places.PlacePrediction } =>
+            s.placePrediction !== null
+          )
+          .map((s) => ({
+            placeId: s.placePrediction.placeId,
+            mainText: s.placePrediction.mainText?.text || "",
+            secondaryText: s.placePrediction.secondaryText?.text || "",
+            placePrediction: s.placePrediction,
+          }));
+
+        setSuggestions(formattedSuggestions);
+        setShowSuggestions(formattedSuggestions.length > 0);
+      } catch (err) {
+        console.error("Autocomplete error:", err);
+        setSuggestions([]);
+      } finally {
+        setIsLoading(false);
+      }
     },
     []
   );
@@ -197,94 +217,142 @@ export default function AddressAutocomplete({
   };
 
   // Handle suggestion selection
-  const handleSelect = (prediction: google.maps.places.AutocompletePrediction) => {
-    if (!placesService.current || !sessionToken.current) return;
+  const handleSelect = async (suggestion: Suggestion) => {
+    if (!sessionToken.current) return;
 
     setShowSuggestions(false);
     setIsLoading(true);
 
-    placesService.current.getDetails(
-      {
-        placeId: prediction.place_id,
-        sessionToken: sessionToken.current,
-        fields: ["address_components", "formatted_address", "geometry"],
-      },
-      (place, status) => {
-        setIsLoading(false);
+    try {
+      // Convert prediction to Place and fetch details
+      const place = suggestion.placePrediction.toPlace();
 
-        // Create new session token after selection (billing optimization)
-        sessionToken.current = new window.google!.maps.places.AutocompleteSessionToken();
+      await place.fetchFields({
+        fields: ["addressComponents", "formattedAddress", "location", "displayName"],
+      });
 
-        if (status === window.google?.maps.places.PlacesServiceStatus.OK && place) {
-          const addressComponents = parseAddressComponents(place);
-          onChange(addressComponents.streetAddress || prediction.structured_formatting.main_text);
-          onSelect(addressComponents);
-        } else {
-          // Fallback - just use the prediction text
-          onChange(prediction.structured_formatting.main_text);
-          onSelect({
-            streetAddress: prediction.structured_formatting.main_text,
-            suburb: "",
-            city: "",
-            province: "",
-            postalCode: "",
-            country: "South Africa",
-            formattedAddress: prediction.description,
-          });
-        }
-      }
-    );
+      // Debug: Log what Google returns
+      console.log("Google Place Details:", {
+        displayName: place.displayName,
+        formattedAddress: place.formattedAddress,
+        addressComponents: place.addressComponents?.map(c => ({
+          types: c.types,
+          longText: c.longText,
+          shortText: c.shortText,
+        })),
+      });
+
+      // Create new session token after selection (billing optimization)
+      sessionToken.current = new window.google!.maps.places.AutocompleteSessionToken();
+
+      const addressComponents = parseAddressComponents(place, suggestion.mainText);
+      onChange(addressComponents.streetAddress || suggestion.mainText);
+      onSelect(addressComponents);
+    } catch (err) {
+      console.error("Failed to fetch place details:", err);
+      // Fallback - just use the suggestion text
+      onChange(suggestion.mainText);
+      onSelect({
+        complexName: "",
+        unitNumber: "",
+        floor: "",
+        streetNumber: "",
+        streetName: "",
+        streetAddress: suggestion.mainText,
+        neighborhood: "",
+        suburb: "",
+        city: "",
+        province: "",
+        postalCode: "",
+        country: "South Africa",
+        formattedAddress: `${suggestion.mainText}, ${suggestion.secondaryText}`,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Parse Google Place details into our address format
-  const parseAddressComponents = (place: google.maps.places.PlaceResult): AddressComponents => {
+  // Parse Place details into our address format
+  const parseAddressComponents = (place: google.maps.places.Place, suggestionMainText?: string): AddressComponents => {
     const components: AddressComponents = {
+      // Building/Complex details
+      complexName: "",
+      unitNumber: "",
+      floor: "",
+      // Street address
+      streetNumber: "",
+      streetName: "",
       streetAddress: "",
+      // Area/Region
+      neighborhood: "",
       suburb: "",
       city: "",
       province: "",
       postalCode: "",
       country: "",
-      formattedAddress: place.formatted_address || "",
-      lat: place.geometry?.location?.lat(),
-      lng: place.geometry?.location?.lng(),
+      // Full address
+      formattedAddress: place.formattedAddress || "",
+      lat: place.location?.lat(),
+      lng: place.location?.lng(),
     };
 
-    if (!place.address_components) return components;
+    if (!place.addressComponents) return components;
 
-    let streetNumber = "";
-    let route = "";
-
-    for (const component of place.address_components) {
+    for (const component of place.addressComponents) {
       const types = component.types;
+      const value = component.longText || "";
 
-      if (types.includes("street_number")) {
-        streetNumber = component.long_name;
+      // Building/Complex details
+      if (types.includes("premise")) {
+        components.complexName = value;
+      } else if (types.includes("subpremise")) {
+        components.unitNumber = value;
+      } else if (types.includes("floor")) {
+        components.floor = value;
+      }
+      // Street address
+      else if (types.includes("street_number")) {
+        components.streetNumber = value;
       } else if (types.includes("route")) {
-        route = component.long_name;
-      } else if (types.includes("sublocality") || types.includes("sublocality_level_1")) {
-        components.suburb = component.long_name;
+        components.streetName = value;
+      }
+      // Area/Region - check sublocality levels for suburb
+      else if (types.includes("sublocality") || types.includes("sublocality_level_1") || types.includes("sublocality_level_2")) {
+        // Use first sublocality found as suburb
+        if (!components.suburb) {
+          components.suburb = value;
+        }
+      } else if (types.includes("neighborhood")) {
+        components.neighborhood = value;
       } else if (types.includes("locality")) {
-        components.city = component.long_name;
+        components.city = value;
       } else if (types.includes("administrative_area_level_1")) {
-        components.province = component.long_name;
+        components.province = value;
       } else if (types.includes("postal_code")) {
-        components.postalCode = component.long_name;
+        components.postalCode = value;
       } else if (types.includes("country")) {
-        components.country = component.long_name;
+        components.country = value;
       }
     }
 
-    // Combine street number and route
-    components.streetAddress = [streetNumber, route].filter(Boolean).join(" ");
+    // Combine street number and route for streetAddress
+    components.streetAddress = [components.streetNumber, components.streetName].filter(Boolean).join(" ");
 
-    // If no suburb found, try to extract from city areas
-    if (!components.suburb && components.city) {
-      const neighborhoodComponent = place.address_components.find(
-        (c) => c.types.includes("neighborhood") || c.types.includes("sublocality_level_2")
-      );
-      if (neighborhoodComponent) {
-        components.suburb = neighborhoodComponent.long_name;
+    // If no suburb found, use neighborhood as fallback
+    if (!components.suburb && components.neighborhood) {
+      components.suburb = components.neighborhood;
+    }
+
+    // If no complexName found from premise, try using displayName or suggestionMainText
+    // This handles cases where the place is an estate/complex but Google returns it as the place name
+    if (!components.complexName) {
+      const displayName = place.displayName;
+      // Only use displayName/suggestionMainText if it's different from the street address
+      // and doesn't look like a street address (contains letters not just numbers)
+      if (displayName && displayName !== components.streetAddress && !/^\d+\s/.test(displayName)) {
+        components.complexName = displayName;
+      } else if (suggestionMainText && suggestionMainText !== components.streetAddress && !/^\d+\s/.test(suggestionMainText)) {
+        components.complexName = suggestionMainText;
       }
     }
 
@@ -294,7 +362,7 @@ export default function AddressAutocomplete({
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
       }
     };
@@ -337,8 +405,9 @@ export default function AddressAutocomplete({
   }
 
   return (
-    <div className="relative" ref={inputRef}>
+    <div className="relative" ref={containerRef}>
       <input
+        ref={inputRef}
         type="text"
         id={id}
         name={name}
@@ -364,15 +433,15 @@ export default function AddressAutocomplete({
         <ul className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
           {suggestions.map((suggestion) => (
             <li
-              key={suggestion.place_id}
+              key={suggestion.placeId}
               onClick={() => handleSelect(suggestion)}
               className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
             >
               <div className="font-medium text-gray-900">
-                {suggestion.structured_formatting.main_text}
+                {suggestion.mainText}
               </div>
               <div className="text-xs text-gray-500">
-                {suggestion.structured_formatting.secondary_text}
+                {suggestion.secondaryText}
               </div>
             </li>
           ))}

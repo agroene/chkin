@@ -4,7 +4,10 @@
  * Form Preview Component
  *
  * Live preview of the form as patients will see it.
+ * Supports Google Places address autocomplete for address fields.
  */
+
+import { AddressAutocomplete } from "@/components/ui";
 
 interface FormField {
   id: string;
@@ -172,6 +175,35 @@ export default function FormPreview({
               </p>
             </div>
           </div>
+        );
+
+      case "address":
+        // Render Google Places address autocomplete (disabled for preview)
+        return (
+          <AddressAutocomplete
+            value=""
+            onChange={() => {}}
+            onSelect={() => {}}
+            placeholder={config.placeholder || "Start typing an address..."}
+            disabled
+            className="mt-1"
+          />
+        );
+
+      case "country":
+        // Country selector with South Africa as default
+        return (
+          <select className={baseInputClasses} disabled>
+            <option value="">Select country...</option>
+            <option value="ZA" selected={config.defaultCountry === "ZA"}>South Africa</option>
+            <option value="BW">Botswana</option>
+            <option value="LS">Lesotho</option>
+            <option value="MZ">Mozambique</option>
+            <option value="NA">Namibia</option>
+            <option value="SZ">Eswatini</option>
+            <option value="ZW">Zimbabwe</option>
+            <option value="OTHER">Other</option>
+          </select>
         );
 
       default:

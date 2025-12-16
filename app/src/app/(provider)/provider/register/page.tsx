@@ -27,7 +27,10 @@ export default function ProviderRegisterPage() {
     email: "",
     phone: "",
     industryType: "",
-    address: "",
+    // Address fields
+    complexName: "",    // Building/complex/estate name
+    unitNumber: "",     // Unit/apartment number
+    address: "",        // Street address
     suburb: "",
     city: "",
     province: "",
@@ -69,6 +72,8 @@ export default function ProviderRegisterPage() {
   function handleAddressSelect(addressComponents: AddressComponents) {
     setFormData((prev) => ({
       ...prev,
+      complexName: addressComponents.complexName || prev.complexName,
+      unitNumber: addressComponents.unitNumber || prev.unitNumber,
       address: addressComponents.streetAddress || prev.address,
       suburb: addressComponents.suburb || prev.suburb,
       city: addressComponents.city || prev.city,
@@ -382,6 +387,44 @@ export default function ProviderRegisterPage() {
                     required
                     className="mt-1"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="complexName"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Building / Complex / Estate
+                    </label>
+                    <input
+                      id="complexName"
+                      name="complexName"
+                      type="text"
+                      value={formData.complexName}
+                      onChange={handleChange}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 text-gray-900"
+                      placeholder="Medical Centre"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="unitNumber"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Unit / Suite / Floor
+                    </label>
+                    <input
+                      id="unitNumber"
+                      name="unitNumber"
+                      type="text"
+                      value={formData.unitNumber}
+                      onChange={handleChange}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 text-gray-900"
+                      placeholder="Suite 101"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
