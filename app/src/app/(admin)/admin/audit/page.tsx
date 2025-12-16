@@ -10,7 +10,7 @@
  * @module app/(admin)/admin/audit/page
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 
 interface AuditLog {
   id: string;
@@ -445,8 +445,8 @@ export default function AuditLogPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {logs.map((log) => (
-                  <>
-                    <tr key={log.id} className="hover:bg-gray-50">
+                  <Fragment key={log.id}>
+                    <tr className="hover:bg-gray-50">
                       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
                         {formatDate(log.createdAt)}
                       </td>
@@ -506,7 +506,7 @@ export default function AuditLogPage() {
                       </td>
                     </tr>
                     {expandedRow === log.id && (
-                      <tr key={`${log.id}-details`} className="bg-gray-50">
+                      <tr className="bg-gray-50">
                         <td colSpan={6} className="px-4 py-4">
                           <div className="grid gap-4 sm:grid-cols-2">
                             <div>
@@ -531,7 +531,7 @@ export default function AuditLogPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
