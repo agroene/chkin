@@ -74,6 +74,47 @@ interface PublicFormRendererProps {
 
 type FieldValue = string | boolean | string[];
 
+// Field mappings for "Self" relationship auto-population
+// Maps source patient fields to target fields for different relationship types
+// Defined outside component to avoid useCallback dependency issues
+const SELF_RELATIONSHIP_MAPPINGS: Record<string, Record<string, string>> = {
+  // Responsible Party: when relationship is "Self", copy from patient fields
+  responsiblePartyRelationship: {
+    // Name fields
+    firstName: "responsiblePartyName", // Will combine first + last
+    lastName: "responsiblePartyName",  // Marker to combine
+    // ID
+    idNumber: "responsiblePartyIdNumber",
+    // Contact
+    phoneMobile: "responsiblePartyPhone",
+    emailPersonal: "responsiblePartyEmail",
+    // Address fields
+    streetAddress: "responsiblePartyStreetAddress",
+    complexName: "responsiblePartyComplexName",
+    unitNumber: "responsiblePartyUnitNumber",
+    suburb: "responsiblePartyAddressSuburb",
+    city: "responsiblePartyAddressCity",
+    stateProvince: "responsiblePartyAddressProvince",
+    postalCode: "responsiblePartyAddressPostalCode",
+    country: "responsiblePartyAddressCountry",
+  },
+  // Emergency Contact: when relationship is "Self", copy from patient fields
+  emergencyContactRelationship: {
+    firstName: "emergencyContactName",
+    lastName: "emergencyContactName",
+    phoneMobile: "emergencyContactPhone",
+    emailPersonal: "emergencyContactEmail",
+    streetAddress: "emergencyContactStreetAddress",
+    complexName: "emergencyContactComplexName",
+    unitNumber: "emergencyContactUnitNumber",
+    suburb: "emergencyContactAddressSuburb",
+    city: "emergencyContactAddressCity",
+    stateProvince: "emergencyContactAddressProvince",
+    postalCode: "emergencyContactAddressPostalCode",
+    country: "emergencyContactAddressCountry",
+  },
+};
+
 export default function PublicFormRenderer({
   form,
   prefillData,
@@ -108,6 +149,57 @@ export default function PublicFormRenderer({
       return next;
     });
   }, []);
+
+  // Handle relationship field change - auto-populate when "Self" is selected
+  const handleRelationshipChange = useCallback((fieldName: string, value: string) => {
+    // Update the relationship field itself
+    updateFieldValue(fieldName, value);
+
+    // Check if this is a relationship field that triggers auto-population
+    const mapping = SELF_RELATIONSHIP_MAPPINGS[fieldName];
+    if (!mapping) return;
+
+    // Only auto-populate when "Self" is selected
+    if (value.toLowerCase() !== "self") {
+      // Optionally clear the auto-populated fields when changing away from "Self"
+      // For now, we leave them as-is so user data isn't lost
+      return;
+    }
+
+    // Build the updates object from current field values
+    const updates: Record<string, FieldValue> = {};
+    const formFieldNames = form.fields.map(f => f.fieldDefinition.name);
+
+    // Handle name combination (firstName + lastName -> targetName)
+    const firstName = fieldValues["firstName"] as string || "";
+    const lastName = fieldValues["lastName"] as string || "";
+    const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
+    for (const [sourceField, targetField] of Object.entries(mapping)) {
+      // Skip if target field is not in this form
+      if (!formFieldNames.includes(targetField)) continue;
+
+      // Handle name fields specially (combine first + last)
+      if (sourceField === "firstName" && fullName) {
+        updates[targetField] = fullName;
+        continue;
+      }
+      // Skip lastName since we already handled it with firstName
+      if (sourceField === "lastName") continue;
+
+      // Copy the source value to target if it exists
+      const sourceValue = fieldValues[sourceField];
+      if (sourceValue !== undefined && sourceValue !== null && sourceValue !== "") {
+        updates[targetField] = sourceValue;
+      }
+    }
+
+    // Apply all updates at once
+    if (Object.keys(updates).length > 0) {
+      console.log("Auto-populating from Self relationship:", { fieldName, updates });
+      setFieldValues(prev => ({ ...prev, ...updates }));
+    }
+  }, [fieldValues, form.fields, updateFieldValue]);
 
   // Handle address field auto-populate
   const populateAddressFields = useCallback((field: FormField, address: AddressComponents) => {
@@ -449,12 +541,18 @@ export default function PublicFormRenderer({
           />
         );
 
-      case "select":
+      case "select": {
+        // Check if this is a relationship field that supports auto-population
+        const isRelationshipField = fieldName in SELF_RELATIONSHIP_MAPPINGS;
+        const handleChange = isRelationshipField
+          ? (e: React.ChangeEvent<HTMLSelectElement>) => handleRelationshipChange(fieldName, e.target.value)
+          : (e: React.ChangeEvent<HTMLSelectElement>) => updateFieldValue(fieldName, e.target.value);
+
         return (
           <select
             className={baseInputClasses}
             value={fieldValue as string}
-            onChange={(e) => updateFieldValue(fieldName, e.target.value)}
+            onChange={handleChange}
           >
             <option value="">Select {label.toLowerCase()}...</option>
             {config.options?.map((opt: string | { value: string; label: string }, i: number) => {
@@ -468,6 +566,7 @@ export default function PublicFormRenderer({
             })}
           </select>
         );
+      }
 
       case "checkbox":
         return (
