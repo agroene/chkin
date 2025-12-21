@@ -83,6 +83,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Increment scan count (fire and forget - don't block response)
+    prisma.qRCode
+      .update({
+        where: { shortCode },
+        data: {
+          scanCount: { increment: 1 },
+          lastScannedAt: new Date(),
+        },
+      })
+      .catch((err) => {
+        console.error("Failed to update scan count:", err);
+      });
+
     const form = qrCode.formTemplate;
 
     // Check if user is authenticated (optional - for pre-fill)

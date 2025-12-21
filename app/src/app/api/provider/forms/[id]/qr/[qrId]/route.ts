@@ -102,10 +102,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       qrCode: {
         id: qrCode.id,
         shortCode: qrCode.shortCode,
+        label: qrCode.label,
         formUrl,
         qrImageDataUrl,
         qrImageSvg,
         isActive: qrCode.isActive,
+        scanCount: qrCode.scanCount,
+        lastScannedAt: qrCode.lastScannedAt,
         createdAt: qrCode.createdAt,
         createdBy: qrCode.createdBy,
       },

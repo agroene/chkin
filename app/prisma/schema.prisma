@@ -355,6 +355,11 @@ model QRCode {
 
   // QR code data
   shortCode      String   @unique // Short URL code (e.g., "abc123")
+  label          String?  // Optional label (e.g., "Reception Desk")
+
+  // Scan tracking
+  scanCount      Int      @default(0)
+  lastScannedAt  DateTime?
 
   // Status
   isActive       Boolean  @default(true)
