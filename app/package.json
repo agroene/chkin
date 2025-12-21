@@ -22,6 +22,7 @@
     "@types/pg": "^8.15.6",
     "bcryptjs": "^2.4.3",
     "better-auth": "^1.4.6",
+    "libphonenumber-js": "^1.12.33",
     "nanoid": "^5.1.6",
     "next": "16.0.8",
     "nodemailer": "^7.0.11",

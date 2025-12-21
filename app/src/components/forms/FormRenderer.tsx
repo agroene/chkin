@@ -8,7 +8,11 @@
  */
 
 import { useState, useCallback } from "react";
-import { AddressAutocomplete, type AddressComponents } from "@/components/ui";
+import {
+  AddressAutocomplete,
+  type AddressComponents,
+  PhoneInput,
+} from "@/components/ui";
 
 interface FieldDefinition {
   id: string;
@@ -180,7 +184,6 @@ export default function FormRenderer({
     switch (field.fieldDefinition.fieldType) {
       case "text":
       case "email":
-      case "phone":
         return (
           <input
             type={field.fieldDefinition.fieldType === "email" ? "email" : "text"}
@@ -189,6 +192,17 @@ export default function FormRenderer({
             placeholder={config.placeholder || `Enter ${label.toLowerCase()}...`}
             maxLength={config.maxLength}
             className={baseInputClasses}
+          />
+        );
+
+      case "phone":
+        return (
+          <PhoneInput
+            value={value}
+            onChange={(newValue) => updateValue(fieldName, newValue)}
+            defaultCountry={config.defaultCountry || "ZA"}
+            placeholder={config.placeholder}
+            hasError={!!error}
           />
         );
 
