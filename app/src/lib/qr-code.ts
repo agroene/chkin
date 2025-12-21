@@ -68,10 +68,11 @@ export async function generateQRCodeSVG(
 
 /**
  * Get the local network IP address for mobile device testing
- * Returns the first non-internal IPv4 address found
+ * Prioritizes physical network adapters (Wi-Fi, Ethernet) over virtual ones (WSL, VPN, etc.)
  */
 function getLocalNetworkIP(): string | null {
   const nets = networkInterfaces();
+  const candidates: { name: string; address: string; priority: number }[] = [];
 
   for (const name of Object.keys(nets)) {
     const netInterfaces = nets[name];
@@ -79,10 +80,47 @@ function getLocalNetworkIP(): string | null {
 
     for (const net of netInterfaces) {
       // Skip internal and non-IPv4 addresses
-      if (net.family === "IPv4" && !net.internal) {
-        return net.address;
+      if (net.family !== "IPv4" || net.internal) continue;
+
+      // Determine priority based on interface name
+      // Lower number = higher priority
+      let priority = 50; // Default priority
+
+      const lowerName = name.toLowerCase();
+
+      // Highest priority: Wi-Fi and standard Ethernet
+      if (lowerName.includes("wi-fi") || lowerName.includes("wifi")) {
+        priority = 10;
+      } else if (lowerName === "ethernet" || lowerName.match(/^ethernet \d*$/i)) {
+        priority = 15;
       }
+      // Lower priority: Virtual adapters (WSL, Hyper-V, VPN, etc.)
+      else if (
+        lowerName.includes("vethernet") ||
+        lowerName.includes("wsl") ||
+        lowerName.includes("hyper-v") ||
+        lowerName.includes("virtual") ||
+        lowerName.includes("vpn") ||
+        lowerName.includes("tailscale")
+      ) {
+        priority = 90;
+      }
+      // Medium priority: Mobile broadband, Bluetooth
+      else if (lowerName.includes("cellular") || lowerName.includes("mobile")) {
+        priority = 70;
+      } else if (lowerName.includes("bluetooth")) {
+        priority = 80;
+      }
+
+      candidates.push({ name, address: net.address, priority });
     }
+  }
+
+  // Sort by priority and return the best candidate
+  candidates.sort((a, b) => a.priority - b.priority);
+
+  if (candidates.length > 0) {
+    return candidates[0].address;
   }
 
   return null;
