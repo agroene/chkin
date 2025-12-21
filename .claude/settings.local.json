@@ -55,7 +55,8 @@
       "Bash(set -a)",
       "Bash(source .env)",
       "Bash(set:*)",
-      "Bash(npx prisma db pull:*)"
+      "Bash(npx prisma db pull:*)",
+      "Bash(ipconfig)"
     ]
   },
   "outputStyle": "default"

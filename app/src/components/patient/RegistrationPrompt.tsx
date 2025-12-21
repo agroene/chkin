@@ -140,13 +140,13 @@ export default function RegistrationPrompt({
           {/* CTA Buttons */}
           <div className="mt-6 space-y-3">
             <Link
-              href="/auth/register"
+              href="/register"
               className="block w-full rounded-lg bg-teal-600 py-3 font-semibold text-white hover:bg-teal-700"
             >
               Create Account
             </Link>
             <Link
-              href="/auth/login"
+              href="/login"
               className="block w-full rounded-lg border border-gray-300 bg-white py-3 font-semibold text-gray-700 hover:bg-gray-50"
             >
               Sign In

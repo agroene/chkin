@@ -13,6 +13,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization } from "better-auth/plugins";
 import { Resend } from "resend";
+import { networkInterfaces } from "os";
 import { prisma } from "./db";
 
 // Re-export prisma for backwards compatibility
@@ -22,7 +23,42 @@ export { prisma } from "./db";
 const MIN_PASSWORD_LENGTH = Number(process.env.MIN_PASSWORD_LENGTH) || 12;
 const SESSION_EXPIRY_DAYS = 30;
 const SESSION_UPDATE_DAYS = 1;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+/**
+ * Get trusted origins for authentication
+ * In development, includes local network IPs for mobile testing
+ */
+function getTrustedOrigins(): string[] {
+  const origins: string[] = [];
+
+  // Add configured app URL if set
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    origins.push(process.env.NEXT_PUBLIC_APP_URL);
+  }
+
+  // Always include localhost
+  origins.push("http://localhost:3000");
+
+  // In development, add all local network IPs
+  if (process.env.NODE_ENV === "development") {
+    const nets = networkInterfaces();
+    for (const name of Object.keys(nets)) {
+      const netInterfaces = nets[name];
+      if (!netInterfaces) continue;
+
+      for (const net of netInterfaces) {
+        if (net.family === "IPv4" && !net.internal) {
+          origins.push(`http://${net.address}:3000`);
+        }
+      }
+    }
+  }
+
+  return origins;
+}
+
+const trustedOrigins = getTrustedOrigins();
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || trustedOrigins[0] || "http://localhost:3000";
 
 /**
  * Better Auth Configuration
@@ -142,7 +178,7 @@ export const auth = betterAuth({
   // Application identity
   appName: "Chkin",
   baseURL: APP_URL,
-  trustedOrigins: [APP_URL],
+  trustedOrigins: trustedOrigins,
 
   // Session configuration (production settings)
   ...(process.env.NODE_ENV === "production" && {
