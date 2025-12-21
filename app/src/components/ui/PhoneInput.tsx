@@ -137,11 +137,15 @@ export function PhoneInput({
           lastExternalValue: value,
         });
       });
-      return parsed;
+      return {
+        selectedCountry: parsed.country,
+        nationalNumber: parsed.nationalNumber,
+        isValid: parsed.isValid,
+      };
     }
     // Otherwise use internal state (user is typing)
     return {
-      country: internalState.selectedCountry,
+      selectedCountry: internalState.selectedCountry,
       nationalNumber: internalState.nationalNumber,
       isValid: internalState.isValid,
     };
