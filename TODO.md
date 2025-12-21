@@ -100,22 +100,22 @@ This file tracks known technical debt, incomplete features, and future improveme
 - [x] Form builder 8-column grid layout support (2025-12-16)
 - [x] Form builder iPhone-style mobile preview (2025-12-16)
 - [x] Google Places address autocomplete (2025-12-16)
+- [x] QR code generation API (2025-12-21)
+- [x] QR code management page (2025-12-21)
+- [x] Short URL system for QR codes (2025-12-21)
+- [x] Public form rendering with responsive layout (2025-12-21)
+- [x] Form submission API with anonymous token support (2025-12-21)
+- [x] Patient profile pre-fill for authenticated users (2025-12-21)
 
 ---
 
-## Future Features (Not Started)
+## Backlog
 
-### Phase 4: QR Code Generation
-- [ ] QR code generation API
-- [ ] QR code management page
-- [ ] Short URL system for QR codes
+### Field Types
+- [ ] **Phone field type** — Create a proper phone data field type following international best practice with country code (prepopulated list), area code (landline/mobile), and local number components
 
-### Phase 5: Patient Portal
-- [ ] Form rendering from templates (with 8-col grid support)
-- [ ] Form validation
-- [ ] Submission API
-- [ ] Consent collection with timestamps
-- [ ] Success confirmation page
+### Form UX
+- [ ] **Responsible person auto-populate** — When completing a form and specifying relationship as "Self" between user and responsible person, auto-populate from user's already-entered data to avoid duplicate entry
 
 ### Phase 6: Submissions
 - [ ] Submission list view

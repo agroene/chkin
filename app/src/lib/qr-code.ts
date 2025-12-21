@@ -6,6 +6,7 @@
 
 import QRCode from "qrcode";
 import { nanoid } from "nanoid";
+import { networkInterfaces } from "os";
 
 /**
  * Generate a unique short code for QR codes
@@ -66,9 +67,50 @@ export async function generateQRCodeSVG(
 }
 
 /**
+ * Get the local network IP address for mobile device testing
+ * Returns the first non-internal IPv4 address found
+ */
+function getLocalNetworkIP(): string | null {
+  const nets = networkInterfaces();
+
+  for (const name of Object.keys(nets)) {
+    const netInterfaces = nets[name];
+    if (!netInterfaces) continue;
+
+    for (const net of netInterfaces) {
+      // Skip internal and non-IPv4 addresses
+      if (net.family === "IPv4" && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
  * Build the public form URL from a short code
+ * In development, uses local network IP for mobile device testing
  */
 export function buildFormUrl(shortCode: string, baseUrl?: string): string {
-  const base = baseUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  return `${base}/c/${shortCode}`;
+  // If explicit base URL provided, use it
+  if (baseUrl) {
+    return `${baseUrl}/c/${shortCode}`;
+  }
+
+  // Use configured app URL if set
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return `${process.env.NEXT_PUBLIC_APP_URL}/c/${shortCode}`;
+  }
+
+  // In development, try to use local network IP for mobile testing
+  if (process.env.NODE_ENV === "development") {
+    const localIP = getLocalNetworkIP();
+    if (localIP) {
+      return `http://${localIP}:3000/c/${shortCode}`;
+    }
+  }
+
+  // Fallback to localhost
+  return `http://localhost:3000/c/${shortCode}`;
 }
