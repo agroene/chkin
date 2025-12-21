@@ -116,10 +116,10 @@ This file tracks known technical debt, incomplete features, and future improveme
 
 ### Form UX
 - [ ] **Responsible person auto-populate** — When completing a form and specifying relationship as "Self" between user and responsible person, auto-populate from user's already-entered data to avoid duplicate entry
-- [ ] **Smart address autopopulate fallback** — When Google Places autocomplete doesn't return all address components (e.g., house number, estate name), intelligently parse what the user originally typed to populate remaining empty fields. Example: user types "8 Kleine Parys Estate 1", Google returns only suburb/city/province but discards "8 Kleine Parys Estate 1" - use the original input to fill the street address field
+- [x] **Smart address autopopulate fallback** — When Google Places autocomplete doesn't return all address components (e.g., house number, estate name), intelligently parse what the user originally typed to populate remaining empty fields. Example: user types "8 Kleine Parys Estate 1", Google returns only suburb/city/province but discards "8 Kleine Parys Estate 1" - use the original input to fill the street address field (Completed 2025-12-21)
 
 ### Phase 6: Submissions
-- [ ] Submission list view
-- [ ] Submission detail view
-- [ ] Mark as reviewed functionality
+- [x] Submission list view (Completed 2025-12-21)
+- [x] Submission detail view (Completed 2025-12-21)
+- [x] Mark as reviewed functionality (Completed 2025-12-21)
 - [ ] Export submissions (CSV/PDF)

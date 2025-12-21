@@ -128,6 +128,8 @@ export default function AddressAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
   const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  // Store the original user input to use as fallback when Google doesn't return street address
+  const originalInputRef = useRef<string>("");
 
   // Initialize Google Places API
   useEffect(() => {
@@ -205,6 +207,9 @@ export default function AddressAutocomplete({
     const newValue = e.target.value;
     onChange(newValue);
 
+    // Store the original input for fallback purposes
+    originalInputRef.current = newValue;
+
     // Clear existing timer
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
@@ -245,7 +250,7 @@ export default function AddressAutocomplete({
       // Create new session token after selection (billing optimization)
       sessionToken.current = new window.google!.maps.places.AutocompleteSessionToken();
 
-      const addressComponents = parseAddressComponents(place, suggestion.mainText);
+      const addressComponents = parseAddressComponents(place, suggestion.mainText, originalInputRef.current);
       onChange(addressComponents.streetAddress || suggestion.mainText);
       onSelect(addressComponents);
     } catch (err) {
@@ -272,8 +277,63 @@ export default function AddressAutocomplete({
     }
   };
 
+  /**
+   * Extract street address portion from user input
+   * Handles formats like:
+   * - "8 Kleine Parys Estate 1" -> "8 Kleine Parys Estate 1"
+   * - "123 Main Street" -> "123 Main Street"
+   * - "Unit 5, 42 Oak Avenue" -> "Unit 5, 42 Oak Avenue"
+   *
+   * Returns the portion that looks like a street address (starts with number or unit/apt)
+   */
+  const extractStreetAddressFromInput = (input: string): string | null => {
+    if (!input || input.trim().length === 0) return null;
+
+    const trimmed = input.trim();
+
+    // Pattern 1: Starts with a number (e.g., "8 Kleine Parys Estate 1", "123 Main Street")
+    // Pattern 2: Starts with unit/apt/suite etc. (e.g., "Unit 5, 42 Oak Avenue")
+    const startsWithNumber = /^\d+/.test(trimmed);
+    const startsWithUnit = /^(unit|apt|apartment|suite|flat|no\.?)\s*\d/i.test(trimmed);
+
+    if (startsWithNumber || startsWithUnit) {
+      // The input looks like a street address, return it
+      // But first, try to remove any trailing city/province if it looks like Google suggestions
+      // e.g., "8 Kleine Parys Estate 1, Paarl, Western Cape" -> "8 Kleine Parys Estate 1"
+
+      // Split by comma and check if last parts look like city/province
+      const parts = trimmed.split(",").map(p => p.trim());
+
+      if (parts.length > 1) {
+        // Common South African province names and patterns
+        const locationPatterns = /^(western cape|eastern cape|northern cape|free state|gauteng|kwazulu-natal|mpumalanga|limpopo|north west|south africa|\d{4})$/i;
+
+        // Find where the actual address ends (before city/province parts)
+        let addressEndIndex = parts.length;
+        for (let i = parts.length - 1; i > 0; i--) {
+          if (locationPatterns.test(parts[i])) {
+            addressEndIndex = i;
+          } else {
+            break;
+          }
+        }
+
+        // Return just the street address portion
+        return parts.slice(0, addressEndIndex).join(", ");
+      }
+
+      return trimmed;
+    }
+
+    return null;
+  };
+
   // Parse Place details into our address format
-  const parseAddressComponents = (place: google.maps.places.Place, suggestionMainText?: string): AddressComponents => {
+  const parseAddressComponents = (
+    place: google.maps.places.Place,
+    suggestionMainText?: string,
+    originalUserInput?: string
+  ): AddressComponents => {
     const components: AddressComponents = {
       // Building/Complex details
       complexName: "",
@@ -353,6 +413,22 @@ export default function AddressAutocomplete({
         components.complexName = displayName;
       } else if (suggestionMainText && suggestionMainText !== components.streetAddress && !/^\d+\s/.test(suggestionMainText)) {
         components.complexName = suggestionMainText;
+      }
+    }
+
+    // SMART FALLBACK: If Google didn't return a street address but the user typed something
+    // that looks like a street address, use their original input as the street address
+    if (!components.streetAddress && originalUserInput) {
+      const extractedAddress = extractStreetAddressFromInput(originalUserInput);
+      if (extractedAddress) {
+        components.streetAddress = extractedAddress;
+
+        // Log for debugging
+        console.log("Smart fallback applied:", {
+          originalInput: originalUserInput,
+          extractedAddress,
+          googleReturnedStreetAddress: false,
+        });
       }
     }
 
