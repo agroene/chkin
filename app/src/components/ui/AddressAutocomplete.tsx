@@ -128,8 +128,11 @@ export default function AddressAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
   const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
-  // Store the original user input to use as fallback when Google doesn't return street address
+  // Store the original user input to use as fallback when Google doesn't return all components
+  // This captures what the user typed BEFORE selecting a suggestion
   const originalInputRef = useRef<string>("");
+  // Track if user has selected a suggestion (to stop updating originalInputRef)
+  const hasSelectedRef = useRef<boolean>(false);
 
   // Initialize Google Places API
   useEffect(() => {
@@ -208,7 +211,14 @@ export default function AddressAutocomplete({
     onChange(newValue);
 
     // Store the original input for fallback purposes
-    originalInputRef.current = newValue;
+    // Only update if user hasn't selected a suggestion yet (or is typing again after selection)
+    if (!hasSelectedRef.current) {
+      originalInputRef.current = newValue;
+    } else {
+      // User is typing again after a selection - reset and capture new input
+      hasSelectedRef.current = false;
+      originalInputRef.current = newValue;
+    }
 
     // Clear existing timer
     if (debounceTimer.current) {
@@ -224,6 +234,9 @@ export default function AddressAutocomplete({
   // Handle suggestion selection
   const handleSelect = async (suggestion: Suggestion) => {
     if (!sessionToken.current) return;
+
+    // Mark that user selected a suggestion
+    hasSelectedRef.current = true;
 
     setShowSuggestions(false);
     setIsLoading(true);
@@ -275,6 +288,142 @@ export default function AddressAutocomplete({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /**
+   * Extract leading unit/apartment/room identifier from user input
+   *
+   * When user types "8 Kleine Parys Estate 1" and selects "Kleine Parys Estate 1",
+   * Google returns the estate's street address (e.g., "120 Carolina Rd").
+   * The "8" is the user's unit number within the estate and should be preserved.
+   *
+   * Also handles formats like:
+   * - "Room 12, Medical Centre" -> "Room 12"
+   * - "Unit 5A, Building B" -> "Unit 5A"
+   * - "Flat 3" -> "Flat 3"
+   *
+   * @returns The unit identifier if found, null otherwise
+   */
+  const extractUnitNumberFromInput = (input: string, googleStreetNumber: string): string | null => {
+    if (!input || input.trim().length === 0) return null;
+
+    const trimmed = input.trim();
+
+    // Pattern 1: "Room X", "Unit X", "Apt X", "Suite X", "Flat X", "Office X", "Shop X", "No. X"
+    // Supports alphanumeric unit numbers like "12", "5A", "B3"
+    const unitPrefixMatch = trimmed.match(/^(room|unit|apt|apartment|suite|flat|office|shop|no\.?)\s*(\d+[a-z]?|[a-z]\d+)/i);
+    if (unitPrefixMatch) {
+      return `${unitPrefixMatch[1]} ${unitPrefixMatch[2]}`.trim();
+    }
+
+    // Pattern 2: Input starts with a number followed by space and non-number
+    // e.g., "8 Kleine Parys Estate" -> "8"
+    // But NOT "123 Main Street" where 123 IS the street number
+    const leadingNumberMatch = trimmed.match(/^(\d+[a-z]?)\s*[,\s]+([^\d])/i);
+
+    if (leadingNumberMatch) {
+      const leadingNumber = leadingNumberMatch[1];
+
+      // If Google returned a different street number, the leading number is likely a unit number
+      if (googleStreetNumber && leadingNumber !== googleStreetNumber) {
+        return leadingNumber;
+      }
+
+      // If Google didn't return a street number but the rest doesn't look like a street name,
+      // it's probably a unit number for a complex
+      if (!googleStreetNumber) {
+        // Check if what follows looks like a complex/estate name (not a street name)
+        const afterNumber = trimmed.substring(leadingNumber.length).trim().replace(/^,\s*/, "");
+        const looksLikeStreet = /^(street|st|road|rd|avenue|ave|drive|dr|lane|ln|crescent|cres|boulevard|blvd|way|close|place|pl)\b/i.test(afterNumber);
+        if (!looksLikeStreet) {
+          return leadingNumber;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  /**
+   * Find parts of the user's original input that weren't captured by Google's response
+   *
+   * For example, if user typed "Room 12, Medical Centre, Paarl Mediclinic, Berlyn Street"
+   * and Google returned complexName: "Medical Centre", streetAddress: "62 Berlyn"
+   * This function would return "Paarl Mediclinic" as the lost part
+   *
+   * @returns Lost parts of input that should be preserved, or null if nothing significant was lost
+   */
+  const findLostInputParts = (input: string, components: AddressComponents): string | null => {
+    if (!input || input.trim().length === 0) return null;
+
+    // Split user input by commas
+    const inputParts = input.split(",").map(p => p.trim()).filter(Boolean);
+    if (inputParts.length <= 1) return null;
+
+    // Collect all values Google returned (lowercase for comparison)
+    const googleValues = new Set<string>();
+    const addToSet = (val: string | undefined) => {
+      if (val) {
+        googleValues.add(val.toLowerCase());
+        // Also add individual words for partial matching
+        val.split(/\s+/).forEach(word => {
+          if (word.length > 2) googleValues.add(word.toLowerCase());
+        });
+      }
+    };
+
+    addToSet(components.complexName);
+    addToSet(components.unitNumber);
+    addToSet(components.streetAddress);
+    addToSet(components.streetNumber);
+    addToSet(components.streetName);
+    addToSet(components.suburb);
+    addToSet(components.city);
+    addToSet(components.province);
+    addToSet(components.postalCode);
+    addToSet(components.country);
+
+    // Common location words to ignore
+    const locationWords = new Set([
+      "street", "st", "road", "rd", "avenue", "ave", "drive", "dr",
+      "lane", "ln", "crescent", "cres", "boulevard", "blvd", "way", "close", "place", "pl",
+      "south", "africa", "western", "eastern", "northern", "cape", "gauteng",
+      "free", "state", "kwazulu", "natal", "mpumalanga", "limpopo", "north", "west",
+    ]);
+
+    // Find parts that weren't captured
+    const lostParts: string[] = [];
+
+    for (const part of inputParts) {
+      const partLower = part.toLowerCase();
+
+      // Skip if this part is just a unit number prefix (already handled by extractUnitNumberFromInput)
+      if (/^(room|unit|apt|apartment|suite|flat|office|shop|no\.?)\s*\d/i.test(part)) {
+        continue;
+      }
+
+      // Skip if this part is just a number (likely street number or postal code)
+      if (/^\d+$/.test(part)) {
+        continue;
+      }
+
+      // Check if any significant word from this part is in Google's response
+      const partWords = part.split(/\s+/).filter(w => w.length > 2);
+      const isPartCaptured = partWords.some(word => {
+        const wordLower = word.toLowerCase();
+        return googleValues.has(wordLower) || locationWords.has(wordLower);
+      });
+
+      // If this part wasn't captured and isn't a location word, it's lost
+      if (!isPartCaptured && partWords.length > 0) {
+        // Also check if the whole part isn't a location name
+        if (!locationWords.has(partLower) && !/^\d{4}$/.test(part)) {
+          lostParts.push(part);
+        }
+      }
+    }
+
+    return lostParts.length > 0 ? lostParts.join(", ") : null;
   };
 
   /**
@@ -416,7 +565,24 @@ export default function AddressAutocomplete({
       }
     }
 
-    // SMART FALLBACK: If Google didn't return a street address but the user typed something
+    // SMART FALLBACK #1: Extract unit number from user's original input
+    // When user types "8 Kleine Parys Estate 1" and selects "Kleine Parys Estate 1",
+    // Google returns "120 Carolina Rd" as the street address. The "8" is the user's unit number.
+    if (!components.unitNumber && originalUserInput) {
+      const extractedUnit = extractUnitNumberFromInput(originalUserInput, components.streetNumber);
+      if (extractedUnit) {
+        components.unitNumber = extractedUnit;
+
+        // Log for debugging
+        console.log("Smart fallback: Unit number extracted from input:", {
+          originalInput: originalUserInput,
+          extractedUnit,
+          googleStreetNumber: components.streetNumber,
+        });
+      }
+    }
+
+    // SMART FALLBACK #2: If Google didn't return a street address but the user typed something
     // that looks like a street address, use their original input as the street address
     if (!components.streetAddress && originalUserInput) {
       const extractedAddress = extractStreetAddressFromInput(originalUserInput);
@@ -424,11 +590,29 @@ export default function AddressAutocomplete({
         components.streetAddress = extractedAddress;
 
         // Log for debugging
-        console.log("Smart fallback applied:", {
+        console.log("Smart fallback: Street address extracted from input:", {
           originalInput: originalUserInput,
           extractedAddress,
           googleReturnedStreetAddress: false,
         });
+      }
+    }
+
+    // SMART FALLBACK #3: Capture any parts of user input that Google didn't return
+    // e.g., "Room 12, Medical Centre, Paarl Mediclinic" - "Paarl Mediclinic" may be lost
+    if (originalUserInput) {
+      const lostParts = findLostInputParts(originalUserInput, components);
+      if (lostParts) {
+        // If we have lost parts and complexName is empty or matches what Google returned,
+        // append the lost parts to complexName (the most flexible field)
+        if (!components.complexName) {
+          components.complexName = lostParts;
+          console.log("Smart fallback: Lost input placed in complexName:", lostParts);
+        } else if (!components.complexName.toLowerCase().includes(lostParts.toLowerCase())) {
+          // Append to existing complexName if the lost part isn't already there
+          components.complexName = `${components.complexName}, ${lostParts}`;
+          console.log("Smart fallback: Lost input appended to complexName:", lostParts);
+        }
       }
     }
 

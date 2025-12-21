@@ -115,7 +115,27 @@ export default function PublicFormRenderer({
       ? JSON.parse(field.fieldDefinition.config)
       : {};
 
-    if (!config.linkedFields) return;
+    // Debug logging for address field auto-population
+    console.log("populateAddressFields called:", {
+      fieldName: field.fieldDefinition.name,
+      config,
+      linkedFields: config.linkedFields,
+      addressComponents: {
+        unitNumber: address.unitNumber,
+        complexName: address.complexName,
+        streetAddress: address.streetAddress,
+        suburb: address.suburb,
+        city: address.city,
+        province: address.province,
+        postalCode: address.postalCode,
+        country: address.country,
+      },
+    });
+
+    if (!config.linkedFields) {
+      console.log("No linkedFields config found, skipping auto-populate");
+      return;
+    }
 
     const updates: Record<string, FieldValue> = {};
 
@@ -134,6 +154,23 @@ export default function PublicFormRenderer({
     // Map address components to linked fields
     const linkedFields = config.linkedFields as Record<string, string>;
 
+    // Building/Complex details
+    if (linkedFields.unitNumber && address.unitNumber) {
+      updates[linkedFields.unitNumber] = address.unitNumber;
+    }
+    if (linkedFields.complexName && address.complexName) {
+      updates[linkedFields.complexName] = address.complexName;
+    }
+    if (linkedFields.floor && address.floor) {
+      updates[linkedFields.floor] = address.floor;
+    }
+
+    // Street address
+    if (linkedFields.streetAddress && address.streetAddress) {
+      updates[linkedFields.streetAddress] = address.streetAddress;
+    }
+
+    // Area/Region
     if (linkedFields.suburb && address.suburb) {
       updates[linkedFields.suburb] = address.suburb;
     }
@@ -150,6 +187,7 @@ export default function PublicFormRenderer({
       updates[linkedFields.country] = countryMap[address.country] || address.country;
     }
 
+    console.log("Applying field updates:", updates);
     setFieldValues((prev) => ({ ...prev, ...updates }));
   }, []);
 
