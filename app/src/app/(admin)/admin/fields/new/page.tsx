@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, Button, Input } from "@/components/ui";
 import { PageHeader } from "@/components/layout";
+import FieldPositionPicker from "@/components/admin/FieldPositionPicker";
 
 // Valid categories
 const CATEGORIES = [
@@ -51,6 +52,7 @@ const FIELD_TYPES = [
   { key: "signature", label: "Signature" },
   { key: "country", label: "Country" },
   { key: "currency", label: "Currency" },
+  { key: "address", label: "Address (Google Places)" },
 ];
 
 export default function NewFieldPage() {
@@ -63,11 +65,21 @@ export default function NewFieldPage() {
     fieldType: "text",
     category: "personal",
     sortOrder: 0,
+    insertAfterFieldId: null as string | null,
     specialPersonalInfo: false,
     requiresExplicitConsent: false,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Handle position selection from FieldPositionPicker
+  function handlePositionSelect(insertAfterFieldId: string | null, sortOrder: number) {
+    setForm({
+      ...form,
+      insertAfterFieldId,
+      sortOrder,
+    });
+  }
 
   function generateCanonicalName(label: string): string {
     return label
@@ -213,6 +225,25 @@ export default function NewFieldPage() {
                   </option>
                 ))}
               </select>
+              {form.fieldType === "address" && (
+                <div className="mt-2 rounded-lg border border-teal-200 bg-teal-50 p-3">
+                  <div className="flex">
+                    <svg className="h-5 w-5 flex-shrink-0 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="ml-3">
+                      <h4 className="text-sm font-medium text-teal-800">
+                        Linked Fields Will Be Auto-Created
+                      </h4>
+                      <p className="mt-1 text-xs text-teal-700">
+                        Creating an address field will automatically create 7 linked sub-fields:
+                        Building/Complex, Unit/Suite, Suburb, City, Province, Postal Code, and Country.
+                        These will be prefixed with the parent field name for uniqueness.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -244,27 +275,16 @@ export default function NewFieldPage() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sort Order
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Position in Category
               </label>
-              <Input
-                type="number"
-                min="0"
-                value={form.sortOrder}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    sortOrder: parseInt(e.target.value) || 0,
-                  })
-                }
+              <FieldPositionPicker
+                category={form.category}
+                onPositionSelect={handlePositionSelect}
+                selectedPosition={form.insertAfterFieldId}
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Controls the default display order within category
-              </p>
             </div>
-
-            <div />
 
             <div className="sm:col-span-2">
               <label className="flex items-center gap-2">

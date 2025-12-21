@@ -4,12 +4,14 @@
  * Provider Forms Page
  *
  * Lists all form templates for the organization with search and filtering.
+ * Includes preview functionality to see how forms appear to patients.
  */
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout";
+import FormPreview from "@/components/provider/form-builder/FormPreview";
 
 interface FormTemplate {
   id: string;
@@ -24,6 +26,35 @@ interface FormTemplate {
     submissions: number;
     qrCodes: number;
   };
+}
+
+interface FormField {
+  id: string;
+  fieldDefinitionId: string;
+  fieldDefinition: {
+    id: string;
+    name: string;
+    label: string;
+    description: string | null;
+    fieldType: string;
+    config: string | null;
+    category: string;
+  };
+  labelOverride: string | null;
+  helpText: string | null;
+  isRequired: boolean;
+  sortOrder: number;
+  section: string | null;
+  columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  groupId?: string;
+}
+
+interface FormDetails {
+  id: string;
+  title: string;
+  description: string | null;
+  consentClause: string | null;
+  fields: FormField[];
 }
 
 interface Pagination {
@@ -45,6 +76,11 @@ export default function ProviderFormsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+
+  // Preview modal state
+  const [previewForm, setPreviewForm] = useState<FormDetails | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewMobile, setPreviewMobile] = useState(false);
 
   const fetchForms = useCallback(async () => {
     setLoading(true);
@@ -94,6 +130,46 @@ export default function ProviderFormsPage() {
     } catch {
       // Handle error silently
     }
+  }
+
+  // Fetch form details for preview
+  async function handlePreview(id: string) {
+    setPreviewLoading(true);
+    try {
+      const response = await fetch(`/api/provider/forms/${id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPreviewForm(data.form);
+      }
+    } catch {
+      // Handle error silently
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  // Close preview modal
+  function closePreview() {
+    setPreviewForm(null);
+    setPreviewMobile(false);
+  }
+
+  // Get unique sections from fields for preview
+  function getPreviewSections(fields: FormField[]): string[] {
+    const sections = new Set<string>();
+    fields.forEach(f => {
+      if (f.section) sections.add(f.section);
+    });
+    return sections.size > 0 ? Array.from(sections) : ["Default"];
+  }
+
+  // Prepare fields for preview - ensure section is set
+  function prepareFieldsForPreview(fields: FormField[]): FormField[] {
+    const sections = getPreviewSections(fields);
+    return fields.map(f => ({
+      ...f,
+      section: f.section || sections[0],
+    }));
   }
 
   return (
@@ -290,6 +366,31 @@ export default function ProviderFormsPage() {
 
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => handlePreview(form.id)}
+                      className="rounded-lg p-2 text-gray-500 hover:bg-teal-50 hover:text-teal-600"
+                      title="Preview form"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    </button>
+                    <button
                       onClick={() => router.push(`/provider/forms/${form.id}`)}
                       className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
                       title="Edit form"
@@ -362,6 +463,113 @@ export default function ProviderFormsPage() {
             >
               Next
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {(previewForm || previewLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-gray-100 shadow-2xl">
+            {/* Modal Header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Form Preview
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {previewForm?.title || "Loading..."}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Mobile/Desktop Toggle */}
+                {previewForm && (
+                  <div className="flex rounded-lg border border-gray-300 p-1">
+                    <button
+                      onClick={() => setPreviewMobile(false)}
+                      className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                        !previewMobile
+                          ? "bg-teal-600 text-white"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setPreviewMobile(true)}
+                      className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                        previewMobile
+                          ? "bg-teal-600 text-white"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {/* Close Button */}
+                <button
+                  onClick={closePreview}
+                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {previewLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
+                </div>
+              ) : previewForm ? (
+                <FormPreview
+                  title={previewForm.title}
+                  description={previewForm.description || ""}
+                  fields={prepareFieldsForPreview(previewForm.fields)}
+                  sections={getPreviewSections(previewForm.fields)}
+                  consentClause={previewForm.consentClause || ""}
+                  mobileView={previewMobile}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
       )}

@@ -63,6 +63,19 @@ const VALID_FIELD_TYPES = [
   "signature",
   "country",
   "currency",
+  "address",
+];
+
+// Linked sub-fields that are auto-created with address fields
+// These use a suffix pattern: {parentBaseName}ComplexName, {parentBaseName}UnitNumber, etc.
+const ADDRESS_LINKED_FIELD_SUFFIXES = [
+  { suffix: "ComplexName", label: "Building/Complex", fieldType: "text", description: "Building, complex, or estate name" },
+  { suffix: "UnitNumber", label: "Unit/Suite", fieldType: "text", description: "Unit, suite, or floor number" },
+  { suffix: "Suburb", label: "Suburb", fieldType: "text", description: "Suburb or neighborhood" },
+  { suffix: "City", label: "City", fieldType: "text", description: "City or town" },
+  { suffix: "Province", label: "Province", fieldType: "text", description: "State, province, or region" },
+  { suffix: "PostalCode", label: "Postal Code", fieldType: "text", description: "Postal or ZIP code" },
+  { suffix: "Country", label: "Country", fieldType: "country", description: "Country selection" },
 ];
 
 export async function GET(request: NextRequest) {
@@ -318,6 +331,54 @@ export async function POST(request: NextRequest) {
       _max: { sortOrder: true },
     });
 
+    // Calculate sortOrder based on insertAfterFieldId or provided sortOrder
+    let newSortOrder: number;
+    const insertAfterFieldId = body.insertAfterFieldId;
+
+    if (insertAfterFieldId) {
+      // Insert after a specific field - find that field's sortOrder
+      const insertAfterField = await prisma.fieldDefinition.findUnique({
+        where: { id: insertAfterFieldId },
+        select: { sortOrder: true, category: true },
+      });
+
+      if (!insertAfterField || insertAfterField.category !== category) {
+        return NextResponse.json(
+          { error: "Insert after field not found or not in the same category" },
+          { status: 400 }
+        );
+      }
+
+      newSortOrder = insertAfterField.sortOrder + 1;
+
+      // Shift all fields at or after this position
+      await prisma.fieldDefinition.updateMany({
+        where: {
+          category,
+          sortOrder: { gte: newSortOrder },
+        },
+        data: {
+          sortOrder: { increment: fieldType === "address" ? 8 : 1 }, // +8 for address (1 parent + 7 linked)
+        },
+      });
+    } else if (body.sortOrder !== undefined && body.sortOrder !== null) {
+      // Explicit sortOrder provided (likely from position picker "insert at beginning")
+      newSortOrder = body.sortOrder;
+
+      // If sortOrder is 0 (beginning), shift all existing fields
+      if (newSortOrder === 0) {
+        await prisma.fieldDefinition.updateMany({
+          where: { category },
+          data: {
+            sortOrder: { increment: fieldType === "address" ? 8 : 1 },
+          },
+        });
+      }
+    } else {
+      // Default: add at end
+      newSortOrder = (maxSortOrder._max.sortOrder || 0) + 1;
+    }
+
     // Create field
     const field = await prisma.fieldDefinition.create({
       data: {
@@ -328,13 +389,80 @@ export async function POST(request: NextRequest) {
         category,
         config: body.config ? JSON.stringify(body.config) : null,
         validation: body.validation ? JSON.stringify(body.validation) : null,
-        sortOrder: body.sortOrder ?? (maxSortOrder._max.sortOrder || 0) + 1,
+        sortOrder: newSortOrder,
         isActive: body.isActive ?? true,
         specialPersonalInfo: body.specialPersonalInfo ?? false,
         requiresExplicitConsent: body.requiresExplicitConsent ?? false,
         createdBy: adminCheck.user?.id,
       },
     });
+
+    // If this is an address field, auto-create linked sub-fields
+    const linkedFields: typeof field[] = [];
+    if (fieldType === "address") {
+      // Generate a base name for linked fields by removing common suffixes
+      // e.g., "homeStreetAddress" -> "home", "responsiblePartyStreetAddress" -> "responsiblePartyAddress"
+      const baseName = name.trim().replace(/StreetAddress$/i, "").replace(/Address$/i, "");
+      const linkedPrefix = baseName.length > 0 ? baseName + "Address" : "";
+
+      let linkedSortOrder = newSortOrder + 1;
+
+      for (const subField of ADDRESS_LINKED_FIELD_SUFFIXES) {
+        // Generate the linked field name: e.g., "homeAddressSuburb", "homeAddressCity"
+        const linkedName = linkedPrefix.length > 0
+          ? linkedPrefix + subField.suffix
+          : subField.suffix.charAt(0).toLowerCase() + subField.suffix.slice(1);
+
+        // Generate the label: e.g., "Home Suburb", "Home City"
+        const linkedLabel = linkedPrefix.length > 0
+          ? label.trim().replace(/Street Address$/i, "").replace(/Address$/i, "").trim() + " " + subField.label
+          : subField.label;
+
+        // Check if this field already exists (skip if it does)
+        const existingLinked = await prisma.fieldDefinition.findUnique({
+          where: { name: linkedName },
+        });
+
+        if (!existingLinked) {
+          const linkedField = await prisma.fieldDefinition.create({
+            data: {
+              name: linkedName,
+              label: linkedLabel,
+              description: `${subField.description} for ${label.trim()}`,
+              fieldType: subField.fieldType,
+              category,
+              sortOrder: linkedSortOrder++,
+              isActive: true,
+              specialPersonalInfo: false,
+              requiresExplicitConsent: false,
+              createdBy: adminCheck.user?.id,
+            },
+          });
+          linkedFields.push(linkedField);
+        }
+      }
+
+      // Update the parent address field's config to reference the linked fields
+      const linkedFieldNames = linkedFields.map(f => f.name);
+      if (linkedFieldNames.length > 0) {
+        await prisma.fieldDefinition.update({
+          where: { id: field.id },
+          data: {
+            config: JSON.stringify({
+              linkedFields: {
+                complexName: linkedFieldNames.find(n => n.endsWith("ComplexName")) || null,
+                unitNumber: linkedFieldNames.find(n => n.endsWith("UnitNumber")) || null,
+                suburb: linkedFieldNames.find(n => n.endsWith("Suburb")) || null,
+                city: linkedFieldNames.find(n => n.endsWith("City")) || null,
+                province: linkedFieldNames.find(n => n.endsWith("Province")) || null,
+                postalCode: linkedFieldNames.find(n => n.endsWith("PostalCode")) || null,
+                country: linkedFieldNames.find(n => n.endsWith("Country")) || null,
+              },
+            }),
+          },
+        });
+      }
+    }
 
     // Log audit event
     await logAuditEvent({
@@ -347,6 +475,7 @@ export async function POST(request: NextRequest) {
         label: field.label,
         fieldType: field.fieldType,
         category: field.category,
+        linkedFieldsCreated: linkedFields.length,
       },
       request,
     });
@@ -368,6 +497,11 @@ export async function POST(request: NextRequest) {
         requiresExplicitConsent: field.requiresExplicitConsent,
         createdAt: field.createdAt,
         updatedAt: field.updatedAt,
+        linkedFields: linkedFields.map(f => ({
+          id: f.id,
+          name: f.name,
+          label: f.label,
+        })),
       },
     });
   } catch (error) {

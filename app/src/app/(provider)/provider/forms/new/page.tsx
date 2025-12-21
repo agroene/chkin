@@ -32,6 +32,7 @@ interface FormField {
   sortOrder: number;
   section: string | null;
   columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // Column span out of 8 (8 = full width)
+  groupId?: string; // Links fields that belong together (e.g., address + sub-fields)
 }
 
 export default function NewFormPage() {
@@ -71,9 +72,67 @@ export default function NewFormPage() {
     setFields((prev) => [...prev, newField]);
   }, [fields, sections, activeSection]);
 
-  // Remove field from form
+  // Add field group (parent + linked fields) - used for address fields
+  const handleAddFieldGroup = useCallback((parentField: FormField["fieldDefinition"], linkedFields: FormField["fieldDefinition"][]) => {
+    const targetSection = sections.includes(activeSection) ? activeSection : sections[0] || "General";
+    const sectionFields = fields.filter(f => f.section === targetSection);
+    let sortOrder = sectionFields.length > 0
+      ? Math.max(...sectionFields.map(f => f.sortOrder)) + 1
+      : fields.length;
+
+    // Create a unique group ID to link all fields together
+    const groupId = `group-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    // Create the parent field (address autocomplete) - full width
+    const parentFormField: FormField = {
+      id: `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      fieldDefinitionId: parentField.id,
+      fieldDefinition: parentField,
+      labelOverride: null,
+      helpText: "Start typing to search for an address",
+      isRequired: false,
+      sortOrder: sortOrder++,
+      section: targetSection,
+      columnSpan: 8, // Full width for address autocomplete
+      groupId,
+    };
+
+    // Create linked fields with appropriate column spans
+    const linkedFormFields: FormField[] = linkedFields.map((field) => {
+      // Determine column span based on field type/name
+      let columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 = 4; // Default half width
+      if (field.name === "postalCode") columnSpan = 2;
+      if (field.name === "country") columnSpan = 3;
+      if (field.name === "stateProvince") columnSpan = 3;
+
+      return {
+        id: `temp-${Date.now()}-${Math.random().toString(36).substring(7)}-${field.name}`,
+        fieldDefinitionId: field.id,
+        fieldDefinition: field,
+        labelOverride: null,
+        helpText: null,
+        isRequired: false,
+        sortOrder: sortOrder++,
+        section: targetSection,
+        columnSpan,
+        groupId,
+      };
+    });
+
+    setFields((prev) => [...prev, parentFormField, ...linkedFormFields]);
+  }, [fields, sections, activeSection]);
+
+  // Remove field from form (removes entire group if field is part of one)
   const handleRemoveField = useCallback((fieldId: string) => {
-    setFields((prev) => prev.filter((f) => f.id !== fieldId));
+    setFields((prev) => {
+      const fieldToRemove = prev.find(f => f.id === fieldId);
+      // If field is part of a group, remove all fields in that group
+      if (fieldToRemove?.groupId) {
+        return prev.filter((f) => f.groupId !== fieldToRemove.groupId);
+      }
+      // Otherwise just remove the single field
+      return prev.filter((f) => f.id !== fieldId);
+    });
   }, []);
 
   // Update field
@@ -304,6 +363,7 @@ export default function NewFormPage() {
               {/* Field Picker */}
               <FieldPicker
                 onAddField={handleAddField}
+                onAddFieldGroup={handleAddFieldGroup}
                 selectedFieldIds={fields.map((f) => f.fieldDefinitionId)}
               />
             </div>

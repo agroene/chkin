@@ -3,7 +3,9 @@
  *
  * GET /api/admin/fields/[id] - Get field details
  * PATCH /api/admin/fields/[id] - Update field
- * DELETE /api/admin/fields/[id] - Deactivate field (soft delete)
+ * DELETE /api/admin/fields/[id] - Delete field
+ *   - ?hard=true - Permanently delete unused fields (default: soft delete/deactivate)
+ *   - ?deleteLinked=true - Also delete linked fields (for address fields)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -323,8 +325,13 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
 
+  // Check for hard delete query parameter
+  const { searchParams } = new URL(request.url);
+  const hardDelete = searchParams.get("hard") === "true";
+  const deleteLinked = searchParams.get("deleteLinked") === "true";
+
   try {
-    // Find field with usage count
+    // Find field with usage count and config
     const field = await prisma.fieldDefinition.findUnique({
       where: { id },
       include: {
@@ -342,7 +349,6 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     // If field is used in forms, only deactivate it (soft delete)
-    // If not used, we could hard delete, but for consistency we just deactivate
     if (field._count.formFields > 0) {
       // Soft delete - deactivate
       await prisma.fieldDefinition.update({
@@ -367,6 +373,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       return NextResponse.json({
         success: true,
         message: `Field "${field.name}" has been deactivated. It is used in ${field._count.formFields} form(s) and cannot be permanently deleted.`,
+        softDeleted: true,
         data: {
           id: field.id,
           name: field.name,
@@ -375,7 +382,68 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       });
     }
 
-    // If not used, deactivate (we don't hard delete to preserve history)
+    // Field is not used in any forms - can be hard deleted if requested
+    if (hardDelete) {
+      // Check if this is an address field with linked fields
+      const linkedFieldsDeleted: string[] = [];
+      if (deleteLinked && field.fieldType === "address" && field.config) {
+        try {
+          const config = JSON.parse(field.config);
+          if (config.linkedFields) {
+            const linkedFieldNames = Object.values(config.linkedFields).filter(Boolean) as string[];
+
+            // Find and delete linked fields that are not used in any forms
+            for (const linkedName of linkedFieldNames) {
+              const linkedField = await prisma.fieldDefinition.findUnique({
+                where: { name: linkedName },
+                include: { _count: { select: { formFields: true } } },
+              });
+
+              if (linkedField && linkedField._count.formFields === 0) {
+                await prisma.fieldDefinition.delete({
+                  where: { id: linkedField.id },
+                });
+                linkedFieldsDeleted.push(linkedName);
+              }
+            }
+          }
+        } catch {
+          // Config parsing failed, continue with parent deletion
+        }
+      }
+
+      // Hard delete the field
+      await prisma.fieldDefinition.delete({
+        where: { id },
+      });
+
+      // Log audit event
+      await logAuditEvent({
+        userId: adminCheck.user?.id,
+        action: "DELETE_FIELD_DEFINITION",
+        resourceType: "FieldDefinition",
+        resourceId: id,
+        metadata: {
+          name: field.name,
+          reason: "Hard delete - field was not used in any forms",
+          linkedFieldsDeleted: linkedFieldsDeleted,
+        },
+        request,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Field "${field.name}" has been permanently deleted.${linkedFieldsDeleted.length > 0 ? ` ${linkedFieldsDeleted.length} linked fields were also deleted.` : ""}`,
+        hardDeleted: true,
+        linkedFieldsDeleted,
+        data: {
+          id: field.id,
+          name: field.name,
+        },
+      });
+    }
+
+    // Default: soft delete (deactivate)
     await prisma.fieldDefinition.update({
       where: { id },
       data: { isActive: false },
@@ -397,6 +465,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     return NextResponse.json({
       success: true,
       message: `Field "${field.name}" has been deactivated.`,
+      softDeleted: true,
       data: {
         id: field.id,
         name: field.name,

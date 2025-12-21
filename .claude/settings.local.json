@@ -46,7 +46,16 @@
       "Bash(powershell -Command:*)",
       "Bash(npm run lint)",
       "Bash(powershell -ExecutionPolicy Bypass -File ./start-local.ps1)",
-      "Bash(powershell -ExecutionPolicy Bypass -Command \"cd ''C:\\Users\\agroenew\\OneDrive\\dev-projects\\chkin\\app''; .\\start-local.ps1\")"
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"cd ''C:\\Users\\agroenew\\OneDrive\\dev-projects\\chkin\\app''; .\\start-local.ps1\")",
+      "WebFetch(domain:developers.google.com)",
+      "WebFetch(domain:dev.to)",
+      "Bash(npm run lint:*)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yes\" npx prisma migrate:*)",
+      "Bash(npx prisma studio:*)",
+      "Bash(set -a)",
+      "Bash(source .env)",
+      "Bash(set:*)",
+      "Bash(npx prisma db pull:*)"
     ]
   },
   "outputStyle": "default"

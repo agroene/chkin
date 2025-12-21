@@ -11,9 +11,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card, DataTable, StatusBadge, Button, Input } from "@/components/ui";
+import { Card, Button, Input } from "@/components/ui";
 import { PageHeader } from "@/components/layout";
-import type { Column } from "@/components/ui/DataTable";
+import FieldLibraryList from "@/components/admin/FieldLibraryList";
 
 interface FieldDefinition {
   id: string;
@@ -74,6 +74,40 @@ export default function FieldsPage() {
   const [currentPage, setCurrentPage] = useState(
     parseInt(searchParams.get("page") || "1")
   );
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reorderError, setReorderError] = useState("");
+
+  // Handle reorder from drag-and-drop
+  async function handleReorder(fieldIds: string[]) {
+    if (!categoryFilter) {
+      setReorderError("Please select a category to reorder fields");
+      return;
+    }
+
+    setReorderError("");
+
+    try {
+      const response = await fetch("/api/admin/fields/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: categoryFilter,
+          fieldIds,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to reorder fields");
+      }
+
+      // Refresh the field list to show new order
+      fetchFields();
+    } catch (err) {
+      setReorderError(err instanceof Error ? err.message : "Failed to reorder fields");
+    }
+  }
 
   // Fetch categories on mount
   useEffect(() => {
@@ -148,133 +182,64 @@ export default function FieldsPage() {
     fetchFields();
   }
 
-  function getFieldTypeBadge(fieldType: string) {
-    const typeColors: Record<string, string> = {
-      text: "bg-gray-100 text-gray-800",
-      email: "bg-blue-100 text-blue-800",
-      phone: "bg-green-100 text-green-800",
-      date: "bg-purple-100 text-purple-800",
-      datetime: "bg-purple-100 text-purple-800",
-      select: "bg-yellow-100 text-yellow-800",
-      multiselect: "bg-yellow-100 text-yellow-800",
-      checkbox: "bg-pink-100 text-pink-800",
-      radio: "bg-pink-100 text-pink-800",
-      textarea: "bg-gray-100 text-gray-800",
-      number: "bg-indigo-100 text-indigo-800",
-      file: "bg-orange-100 text-orange-800",
-      signature: "bg-red-100 text-red-800",
-      country: "bg-teal-100 text-teal-800",
-      currency: "bg-emerald-100 text-emerald-800",
-    };
+  // Handle delete field
+  async function handleDeleteField(field: FieldDefinition, e: React.MouseEvent) {
+    e.stopPropagation(); // Prevent row click navigation
 
-    return (
-      <span
-        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${typeColors[fieldType] || "bg-gray-100 text-gray-800"}`}
-      >
-        {fieldType}
-      </span>
-    );
+    // Build confirmation message
+    const isAddressField = field.fieldType === "address";
+    const hasUsage = field.usageCount > 0;
+
+    let message = `Are you sure you want to delete "${field.label}"?`;
+    if (hasUsage) {
+      message = `"${field.label}" is used in ${field.usageCount} form(s) and will only be deactivated (soft delete).`;
+    } else if (isAddressField) {
+      message = `Delete "${field.label}" and all its linked address sub-fields? This cannot be undone.`;
+    } else {
+      message = `Permanently delete "${field.label}"? This cannot be undone.`;
+    }
+
+    if (!confirm(message)) {
+      return;
+    }
+
+    setDeletingId(field.id);
+    setError("");
+
+    try {
+      // Build query params for hard delete with linked fields
+      const params = new URLSearchParams();
+      if (!hasUsage) {
+        params.set("hard", "true");
+        if (isAddressField) {
+          params.set("deleteLinked", "true");
+        }
+      }
+
+      const response = await fetch(
+        `/api/admin/fields/${field.id}${params.toString() ? `?${params}` : ""}`,
+        { method: "DELETE" }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete field");
+      }
+
+      // Show success message if linked fields were deleted
+      if (data.linkedFieldsDeleted?.length > 0) {
+        alert(`Deleted ${data.linkedFieldsDeleted.length + 1} fields (including linked address fields)`);
+      }
+
+      // Refresh the field list
+      fetchFields();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete field");
+    } finally {
+      setDeletingId(null);
+    }
   }
-
-  function getCategoryDisplayName(category: string) {
-    const cat = categories.find((c) => c.key === category);
-    return cat?.displayName || category;
-  }
-
-  // Column definitions for DataTable
-  const columns: Column<FieldDefinition>[] = [
-    {
-      key: "name",
-      header: "Field",
-      mobileTitle: true,
-      render: (field) => (
-        <div>
-          <div className="font-medium text-gray-900">{field.label}</div>
-          <div className="text-sm text-gray-500 font-mono">{field.name}</div>
-        </div>
-      ),
-    },
-    {
-      key: "type",
-      header: "Type",
-      render: (field) => getFieldTypeBadge(field.fieldType),
-    },
-    {
-      key: "category",
-      header: "Category",
-      hideOnMobile: true,
-      render: (field) => (
-        <span className="text-gray-700">
-          {getCategoryDisplayName(field.category)}
-        </span>
-      ),
-    },
-    {
-      key: "flags",
-      header: "Flags",
-      hideOnMobile: true,
-      render: (field) => (
-        <div className="flex gap-1">
-          {field.specialPersonalInfo && (
-            <span
-              className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800"
-              title="POPIA Special Personal Info"
-            >
-              SPI
-            </span>
-          )}
-          {field.requiresExplicitConsent && (
-            <span
-              className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
-              title="Requires Explicit Consent"
-            >
-              Consent
-            </span>
-          )}
-          {!field.specialPersonalInfo && !field.requiresExplicitConsent && (
-            <span className="text-gray-400">—</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "usage",
-      header: "Usage",
-      hideOnMobile: true,
-      render: (field) =>
-        field.usageCount > 0 ? (
-          <span className="text-gray-900">{field.usageCount} form(s)</span>
-        ) : (
-          <span className="text-gray-400">—</span>
-        ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (field) => (
-        <StatusBadge
-          status={field.isActive ? "approved" : "rejected"}
-          label={field.isActive ? "Active" : "Inactive"}
-        />
-      ),
-    },
-  ];
-
-  const emptyIcon = (
-    <svg
-      className="mx-auto h-12 w-12"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M4 6h16M4 10h16M4 14h16M4 18h16"
-      />
-    </svg>
-  );
 
   // Get category counts from the fetched categories
   const coreCategories = categories.filter((c) => c.tier === "core");
@@ -407,27 +372,27 @@ export default function FieldsPage() {
       </Card>
 
       {/* Error State */}
-      {error && (
+      {(error || reorderError) && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 sm:mb-6">
-          {error}
+          {error || reorderError}
         </div>
       )}
 
       {/* Field List */}
-      <Card noPadding>
-        <DataTable
-          columns={columns}
-          data={fields}
-          keyExtractor={(f) => f.id}
-          onRowClick={(f) => router.push(`/admin/fields/${f.id}`)}
+      <Card className="p-4">
+        <FieldLibraryList
+          fields={fields}
+          category={categoryFilter}
+          onFieldClick={(f) => router.push(`/admin/fields/${f.id}`)}
+          onDeleteField={handleDeleteField}
+          onReorder={handleReorder}
+          deletingId={deletingId}
           loading={loading}
-          emptyMessage="No fields found"
-          emptyIcon={emptyIcon}
         />
 
         {/* Pagination */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="flex flex-col gap-3 border-t border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-center text-sm text-gray-500 sm:text-left">
               Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
               {Math.min(

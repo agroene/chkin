@@ -26,6 +26,7 @@ interface FormField {
   sortOrder: number;
   section: string | null;
   columnSpan: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // Column span out of 8 (8 = full width)
+  groupId?: string; // Links fields that belong together (e.g., address + sub-fields)
 }
 
 interface SectionOrganizerProps {
@@ -229,199 +230,87 @@ export default function SectionOrganizer({
               </p>
             ) : (
               <div className="space-y-2">
-                {fieldsBySection[section]?.map((field) => (
-                  <div
-                    key={field.id}
-                    draggable
-                    onDragStart={() => handleDragStart(field.id)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => {
-                      e.stopPropagation();
-                      handleDropOnField(field.id, section);
-                    }}
-                    className={`rounded-lg border bg-white p-3 transition-all ${
-                      draggedField === field.id
-                        ? "border-teal-400 opacity-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    } ${editingField === field.id ? "ring-2 ring-teal-500" : ""}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Drag Handle */}
-                      <div className="mt-1 cursor-grab text-gray-400 hover:text-gray-600">
-                        <svg
-                          className="h-5 w-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 8h16M4 16h16"
-                          />
-                        </svg>
-                      </div>
+                {(() => {
+                  // Group fields by groupId for rendering
+                  const sectionFields = fieldsBySection[section] || [];
+                  const renderedGroups = new Set<string>();
+                  const elements: React.ReactNode[] = [];
 
-                      {/* Field Content */}
-                      <div className="min-w-0 flex-1">
-                        {editingField === field.id ? (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-xs font-medium text-gray-500">
-                                Label Override
-                              </label>
-                              <input
-                                type="text"
-                                value={field.labelOverride || ""}
-                                onChange={(e) =>
-                                  onUpdateField(field.id, {
-                                    labelOverride: e.target.value || null,
-                                  })
-                                }
-                                placeholder={field.fieldDefinition.label}
-                                className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs font-medium text-gray-500">
-                                Help Text
-                              </label>
-                              <input
-                                type="text"
-                                value={field.helpText || ""}
-                                onChange={(e) =>
-                                  onUpdateField(field.id, {
-                                    helpText: e.target.value || null,
-                                  })
-                                }
-                                placeholder="Additional instructions..."
-                                className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs font-medium text-gray-500">
-                                Column Width (out of 8)
-                              </label>
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {[1, 2, 3, 4, 5, 6, 7, 8].map((value) => (
-                                  <button
-                                    key={value}
-                                    type="button"
-                                    onClick={() =>
-                                      onUpdateField(field.id, {
-                                        columnSpan: value as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8,
-                                      })
-                                    }
-                                    title={value === 8 ? "Full width" : `${value}/8 width`}
-                                    className={`min-w-[32px] rounded border px-2 py-1 text-xs font-medium transition-colors ${
-                                      field.columnSpan === value
-                                        ? "border-teal-500 bg-teal-50 text-teal-700"
-                                        : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
-                                    }`}
-                                  >
-                                    {value === 8 ? "Full" : value}
-                                  </button>
-                                ))}
-                              </div>
+                  sectionFields.forEach((field) => {
+                    // If field is part of a group, render the entire group together
+                    if (field.groupId) {
+                      if (renderedGroups.has(field.groupId)) return; // Skip if already rendered
+                      renderedGroups.add(field.groupId);
+
+                      const groupFields = sectionFields.filter(f => f.groupId === field.groupId);
+                      const parentField = groupFields[0]; // First field is the parent (address)
+
+                      elements.push(
+                        <div
+                          key={field.groupId}
+                          className="rounded-lg border-2 border-teal-200 bg-teal-50/50 p-2"
+                        >
+                          {/* Group Header */}
+                          <div className="mb-2 flex items-center justify-between px-2">
+                            <div className="flex items-center gap-2">
+                              <svg className="h-4 w-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                              </svg>
+                              <span className="text-xs font-medium text-teal-700">
+                                Address Fields (linked group)
+                              </span>
                             </div>
                             <button
-                              onClick={() => setEditingField(null)}
-                              className="text-xs text-teal-600 hover:text-teal-700"
+                              onClick={() => onRemoveField(parentField.id)}
+                              className="rounded p-1 text-teal-600 hover:bg-teal-100 hover:text-red-500"
+                              title="Remove entire address group"
                             >
-                              Done editing
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
                             </button>
                           </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">
-                                {field.labelOverride || field.fieldDefinition.label}
-                              </span>
-                              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
-                                {field.fieldDefinition.fieldType}
-                              </span>
-                              {field.columnSpan !== 8 && (
-                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-600">
-                                  {field.columnSpan}/8
-                                </span>
-                              )}
-                            </div>
-                            {field.helpText && (
-                              <p className="mt-0.5 text-xs text-gray-500">
-                                {field.helpText}
-                              </p>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        {/* Required Toggle */}
-                        <label className="flex cursor-pointer items-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={field.isRequired}
-                            onChange={(e) =>
-                              onUpdateField(field.id, {
-                                isRequired: e.target.checked,
-                              })
-                            }
-                            className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                          />
-                          <span className="text-xs text-gray-500">Required</span>
-                        </label>
-
-                        {/* Edit */}
-                        <button
-                          onClick={() =>
-                            setEditingField(
-                              editingField === field.id ? null : field.id
-                            )
-                          }
-                          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                          title="Edit field"
+                          {/* Group Fields */}
+                          <div className="space-y-2">
+                            {groupFields.map((groupField) => (
+                              <div
+                                key={groupField.id}
+                                className={`rounded-lg border bg-white p-3 transition-all ${
+                                  editingField === groupField.id ? "ring-2 ring-teal-500" : "border-gray-200"
+                                }`}
+                              >
+                                {renderFieldContent(groupField, true)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Regular field (not in a group)
+                      elements.push(
+                        <div
+                          key={field.id}
+                          draggable
+                          onDragStart={() => handleDragStart(field.id)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => {
+                            e.stopPropagation();
+                            handleDropOnField(field.id, section);
+                          }}
+                          className={`rounded-lg border bg-white p-3 transition-all ${
+                            draggedField === field.id
+                              ? "border-teal-400 opacity-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          } ${editingField === field.id ? "ring-2 ring-teal-500" : ""}`}
                         >
-                          <svg
-                            className="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
+                          {renderFieldContent(field, false)}
+                        </div>
+                      );
+                    }
+                  });
 
-                        {/* Remove */}
-                        <button
-                          onClick={() => onRemoveField(field.id)}
-                          className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                          title="Remove field"
-                        >
-                          <svg
-                            className="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  return elements;
+                })()}
               </div>
             )}
           </div>
@@ -452,4 +341,189 @@ export default function SectionOrganizer({
       )}
     </div>
   );
+
+  // Helper function to render field content (used for both grouped and non-grouped fields)
+  function renderFieldContent(field: FormField, isGrouped: boolean) {
+    return (
+      <div className="flex items-start gap-3">
+        {/* Drag Handle - only show for non-grouped fields */}
+        {!isGrouped && (
+          <div className="mt-1 cursor-grab text-gray-400 hover:text-gray-600">
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 8h16M4 16h16"
+              />
+            </svg>
+          </div>
+        )}
+
+        {/* Field Content */}
+        <div className="min-w-0 flex-1">
+          {editingField === field.id ? (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-500">
+                  Label Override
+                </label>
+                <input
+                  type="text"
+                  value={field.labelOverride || ""}
+                  onChange={(e) =>
+                    onUpdateField(field.id, {
+                      labelOverride: e.target.value || null,
+                    })
+                  }
+                  placeholder={field.fieldDefinition.label}
+                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">
+                  Help Text
+                </label>
+                <input
+                  type="text"
+                  value={field.helpText || ""}
+                  onChange={(e) =>
+                    onUpdateField(field.id, {
+                      helpText: e.target.value || null,
+                    })
+                  }
+                  placeholder="Additional instructions..."
+                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500">
+                  Column Width (out of 8)
+                </label>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() =>
+                        onUpdateField(field.id, {
+                          columnSpan: value as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8,
+                        })
+                      }
+                      title={value === 8 ? "Full width" : `${value}/8 width`}
+                      className={`min-w-[32px] rounded border px-2 py-1 text-xs font-medium transition-colors ${
+                        field.columnSpan === value
+                          ? "border-teal-500 bg-teal-50 text-teal-700"
+                          : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {value === 8 ? "Full" : value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingField(null)}
+                className="text-xs text-teal-600 hover:text-teal-700"
+              >
+                Done editing
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-900">
+                  {field.labelOverride || field.fieldDefinition.label}
+                </span>
+                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                  {field.fieldDefinition.fieldType}
+                </span>
+                {field.columnSpan !== 8 && (
+                  <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-600">
+                    {field.columnSpan}/8
+                  </span>
+                )}
+              </div>
+              {field.helpText && (
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {field.helpText}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {/* Required Toggle */}
+          <label className="flex cursor-pointer items-center gap-1">
+            <input
+              type="checkbox"
+              checked={field.isRequired}
+              onChange={(e) =>
+                onUpdateField(field.id, {
+                  isRequired: e.target.checked,
+                })
+              }
+              className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+            />
+            <span className="text-xs text-gray-500">Required</span>
+          </label>
+
+          {/* Edit */}
+          <button
+            onClick={() =>
+              setEditingField(
+                editingField === field.id ? null : field.id
+              )
+            }
+            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            title="Edit field"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+          </button>
+
+          {/* Remove - only show for non-grouped fields (grouped fields have remove at group level) */}
+          {!isGrouped && (
+            <button
+              onClick={() => onRemoveField(field.id)}
+              className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+              title="Remove field"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 }

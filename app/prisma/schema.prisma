@@ -33,6 +33,7 @@ model User {
   teamMembers                 TeamMember[]
   pendingProviderRegistration PendingProviderRegistration?
   auditLogs                   AuditLog[]
+  patientProfile              PatientProfile?
 
   @@map("user")
 }
@@ -393,6 +394,10 @@ model Submission {
   ipAddress      String?
   userAgent      String?
 
+  // Anonymous user tracking - allows claiming submissions after registration
+  anonymousToken String?  @unique  // Token for anonymous users to claim submission
+  claimedAt      DateTime?         // When submission was claimed by registered user
+
   // Audit fields
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -403,6 +408,7 @@ model Submission {
   @@index([organizationId, createdAt])
   @@index([formTemplateId, status])
   @@index([userId])
+  @@index([anonymousToken])
   @@map("submission")
 }
 
@@ -430,4 +436,29 @@ model AuditLog {
   @@index([resourceType, resourceId])
   @@index([action])
   @@map("audit_log")
+}
+
+// =============================================================================
+// PATIENT PROFILE MODEL
+// =============================================================================
+
+// Patient profile - stores canonical patient data that maps to field library
+// Field names in the data JSON match FieldDefinition.name for automatic form pre-fill
+model PatientProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique // One profile per user
+
+  // All profile data stored as JSONB
+  // Keys match FieldDefinition.name (e.g., "firstName", "dateOfBirth", "homeStreetAddress")
+  // This enables automatic form pre-population and profile sync
+  data      String   // JSON object with field values
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("patient_profile")
 }
