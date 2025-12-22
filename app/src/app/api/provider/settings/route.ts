@@ -15,29 +15,72 @@ import { logAuditEvent } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 
-// Fields that providers can update (name is required, others nullable)
-const NULLABLE_FIELDS = [
+// String fields that providers can update (nullable)
+const NULLABLE_STRING_FIELDS = [
   "phone",
-  "address",
-  "city",
-  "postalCode",
   "website",
   "practiceNumber",
   "industryType",
+  // Address fields
+  "complexName",
+  "unitNumber",
+  "streetAddress",
+  "suburb",
+  "city",
+  "province",
+  "postalCode",
+  "country",
 ] as const;
 
-type NullableField = (typeof NULLABLE_FIELDS)[number];
+// Numeric fields (lat/lng for GPS coordinates)
+const NULLABLE_FLOAT_FIELDS = ["lat", "lng"] as const;
+
+type NullableStringField = (typeof NULLABLE_STRING_FIELDS)[number];
+type NullableFloatField = (typeof NULLABLE_FLOAT_FIELDS)[number];
 
 interface OrganizationUpdateData {
   name?: string;
   phone?: string | null;
-  address?: string | null;
-  city?: string | null;
-  postalCode?: string | null;
   website?: string | null;
   practiceNumber?: string | null;
   industryType?: string | null;
+  // Address fields
+  complexName?: string | null;
+  unitNumber?: string | null;
+  streetAddress?: string | null;
+  suburb?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }
+
+// Fields to select for organization queries
+const ORGANIZATION_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  logo: true,
+  status: true,
+  phone: true,
+  website: true,
+  practiceNumber: true,
+  industryType: true,
+  // Address fields
+  complexName: true,
+  unitNumber: true,
+  streetAddress: true,
+  suburb: true,
+  city: true,
+  province: true,
+  postalCode: true,
+  country: true,
+  lat: true,
+  lng: true,
+  createdAt: true,
+} as const;
 
 // GET: Get organization details
 export async function GET() {
@@ -57,21 +100,7 @@ export async function GET() {
         organizationId: true,
         role: true,
         organization: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            logo: true,
-            status: true,
-            phone: true,
-            address: true,
-            city: true,
-            postalCode: true,
-            website: true,
-            practiceNumber: true,
-            industryType: true,
-            createdAt: true,
-          },
+          select: ORGANIZATION_SELECT,
         },
       },
     });
@@ -140,16 +169,7 @@ export async function PATCH(request: NextRequest) {
     // Get current values for audit log
     const currentOrg = await prisma.organization.findUnique({
       where: { id: membership.organizationId },
-      select: {
-        name: true,
-        phone: true,
-        address: true,
-        city: true,
-        postalCode: true,
-        website: true,
-        practiceNumber: true,
-        industryType: true,
-      },
+      select: ORGANIZATION_SELECT,
     });
 
     // Handle name field separately (required, non-nullable)
@@ -167,14 +187,38 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Handle nullable fields
-    for (const field of NULLABLE_FIELDS) {
+    // Handle nullable string fields
+    for (const field of NULLABLE_STRING_FIELDS) {
       if (field in body) {
         const value = body[field];
         const newValue =
           typeof value === "string" && value.trim().length > 0
             ? value.trim()
             : null;
+        updateData[field] = newValue;
+
+        // Track changes for audit
+        if (currentOrg && currentOrg[field] !== newValue) {
+          changes[field] = { from: currentOrg[field], to: newValue };
+        }
+      }
+    }
+
+    // Handle nullable float fields (lat/lng)
+    for (const field of NULLABLE_FLOAT_FIELDS) {
+      if (field in body) {
+        const value = body[field];
+        let newValue: number | null = null;
+
+        if (typeof value === "number" && !isNaN(value)) {
+          newValue = value;
+        } else if (typeof value === "string" && value.trim().length > 0) {
+          const parsed = parseFloat(value);
+          if (!isNaN(parsed)) {
+            newValue = parsed;
+          }
+        }
+
         updateData[field] = newValue;
 
         // Track changes for audit
@@ -195,21 +239,7 @@ export async function PATCH(request: NextRequest) {
     const updatedOrg = await prisma.organization.update({
       where: { id: membership.organizationId },
       data: updateData,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logo: true,
-        status: true,
-        phone: true,
-        address: true,
-        city: true,
-        postalCode: true,
-        website: true,
-        practiceNumber: true,
-        industryType: true,
-        createdAt: true,
-      },
+      select: ORGANIZATION_SELECT,
     });
 
     // Log audit event with changes

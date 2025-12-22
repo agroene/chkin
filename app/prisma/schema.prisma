@@ -112,13 +112,25 @@ model Organization {
   practiceNumber  String?                       // Optional practice registration number
   phone           String?
   industryType    String?                       // General Practice, Specialist, Dental, etc.
-  address         String?
-  city            String?
-  postalCode      String?
   website         String?
   rejectionReason String?                       // Reason if rejected by admin
   approvedAt      DateTime?
   approvedBy      String?                       // userId of admin who approved
+
+  // Address fields (aligned with AddressComponents interface)
+  complexName     String?                       // Building/estate/complex name
+  unitNumber      String?                       // Unit/apartment/suite number
+  streetAddress   String?                       // Street number + street name
+  suburb          String?                       // Sublocality
+  city            String?
+  province        String?                       // Administrative area level 1
+  postalCode      String?
+  country         String?  @default("South Africa")
+  lat             Float?                        // GPS latitude
+  lng             Float?                        // GPS longitude
+
+  // Legacy field - kept for backwards compatibility during migration
+  address         String?                       // @deprecated Use streetAddress instead
 
   // Relationships
   members       Member[]

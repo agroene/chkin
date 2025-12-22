@@ -4,11 +4,16 @@
  * Provider Settings Page
  *
  * Allows organization owners to view and update their organization details.
+ * Includes full address fields with Google Places autocomplete and map view.
  */
 
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/layout";
-import { PhoneInput } from "@/components/ui";
+import {
+  PhoneInput,
+  AddressAutocomplete,
+  type AddressComponents,
+} from "@/components/ui";
 
 interface Organization {
   id: string;
@@ -17,25 +22,59 @@ interface Organization {
   logo: string | null;
   status: string;
   phone: string | null;
-  address: string | null;
-  city: string | null;
-  postalCode: string | null;
   website: string | null;
   practiceNumber: string | null;
   industryType: string | null;
+  // Address fields
+  complexName: string | null;
+  unitNumber: string | null;
+  streetAddress: string | null;
+  suburb: string | null;
+  city: string | null;
+  province: string | null;
+  postalCode: string | null;
+  country: string | null;
+  lat: number | null;
+  lng: number | null;
   createdAt: string;
 }
 
 interface FormData {
   name: string;
   phone: string;
-  address: string;
-  city: string;
-  postalCode: string;
   website: string;
   practiceNumber: string;
   industryType: string;
+  // Address fields
+  complexName: string;
+  unitNumber: string;
+  streetAddress: string;
+  suburb: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  country: string;
+  lat: number | null;
+  lng: number | null;
 }
+
+const INITIAL_FORM_DATA: FormData = {
+  name: "",
+  phone: "",
+  website: "",
+  practiceNumber: "",
+  industryType: "",
+  complexName: "",
+  unitNumber: "",
+  streetAddress: "",
+  suburb: "",
+  city: "",
+  province: "",
+  postalCode: "",
+  country: "South Africa",
+  lat: null,
+  lng: null,
+};
 
 export default function ProviderSettingsPage() {
   const [organization, setOrganization] = useState<Organization | null>(null);
@@ -44,20 +83,11 @@ export default function ProviderSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    phone: "",
-    address: "",
-    city: "",
-    postalCode: "",
-    website: "",
-    practiceNumber: "",
-    industryType: "",
-  });
-
-  // Track if form has been modified
+  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
   const [isDirty, setIsDirty] = useState(false);
+
+  // For the address autocomplete display value
+  const [addressSearchValue, setAddressSearchValue] = useState("");
 
   // Fetch organization settings
   useEffect(() => {
@@ -72,16 +102,27 @@ export default function ProviderSettingsPage() {
         setRole(data.role);
 
         // Initialize form data
+        const org = data.organization;
         setFormData({
-          name: data.organization.name || "",
-          phone: data.organization.phone || "",
-          address: data.organization.address || "",
-          city: data.organization.city || "",
-          postalCode: data.organization.postalCode || "",
-          website: data.organization.website || "",
-          practiceNumber: data.organization.practiceNumber || "",
-          industryType: data.organization.industryType || "",
+          name: org.name || "",
+          phone: org.phone || "",
+          website: org.website || "",
+          practiceNumber: org.practiceNumber || "",
+          industryType: org.industryType || "",
+          complexName: org.complexName || "",
+          unitNumber: org.unitNumber || "",
+          streetAddress: org.streetAddress || "",
+          suburb: org.suburb || "",
+          city: org.city || "",
+          province: org.province || "",
+          postalCode: org.postalCode || "",
+          country: org.country || "South Africa",
+          lat: org.lat,
+          lng: org.lng,
         });
+
+        // Set address search value for autocomplete display
+        setAddressSearchValue(org.streetAddress || "");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load settings");
       } finally {
@@ -93,8 +134,31 @@ export default function ProviderSettingsPage() {
   }, []);
 
   // Update form field
-  const updateField = useCallback((field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const updateField = useCallback(
+    <K extends keyof FormData>(field: K, value: FormData[K]) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      setIsDirty(true);
+      setSuccess(false);
+      setError(null);
+    },
+    []
+  );
+
+  // Handle address selection from autocomplete
+  const handleAddressSelect = useCallback((components: AddressComponents) => {
+    setFormData((prev) => ({
+      ...prev,
+      complexName: components.complexName || prev.complexName,
+      unitNumber: components.unitNumber || prev.unitNumber,
+      streetAddress: components.streetAddress || "",
+      suburb: components.suburb || "",
+      city: components.city || "",
+      province: components.province || "",
+      postalCode: components.postalCode || "",
+      country: components.country || "South Africa",
+      lat: components.lat ?? null,
+      lng: components.lng ?? null,
+    }));
     setIsDirty(true);
     setSuccess(false);
     setError(null);
@@ -138,13 +202,21 @@ export default function ProviderSettingsPage() {
       setFormData({
         name: organization.name || "",
         phone: organization.phone || "",
-        address: organization.address || "",
-        city: organization.city || "",
-        postalCode: organization.postalCode || "",
         website: organization.website || "",
         practiceNumber: organization.practiceNumber || "",
         industryType: organization.industryType || "",
+        complexName: organization.complexName || "",
+        unitNumber: organization.unitNumber || "",
+        streetAddress: organization.streetAddress || "",
+        suburb: organization.suburb || "",
+        city: organization.city || "",
+        province: organization.province || "",
+        postalCode: organization.postalCode || "",
+        country: organization.country || "South Africa",
+        lat: organization.lat,
+        lng: organization.lng,
       });
+      setAddressSearchValue(organization.streetAddress || "");
       setIsDirty(false);
       setError(null);
       setSuccess(false);
@@ -152,6 +224,28 @@ export default function ProviderSettingsPage() {
   };
 
   const isOwner = role === "owner";
+
+  // Build Google Maps embed URL
+  const getMapUrl = () => {
+    if (formData.lat && formData.lng) {
+      return `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}&q=${formData.lat},${formData.lng}&zoom=16`;
+    }
+    // Fallback to address search
+    const addressParts = [
+      formData.streetAddress,
+      formData.suburb,
+      formData.city,
+      formData.province,
+      formData.postalCode,
+      formData.country,
+    ].filter(Boolean);
+    if (addressParts.length > 0) {
+      return `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}&q=${encodeURIComponent(addressParts.join(", "))}`;
+    }
+    return null;
+  };
+
+  const mapUrl = getMapUrl();
 
   if (loading) {
     return (
@@ -335,24 +429,87 @@ export default function ProviderSettingsPage() {
           </div>
 
           <div className="px-6 py-4 space-y-4">
+            {/* Address Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Search Address
+              </label>
+              <p className="text-xs text-gray-500 mb-1">
+                Start typing to search for your address - fields will auto-populate
+              </p>
+              <AddressAutocomplete
+                value={addressSearchValue}
+                onChange={setAddressSearchValue}
+                onSelect={handleAddressSelect}
+                placeholder="Start typing your address..."
+                disabled={!isOwner || saving}
+              />
+            </div>
+
+            {/* Building/Complex Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="complexName" className="block text-sm font-medium text-gray-700">
+                  Building / Complex Name
+                </label>
+                <input
+                  type="text"
+                  id="complexName"
+                  value={formData.complexName}
+                  onChange={(e) => updateField("complexName", e.target.value)}
+                  disabled={!isOwner || saving}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="e.g., Medical Centre"
+                />
+              </div>
+              <div>
+                <label htmlFor="unitNumber" className="block text-sm font-medium text-gray-700">
+                  Unit / Suite Number
+                </label>
+                <input
+                  type="text"
+                  id="unitNumber"
+                  value={formData.unitNumber}
+                  onChange={(e) => updateField("unitNumber", e.target.value)}
+                  disabled={!isOwner || saving}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="e.g., Suite 12"
+                />
+              </div>
+            </div>
+
             {/* Street Address */}
             <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="streetAddress" className="block text-sm font-medium text-gray-700">
                 Street Address
               </label>
               <input
                 type="text"
-                id="address"
-                value={formData.address}
-                onChange={(e) => updateField("address", e.target.value)}
+                id="streetAddress"
+                value={formData.streetAddress}
+                onChange={(e) => updateField("streetAddress", e.target.value)}
                 disabled={!isOwner || saving}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="123 Main Street"
               />
             </div>
 
-            {/* City and Postal Code */}
+            {/* Suburb and City */}
             <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="suburb" className="block text-sm font-medium text-gray-700">
+                  Suburb
+                </label>
+                <input
+                  type="text"
+                  id="suburb"
+                  value={formData.suburb}
+                  onChange={(e) => updateField("suburb", e.target.value)}
+                  disabled={!isOwner || saving}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="e.g., Gardens"
+                />
+              </div>
               <div>
                 <label htmlFor="city" className="block text-sm font-medium text-gray-700">
                   City
@@ -364,8 +521,35 @@ export default function ProviderSettingsPage() {
                   onChange={(e) => updateField("city", e.target.value)}
                   disabled={!isOwner || saving}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder="Cape Town"
+                  placeholder="e.g., Cape Town"
                 />
+              </div>
+            </div>
+
+            {/* Province and Postal Code */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="province" className="block text-sm font-medium text-gray-700">
+                  Province
+                </label>
+                <select
+                  id="province"
+                  value={formData.province}
+                  onChange={(e) => updateField("province", e.target.value)}
+                  disabled={!isOwner || saving}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select province...</option>
+                  <option value="Eastern Cape">Eastern Cape</option>
+                  <option value="Free State">Free State</option>
+                  <option value="Gauteng">Gauteng</option>
+                  <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                  <option value="Limpopo">Limpopo</option>
+                  <option value="Mpumalanga">Mpumalanga</option>
+                  <option value="Northern Cape">Northern Cape</option>
+                  <option value="North West">North West</option>
+                  <option value="Western Cape">Western Cape</option>
+                </select>
               </div>
               <div>
                 <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">
@@ -378,10 +562,64 @@ export default function ProviderSettingsPage() {
                   onChange={(e) => updateField("postalCode", e.target.value)}
                   disabled={!isOwner || saving}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder="8001"
+                  placeholder="e.g., 8001"
                 />
               </div>
             </div>
+
+            {/* Country */}
+            <div>
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+                Country
+              </label>
+              <select
+                id="country"
+                value={formData.country}
+                onChange={(e) => updateField("country", e.target.value)}
+                disabled={!isOwner || saving}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="South Africa">South Africa</option>
+                <option value="Botswana">Botswana</option>
+                <option value="Lesotho">Lesotho</option>
+                <option value="Mozambique">Mozambique</option>
+                <option value="Namibia">Namibia</option>
+                <option value="Eswatini">Eswatini</option>
+                <option value="Zimbabwe">Zimbabwe</option>
+              </select>
+            </div>
+
+            {/* GPS Coordinates (Read-only display) */}
+            {(formData.lat || formData.lng) && (
+              <div className="pt-2 border-t border-gray-100">
+                <label className="block text-sm font-medium text-gray-700">
+                  GPS Coordinates
+                </label>
+                <p className="mt-1 text-sm text-gray-600 font-mono bg-gray-50 rounded px-3 py-2">
+                  {formData.lat?.toFixed(6)}, {formData.lng?.toFixed(6)}
+                </p>
+              </div>
+            )}
+
+            {/* Map Preview */}
+            {mapUrl && process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY && (
+              <div className="pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location Preview
+                </label>
+                <div className="rounded-lg overflow-hidden border border-gray-200">
+                  <iframe
+                    width="100%"
+                    height="300"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={mapUrl}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
