@@ -12,6 +12,8 @@ import {
   AddressAutocomplete,
   type AddressComponents,
   PhoneInput,
+  ReferralDoctorInput,
+  type ReferralDoctorData,
 } from "@/components/ui";
 
 interface FieldDefinition {
@@ -352,6 +354,43 @@ export default function FormRenderer({
             <option value="OTHER">Other</option>
           </select>
         );
+
+      case "referral-doctor": {
+        // Build the current value object from all referral doctor fields
+        const referralDoctorValue: Partial<ReferralDoctorData> = {
+          referralDoctorName: values["referralDoctorName"] || "",
+          referralDoctorPractice: values["referralDoctorPractice"] || "",
+          referralDoctorSpecialty: values["referralDoctorSpecialty"] || "",
+          referralDoctorPhone: values["referralDoctorPhone"] || "",
+          referralDoctorFax: values["referralDoctorFax"] || "",
+          referralDoctorEmail: values["referralDoctorEmail"] || "",
+          referralDoctorPracticeNumber: values["referralDoctorPracticeNumber"] || "",
+          referralDoctorAddress: values["referralDoctorAddress"] || "",
+          referralDoctorIsPrimary: values["referralDoctorIsPrimary"] === "true",
+        };
+
+        // Build field errors from validation errors
+        const fieldErrors: Partial<Record<keyof ReferralDoctorData, boolean>> = {};
+        Object.keys(referralDoctorValue).forEach((key) => {
+          if (errors[key]) {
+            fieldErrors[key as keyof ReferralDoctorData] = true;
+          }
+        });
+
+        return (
+          <ReferralDoctorInput
+            value={referralDoctorValue}
+            onChange={(subFieldName, subValue) => {
+              // Convert boolean to string for consistency with form values
+              const stringValue = typeof subValue === "boolean" ? String(subValue) : subValue;
+              updateValue(subFieldName, stringValue);
+            }}
+            savedDoctors={[]} // TODO: Load from patient profile in preview mode
+            fieldErrors={fieldErrors}
+            size="default"
+          />
+        );
+      }
 
       default:
         return (

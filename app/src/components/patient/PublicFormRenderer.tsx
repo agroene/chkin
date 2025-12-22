@@ -8,7 +8,13 @@
  */
 
 import { useState, useCallback } from "react";
-import { AddressAutocomplete, PhoneInput, type AddressComponents } from "@/components/ui";
+import {
+  AddressAutocomplete,
+  PhoneInput,
+  ReferralDoctorInput,
+  type AddressComponents,
+  type ReferralDoctorData,
+} from "@/components/ui";
 
 interface FormField {
   id: string;
@@ -648,6 +654,41 @@ export default function PublicFormRenderer({
             <option value="OTHER">Other</option>
           </select>
         );
+
+      case "referral-doctor": {
+        // Build the current value object from all referral doctor fields
+        const referralDoctorValue: Partial<ReferralDoctorData> = {
+          referralDoctorName: (fieldValues["referralDoctorName"] as string) || "",
+          referralDoctorPractice: (fieldValues["referralDoctorPractice"] as string) || "",
+          referralDoctorSpecialty: (fieldValues["referralDoctorSpecialty"] as string) || "",
+          referralDoctorPhone: (fieldValues["referralDoctorPhone"] as string) || "",
+          referralDoctorFax: (fieldValues["referralDoctorFax"] as string) || "",
+          referralDoctorEmail: (fieldValues["referralDoctorEmail"] as string) || "",
+          referralDoctorPracticeNumber: (fieldValues["referralDoctorPracticeNumber"] as string) || "",
+          referralDoctorAddress: (fieldValues["referralDoctorAddress"] as string) || "",
+          referralDoctorIsPrimary: (fieldValues["referralDoctorIsPrimary"] as boolean) || false,
+        };
+
+        // Build field errors from validation errors
+        const fieldErrors: Partial<Record<keyof ReferralDoctorData, boolean>> = {};
+        Object.keys(referralDoctorValue).forEach((key) => {
+          if (validationErrors[key]) {
+            fieldErrors[key as keyof ReferralDoctorData] = true;
+          }
+        });
+
+        return (
+          <ReferralDoctorInput
+            value={referralDoctorValue}
+            onChange={(subFieldName, value) => {
+              updateFieldValue(subFieldName, value as FieldValue);
+            }}
+            savedDoctors={[]} // TODO: Load from patient profile
+            fieldErrors={fieldErrors}
+            size="large"
+          />
+        );
+      }
 
       default:
         return (

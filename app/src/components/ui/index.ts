@@ -15,6 +15,12 @@ export { default as EmptyState } from "./EmptyState";
 export { default as Input } from "./Input";
 export { default as Modal } from "./Modal";
 export { PhoneInput, type PhoneInputProps } from "./PhoneInput";
+export {
+  ReferralDoctorInput,
+  type ReferralDoctorInputProps,
+  type ReferralDoctorData,
+  type SavedDoctor,
+} from "./ReferralDoctorInput";
 export { default as StatusBadge } from "./StatusBadge";
 
 // Keep legacy Table export for backwards compatibility
