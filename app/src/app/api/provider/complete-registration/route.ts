@@ -89,12 +89,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Add user as admin member of the organization
+    // Add user as owner of the organization
     await prisma.member.create({
       data: {
         userId: session.user.id,
         organizationId: organization.id,
-        role: "admin",
+        role: "owner",
       },
     });
 

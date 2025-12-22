@@ -57,7 +57,8 @@
       "Bash(set:*)",
       "Bash(npx prisma db pull:*)",
       "Bash(ipconfig)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx prisma db execute:*)"
     ]
   },
   "outputStyle": "default"
