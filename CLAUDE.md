@@ -165,6 +165,29 @@ cd app && npm run dev
 # Build for production
 cd app && npm run build
 ```
+
+---
+
+## CRITICAL: Database Reset Protocol
+
+**NEVER reset the database without explicit user permission.**
+
+If a database reset is absolutely necessary (migration drift, etc.):
+
+1. **ASK THE USER FIRST** - Database contains test data that takes time to recreate
+2. After reset, you **MUST** run these scripts in order:
+
+```bash
+# 1. Seed the field library (263 field definitions)
+cd app && npx tsx prisma/seed-fields.ts
+
+# 2. Create the admin user
+cd app && npx tsx prisma/create-admin.ts
+```
+
+**IMPORTANT:** On Windows, `npm run seed` does NOT work - it opens the file in Notepad++ instead of executing it. Always use `npx tsx` to run TypeScript files directly.
+
+The user will still need to manually re-register any test providers through `/provider/register`.
 ---
 
 ## Development Standards (14-Point Checklist)
