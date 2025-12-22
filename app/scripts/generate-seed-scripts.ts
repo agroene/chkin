@@ -301,8 +301,20 @@ const FORM_CONFIG = {
   consentClause: ${form.consentClause ? `\`${form.consentClause.replace(/`/g, "\\`")}\`` : "null"},
 };
 
+// Form field interface for type safety
+interface FormFieldConfig {
+  fieldName: string;
+  isRequired: boolean;
+  sortOrder: number;
+  section: string;
+  columnSpan: number;
+  labelOverride?: string;
+  helpText?: string;
+  visibilityRules?: string;
+}
+
 // Form fields configuration - maps field names to their form-specific settings
-const FORM_FIELDS = [
+const FORM_FIELDS: FormFieldConfig[] = [
 `;
 
   for (const field of form.fields) {

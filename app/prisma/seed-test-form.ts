@@ -22,8 +22,20 @@ const FORM_CONFIG = {
 - That if the account is not paid / short paid, for whatsoever reason, I will settle this within 30 calendar days. Should this account be overdue I understand that should I still not settle the account upon receipt of a final notice / demand that the practice may undertake the debt collection process and that I will be responsible for the costs or legal fees relating to this collection, which may also include interest. I consent that should this be the case, my personal information may be given to the debt collection agency / attorneys.`,
 };
 
+// Form field interface for type safety
+interface FormFieldConfig {
+  fieldName: string;
+  isRequired: boolean;
+  sortOrder: number;
+  section: string;
+  columnSpan: number;
+  labelOverride?: string;
+  helpText?: string;
+  visibilityRules?: string;
+}
+
 // Form fields configuration - maps field names to their form-specific settings
-const FORM_FIELDS = [
+const FORM_FIELDS: FormFieldConfig[] = [
   {
     fieldName: "title",
     isRequired: false,
