@@ -46,12 +46,20 @@ npx prisma generate
 Write-Host "  Migrations complete" -ForegroundColor Green
 
 # Seed database (optional, skip if no seed data)
+# Note: Use npx tsx directly because npm run seed opens Notepad++ on Windows
 Write-Host "`n[5/5] Seeding database..." -ForegroundColor Yellow
 try {
-    npm run seed 2>$null
+    # Seed field definitions
+    Write-Host "  Seeding field definitions..." -ForegroundColor Gray
+    npx tsx prisma/seed-fields.ts 2>$null
+
+    # Create admin user
+    Write-Host "  Creating admin user..." -ForegroundColor Gray
+    npx tsx prisma/create-admin.ts 2>$null
+
     Write-Host "  Seeding complete" -ForegroundColor Green
 } catch {
-    Write-Host "  Skipped (no seed data or seed failed)" -ForegroundColor Gray
+    Write-Host "  Skipped (seed scripts not found or failed)" -ForegroundColor Gray
 }
 
 # Start dev server

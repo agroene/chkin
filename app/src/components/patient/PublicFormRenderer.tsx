@@ -15,6 +15,7 @@ import {
   type AddressComponents,
   type ReferralDoctorData,
 } from "@/components/ui";
+import { generateTestData, isDevelopment } from "@/lib/test-data";
 
 interface FormField {
   id: string;
@@ -144,6 +145,14 @@ export default function PublicFormRenderer({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Fill form with test data (dev only)
+  const fillWithTestData = useCallback(() => {
+    const testData = generateTestData(form.fields);
+    setFieldValues(testData as Record<string, FieldValue>);
+    setConsentChecked(true);
+    setValidationErrors({});
+  }, [form.fields]);
 
   // Update a field value
   const updateFieldValue = useCallback((fieldName: string, value: FieldValue) => {
@@ -732,6 +741,28 @@ export default function PublicFormRenderer({
                 />
               </svg>
               Pre-filled with your saved information
+            </div>
+          )}
+
+          {/* Dev-only: Fill with test data button */}
+          {isDevelopment() && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={fillWithTestData}
+                className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-orange-400 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                Fill with Test Data
+                <span className="rounded bg-orange-200 px-1.5 py-0.5 text-xs">DEV</span>
+              </button>
             </div>
           )}
         </div>

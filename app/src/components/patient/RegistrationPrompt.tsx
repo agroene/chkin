@@ -12,6 +12,8 @@ import Link from "next/link";
 interface RegistrationPromptProps {
   organizationName?: string;
   anonymousToken: string | null;
+  prefillName?: string;
+  prefillEmail?: string;
   onComplete?: () => void;
   onSkip: () => void;
 }
@@ -19,11 +21,22 @@ interface RegistrationPromptProps {
 export default function RegistrationPrompt({
   organizationName,
   anonymousToken,
+  prefillName,
+  prefillEmail,
   onSkip,
 }: RegistrationPromptProps) {
-  // Store token for later claiming when user registers
-  if (anonymousToken && typeof window !== "undefined") {
-    localStorage.setItem("chkin_anonymous_token", anonymousToken);
+  // Store token and prefill data for later use when user registers
+  if (typeof window !== "undefined") {
+    if (anonymousToken) {
+      localStorage.setItem("chkin_anonymous_token", anonymousToken);
+    }
+    // Store prefill data for registration page
+    if (prefillName || prefillEmail) {
+      localStorage.setItem("chkin_registration_prefill", JSON.stringify({
+        name: prefillName || "",
+        email: prefillEmail || "",
+      }));
+    }
   }
 
   return (

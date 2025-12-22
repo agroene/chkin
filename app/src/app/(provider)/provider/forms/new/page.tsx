@@ -5,6 +5,7 @@
  *
  * Create new form templates with live preview, field picker, and consent editor.
  * Split view: Build panel on left, Live Preview on right.
+ * Includes "Quick Start Template" button to load a pre-configured form.
  */
 
 import { useState, useCallback } from "react";
@@ -46,9 +47,51 @@ export default function NewFormPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"fields" | "consent">("fields");
   const [previewMode, setPreviewMode] = useState(false);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   // Mobile preview toggle
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+
+  // Load Quick Start Template
+  const handleLoadTemplate = useCallback(async () => {
+    if (fields.length > 0 || title || description || consentClause) {
+      const confirmed = window.confirm(
+        "Loading a template will replace your current form. Are you sure you want to continue?"
+      );
+      if (!confirmed) return;
+    }
+
+    setLoadingTemplate(true);
+    try {
+      const response = await fetch("/api/provider/forms/templates/patient-registration");
+      if (!response.ok) {
+        throw new Error("Failed to load template");
+      }
+      const data = await response.json();
+      const { template } = data;
+
+      // Update all form state with template data
+      setTitle(template.title);
+      setDescription(template.description || "");
+      setConsentClause(template.consentClause || "");
+      setSections(template.sections);
+      setActiveSection(template.sections[0] || "General");
+      setFields(template.fields.map((f: FormField, index: number) => ({
+        ...f,
+        id: `template-${index}-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      })));
+
+      // Show success feedback
+      if (data.missingFields?.length > 0) {
+        alert(`Template loaded! Note: ${data.missingFields.length} fields were skipped because they're not in the field library.`);
+      }
+    } catch (error) {
+      console.error("Error loading template:", error);
+      alert("Failed to load template. Please try again.");
+    } finally {
+      setLoadingTemplate(false);
+    }
+  }, [fields.length, title, description, consentClause]);
 
   // Add field to form - adds to the active section
   const handleAddField = useCallback((fieldDefinition: FormField["fieldDefinition"]) => {
@@ -219,6 +262,54 @@ export default function NewFormPage() {
         title="Create Form"
         description="Design a patient check-in form"
       >
+        <button
+          onClick={handleLoadTemplate}
+          disabled={loadingTemplate}
+          className="inline-flex items-center rounded-lg border border-teal-600 px-4 py-2 text-sm font-medium text-teal-600 hover:bg-teal-50 disabled:opacity-50"
+          title="Load a pre-configured Patient Registration Form"
+        >
+          {loadingTemplate ? (
+            <>
+              <svg
+                className="mr-2 h-4 w-4 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Loading...
+            </>
+          ) : (
+            <>
+              <svg
+                className="mr-2 h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              Quick Start Template
+            </>
+          )}
+        </button>
         <button
           onClick={() => router.push("/provider/forms")}
           className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"

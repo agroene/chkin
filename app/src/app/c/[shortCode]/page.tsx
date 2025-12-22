@@ -83,6 +83,7 @@ export default function PublicFormPage() {
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [anonymousToken, setAnonymousToken] = useState<string | null>(null);
   const [profileDiff, setProfileDiff] = useState<ProfileDiff[] | null>(null);
+  const [submittedFormData, setSubmittedFormData] = useState<Record<string, unknown> | null>(null);
 
   // Fetch form data
   const fetchForm = useCallback(async () => {
@@ -135,6 +136,7 @@ export default function PublicFormPage() {
       }
 
       setSubmissionId(data.submission.id);
+      setSubmittedFormData(formData);
 
       // Handle response based on authentication
       if (data.promptRegistration) {
@@ -276,10 +278,19 @@ export default function PublicFormPage() {
 
   // Render registration prompt
   if (pageState === "registration-prompt") {
+    // Extract name and email from submitted form data for registration pre-fill
+    const firstName = submittedFormData?.firstName as string || "";
+    const lastName = submittedFormData?.lastName as string || "";
+    const fullName = [firstName, lastName].filter(Boolean).join(" ");
+    const email = (submittedFormData?.emailPersonal as string) ||
+                  (submittedFormData?.email as string) || "";
+
     return (
       <RegistrationPrompt
         organizationName={form?.organization.name}
         anonymousToken={anonymousToken}
+        prefillName={fullName}
+        prefillEmail={email}
         onComplete={handleRegistrationComplete}
         onSkip={() => setPageState("submitted")}
       />

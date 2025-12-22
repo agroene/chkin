@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { signUp, sendVerificationEmail } from "@/lib/auth-client";
@@ -17,6 +17,24 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+
+  // Pre-fill form from localStorage (if user came from form submission)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const prefillData = localStorage.getItem("chkin_registration_prefill");
+      if (prefillData) {
+        try {
+          const { name: prefillName, email: prefillEmail } = JSON.parse(prefillData);
+          if (prefillName) setName(prefillName);
+          if (prefillEmail) setEmail(prefillEmail);
+          // Clear the prefill data after using it
+          localStorage.removeItem("chkin_registration_prefill");
+        } catch {
+          // Invalid JSON, ignore
+        }
+      }
+    }
+  }, []);
 
   async function handleResendVerification() {
     setResendLoading(true);
