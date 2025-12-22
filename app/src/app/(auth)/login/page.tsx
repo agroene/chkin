@@ -27,9 +27,13 @@ export default function LoginPage() {
       });
 
       if (result.error) {
-        // Handle email not verified
-        if (result.error.message?.toLowerCase().includes("verify") ||
-            result.error.message?.toLowerCase().includes("email")) {
+        const errorMsg = result.error.message?.toLowerCase() || "";
+        // Handle email not verified - check for specific verification-related messages
+        // Be careful not to match "Invalid email or password" which contains "email"
+        if (errorMsg.includes("verify") ||
+            errorMsg.includes("verification") ||
+            errorMsg.includes("not verified") ||
+            errorMsg.includes("email is not verified")) {
           setNeedsVerification(true);
           setError("Please verify your email before signing in.");
         } else {
