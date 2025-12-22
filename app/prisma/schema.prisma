@@ -151,10 +151,18 @@ model PendingProviderRegistration {
   practiceNumber  String?
   phone           String
   industryType    String
-  address         String
-  city            String
-  postalCode      String
   website         String?
+  // Address fields (aligned with Organization model)
+  complexName     String?
+  unitNumber      String?
+  streetAddress   String?
+  suburb          String?
+  city            String
+  province        String?
+  postalCode      String
+  country         String?  @default("South Africa")
+  // Legacy field for backwards compatibility
+  address         String?
   createdAt       DateTime @default(now())
   expiresAt       DateTime @default(dbgenerated("NOW() + interval '24 hours'")) // Expire after 24 hours
 

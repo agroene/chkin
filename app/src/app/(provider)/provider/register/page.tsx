@@ -4,19 +4,21 @@ import { useState } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { signUp, sendVerificationEmail } from "@/lib/auth-client";
-import { AddressAutocomplete, type AddressComponents } from "@/components/ui";
+import { AddressAutocomplete, type AddressComponents, PhoneInput } from "@/components/ui";
 
 type RegistrationState = "form" | "check-email" | "submitted";
 
 const INDUSTRY_TYPES = [
-  "General Practice",
-  "Specialist",
-  "Dental",
-  "Pharmacy",
-  "Physiotherapy",
-  "Psychology",
-  "Optometry",
-  "Other",
+  { value: "general_practice", label: "General Practice" },
+  { value: "specialist", label: "Specialist" },
+  { value: "dental", label: "Dental" },
+  { value: "pharmacy", label: "Pharmacy" },
+  { value: "physiotherapy", label: "Physiotherapy" },
+  { value: "psychology", label: "Psychology" },
+  { value: "optometry", label: "Optometry" },
+  { value: "hospital", label: "Hospital" },
+  { value: "clinic", label: "Clinic" },
+  { value: "other", label: "Other" },
 ];
 
 export default function ProviderRegisterPage() {
@@ -289,8 +291,8 @@ export default function ProviderRegisterPage() {
                   >
                     <option value="">Select industry type</option>
                     {INDUSTRY_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
+                      <option key={type.value} value={type.value}>
+                        {type.label}
                       </option>
                     ))}
                   </select>
@@ -332,17 +334,13 @@ export default function ProviderRegisterPage() {
                   >
                     Phone number *
                   </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    required
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 text-gray-900"
-                    placeholder="021 123 4567"
-                  />
+                  <div className="mt-1">
+                    <PhoneInput
+                      value={formData.phone}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, phone: value }))}
+                      defaultCountry="ZA"
+                    />
+                  </div>
                 </div>
 
                 <div>

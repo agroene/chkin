@@ -56,10 +56,15 @@ export async function GET() {
         practiceNumber: pending.practiceNumber,
         phone: pending.phone,
         industryType: pending.industryType,
-        address: pending.address,
-        city: pending.city,
-        postalCode: pending.postalCode,
         website: pending.website,
+        complexName: pending.complexName,
+        unitNumber: pending.unitNumber,
+        streetAddress: pending.streetAddress || pending.address,
+        suburb: pending.suburb,
+        city: pending.city,
+        province: pending.province,
+        postalCode: pending.postalCode,
+        country: pending.country,
       },
     });
   } catch (error) {

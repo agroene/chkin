@@ -33,13 +33,18 @@ export async function POST(request: NextRequest) {
       practiceNumber,
       phone,
       industryType,
-      address,
-      city,
-      postalCode,
       website,
+      complexName,
+      unitNumber,
+      streetAddress,
+      suburb,
+      city,
+      province,
+      postalCode,
+      country,
     } = body;
 
-    if (!practiceName || !phone || !industryType || !address || !city || !postalCode) {
+    if (!practiceName || !phone || !industryType || !streetAddress || !city || !postalCode) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -82,10 +87,15 @@ export async function POST(request: NextRequest) {
         practiceNumber,
         phone,
         industryType,
-        address,
-        city,
-        postalCode,
         website,
+        complexName,
+        unitNumber,
+        streetAddress,
+        suburb,
+        city,
+        province,
+        postalCode,
+        country: country || "South Africa",
       },
     });
 

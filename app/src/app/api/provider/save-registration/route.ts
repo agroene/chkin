@@ -23,10 +23,15 @@ export async function POST(request: NextRequest) {
       practiceNumber,
       phone,
       industryType,
-      address,
-      city,
-      postalCode,
       website,
+      // Address fields
+      complexName,
+      unitNumber,
+      address,        // streetAddress from form
+      suburb,
+      city,
+      province,
+      postalCode,
     } = formData;
 
     // Validate required fields
@@ -64,10 +69,15 @@ export async function POST(request: NextRequest) {
         practiceNumber,
         phone,
         industryType,
-        address,
-        city,
-        postalCode,
         website,
+        complexName,
+        unitNumber,
+        streetAddress: address,
+        suburb,
+        city,
+        province,
+        postalCode,
+        address, // Keep for backwards compat
       },
       create: {
         userId: user.id,
@@ -75,10 +85,15 @@ export async function POST(request: NextRequest) {
         practiceNumber,
         phone,
         industryType,
-        address,
-        city,
-        postalCode,
         website,
+        complexName,
+        unitNumber,
+        streetAddress: address,
+        suburb,
+        city,
+        province,
+        postalCode,
+        address, // Keep for backwards compat
       },
     });
 
