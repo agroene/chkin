@@ -1,8 +1,8 @@
 /**
- * Field Library Seed Data
+ * Field Library Seed Data (Auto-generated)
  *
+ * Generated from current database state.
  * Canonical field definitions for the Chkin platform.
- * All providers select from this standard library.
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -10,7 +10,6 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import "dotenv/config";
 
-// Lazy initialization for when running directly
 let prisma: PrismaClient | null = null;
 
 function getPrismaClient(): PrismaClient {
@@ -39,397 +38,423 @@ interface FieldDefinitionSeed {
 }
 
 // =============================================================================
-// CORE CATEGORIES
+// ADDRESS FIELDS
 // =============================================================================
 
-const personalFields: FieldDefinitionSeed[] = [
+const addressFields: FieldDefinitionSeed[] = [
   {
-    name: "title",
-    label: "Title",
-    description: "Personal title or honorific (Mr, Mrs, Ms, Dr, Prof, etc.)",
-    fieldType: "select",
-    category: "personal",
+    name: "streetAddress",
+    label: "Street Address",
+    description: "Street address with Google Places autocomplete - auto-populates related address fields",
+    fieldType: "address",
+    category: "address",
     config: {
-      options: [
-        { value: "mr", label: "Mr" },
-        { value: "mrs", label: "Mrs" },
-        { value: "ms", label: "Ms" },
-        { value: "miss", label: "Miss" },
-        { value: "dr", label: "Dr" },
-        { value: "prof", label: "Prof" },
-        { value: "rev", label: "Rev" },
-        { value: "other", label: "Other" },
-      ],
+          "linkedFields": {
+                "complexName": "complexName",
+                "unitNumber": "unitNumber",
+                "suburb": "suburb",
+                "city": "city",
+                "province": "stateProvince",
+                "postalCode": "postalCode",
+                "country": "country",
+                "lat": "gpsLat",
+                "lng": "gpsLng"
+          }
     },
     sortOrder: 1,
   },
   {
-    name: "firstName",
-    label: "First Name",
-    description: "Person's given/first name as it appears on official documents",
+    name: "complexName",
+    label: "Building / Complex / Estate",
+    description: "Name of building, complex, estate, or premises",
     fieldType: "text",
-    category: "personal",
-    config: { minLength: 1, maxLength: 100 },
+    category: "address",
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 2,
   },
   {
-    name: "middleName",
-    label: "Middle Name",
-    description: "Person's middle name(s) as they appear on official documents",
+    name: "unitNumber",
+    label: "Unit / Suite / Floor",
+    description: "Unit number, suite, apartment, or floor",
     fieldType: "text",
-    category: "personal",
-    config: { maxLength: 100 },
+    category: "address",
+    config: {
+          "maxLength": 50
+    },
     sortOrder: 3,
   },
   {
-    name: "lastName",
-    label: "Last Name",
-    description: "Person's family name/surname as it appears on official documents",
+    name: "addressLine1",
+    label: "Address Line 1",
+    description: "Street address line 1 (street number and name) - use for manual entry or override",
     fieldType: "text",
-    category: "personal",
-    config: { minLength: 1, maxLength: 100 },
+    category: "address",
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 4,
   },
   {
-    name: "preferredName",
-    label: "Preferred Name",
-    description: "Name the person prefers to be called (nickname or informal name)",
+    name: "addressLine2",
+    label: "Address Line 2",
+    description: "Street address line 2 (additional details)",
     fieldType: "text",
-    category: "personal",
-    config: { maxLength: 100 },
+    category: "address",
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 5,
   },
   {
-    name: "dateOfBirth",
-    label: "Date of Birth",
-    description: "Person's date of birth",
-    fieldType: "date",
-    category: "personal",
+    name: "suburb",
+    label: "Suburb",
+    description: "Suburb or neighborhood name",
+    fieldType: "text",
+    category: "address",
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 6,
   },
   {
-    name: "gender",
-    label: "Gender",
-    description: "Person's gender identity",
-    fieldType: "select",
-    category: "personal",
+    name: "city",
+    label: "City",
+    description: "City or town name",
+    fieldType: "text",
+    category: "address",
     config: {
-      options: [
-        { value: "male", label: "Male" },
-        { value: "female", label: "Female" },
-        { value: "nonbinary", label: "Non-binary" },
-        { value: "prefernottosay", label: "Prefer not to say" },
-        { value: "other", label: "Other" },
-      ],
+          "maxLength": 100
     },
     sortOrder: 7,
   },
   {
-    name: "biologicalSex",
-    label: "Biological Sex",
-    description: "Biological sex at birth (for medical purposes)",
-    fieldType: "select",
-    category: "personal",
+    name: "stateProvince",
+    label: "State/Province",
+    description: "State, province, or region",
+    fieldType: "text",
+    category: "address",
     config: {
-      options: [
-        { value: "male", label: "Male" },
-        { value: "female", label: "Female" },
-        { value: "intersex", label: "Intersex" },
-      ],
+          "maxLength": 100
     },
     sortOrder: 8,
-    specialPersonalInfo: true,
   },
   {
-    name: "maritalStatus",
-    label: "Marital Status",
-    description: "Current marital/civil status",
-    fieldType: "select",
-    category: "personal",
+    name: "postalCode",
+    label: "Postal Code",
+    description: "Postal or ZIP code",
+    fieldType: "text",
+    category: "address",
     config: {
-      options: [
-        { value: "single", label: "Single" },
-        { value: "married", label: "Married" },
-        { value: "divorced", label: "Divorced" },
-        { value: "widowed", label: "Widowed" },
-        { value: "separated", label: "Separated" },
-        { value: "civilpartnership", label: "Civil Partnership" },
-        { value: "cohabiting", label: "Cohabiting" },
-      ],
+          "maxLength": 20
     },
     sortOrder: 9,
   },
   {
-    name: "nationality",
-    label: "Nationality",
-    description: "Country of citizenship",
+    name: "country",
+    label: "Country",
+    description: "Country of residence",
     fieldType: "country",
-    category: "personal",
+    category: "address",
+    config: {
+          "defaultCountry": "ZA"
+    },
     sortOrder: 10,
   },
   {
-    name: "countryOfBirth",
-    label: "Country of Birth",
-    description: "Country where the person was born",
-    fieldType: "country",
-    category: "personal",
+    name: "gpsLat",
+    label: "GPS Latitude",
+    description: "GPS latitude coordinate",
+    fieldType: "number",
+    category: "address",
+    config: {
+          "step": "any",
+          "placeholder": "-33.9249"
+    },
     sortOrder: 11,
   },
   {
-    name: "placeOfBirth",
-    label: "Place of Birth",
-    description: "City or town where the person was born",
-    fieldType: "text",
-    category: "personal",
-    config: { maxLength: 100 },
+    name: "gpsLng",
+    label: "GPS Longitude",
+    description: "GPS longitude coordinate",
+    fieldType: "number",
+    category: "address",
+    config: {
+          "step": "any",
+          "placeholder": "18.4241"
+    },
     sortOrder: 12,
   },
   {
-    name: "ethnicity",
-    label: "Ethnicity",
-    description: "Ethnic background or heritage",
+    name: "addressType",
+    label: "Address Type",
+    description: "Type of address (residential, postal, business)",
     fieldType: "select",
-    category: "personal",
+    category: "address",
     config: {
-      options: [
-        { value: "black", label: "Black African" },
-        { value: "coloured", label: "Coloured" },
-        { value: "indian", label: "Indian/Asian" },
-        { value: "white", label: "White" },
-        { value: "other", label: "Other" },
-        { value: "prefernottosay", label: "Prefer not to say" },
-      ],
+          "options": [
+                {
+                      "value": "residential",
+                      "label": "Residential"
+                },
+                {
+                      "value": "postal",
+                      "label": "Postal"
+                },
+                {
+                      "value": "business",
+                      "label": "Business"
+                }
+          ]
     },
     sortOrder: 13,
-    specialPersonalInfo: true,
-    requiresExplicitConsent: true,
   },
   {
-    name: "race",
-    label: "Race",
-    description: "Racial classification (for statistical or compliance purposes)",
-    fieldType: "select",
-    category: "personal",
+    name: "postalStreetAddress",
+    label: "Postal Street Address",
+    description: "Postal address with Google Places autocomplete (if different from residential)",
+    fieldType: "address",
+    category: "address",
     config: {
-      options: [
-        { value: "black", label: "Black" },
-        { value: "coloured", label: "Coloured" },
-        { value: "indian", label: "Indian" },
-        { value: "white", label: "White" },
-        { value: "other", label: "Other" },
-      ],
+          "linkedFields": {
+                "complexName": "postalComplexName",
+                "unitNumber": "postalUnitNumber",
+                "suburb": "postalSuburb",
+                "city": "postalCity",
+                "province": "postalProvince",
+                "postalCode": "postalPostalCode",
+                "country": "postalCountry"
+          }
     },
     sortOrder: 14,
-    specialPersonalInfo: true,
-    requiresExplicitConsent: true,
   },
   {
-    name: "homeLanguage",
-    label: "Home Language",
-    description: "Primary language spoken at home",
-    fieldType: "select",
-    category: "personal",
+    name: "postalComplexName",
+    label: "Postal Building / Complex",
+    description: "Building or complex name for postal address",
+    fieldType: "text",
+    category: "address",
     config: {
-      options: [
-        { value: "english", label: "English" },
-        { value: "afrikaans", label: "Afrikaans" },
-        { value: "zulu", label: "isiZulu" },
-        { value: "xhosa", label: "isiXhosa" },
-        { value: "sotho", label: "Sesotho" },
-        { value: "tswana", label: "Setswana" },
-        { value: "pedi", label: "Sepedi" },
-        { value: "venda", label: "Tshivenda" },
-        { value: "tsonga", label: "Xitsonga" },
-        { value: "swati", label: "siSwati" },
-        { value: "ndebele", label: "isiNdebele" },
-        { value: "other", label: "Other" },
-      ],
+          "maxLength": 200
     },
     sortOrder: 15,
   },
   {
-    name: "preferredLanguage",
-    label: "Preferred Language",
-    description: "Preferred language for communication",
-    fieldType: "select",
-    category: "personal",
+    name: "postalUnitNumber",
+    label: "Postal Unit / Suite",
+    description: "Unit number for postal address",
+    fieldType: "text",
+    category: "address",
     config: {
-      options: [
-        { value: "english", label: "English" },
-        { value: "afrikaans", label: "Afrikaans" },
-        { value: "zulu", label: "isiZulu" },
-        { value: "xhosa", label: "isiXhosa" },
-        { value: "other", label: "Other" },
-      ],
+          "maxLength": 50
     },
     sortOrder: 16,
   },
   {
-    name: "religion",
-    label: "Religion",
-    description: "Religious affiliation or belief system",
-    fieldType: "select",
-    category: "personal",
+    name: "postalAddressLine1",
+    label: "Postal Address Line 1",
+    description: "Postal address line 1 (for manual entry)",
+    fieldType: "text",
+    category: "address",
     config: {
-      options: [
-        { value: "christianity", label: "Christianity" },
-        { value: "islam", label: "Islam" },
-        { value: "hinduism", label: "Hinduism" },
-        { value: "judaism", label: "Judaism" },
-        { value: "buddhism", label: "Buddhism" },
-        { value: "traditional", label: "Traditional/Indigenous" },
-        { value: "none", label: "No religion" },
-        { value: "other", label: "Other" },
-        { value: "prefernottosay", label: "Prefer not to say" },
-      ],
+          "maxLength": 200
     },
     sortOrder: 17,
-    specialPersonalInfo: true,
-    requiresExplicitConsent: true,
   },
   {
-    name: "occupation",
-    label: "Occupation",
-    description: "Current occupation or job title",
+    name: "postalAddressLine2",
+    label: "Postal Address Line 2",
+    description: "Postal address line 2",
     fieldType: "text",
-    category: "personal",
-    config: { maxLength: 100 },
+    category: "address",
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 18,
   },
   {
-    name: "employer",
-    label: "Employer",
-    description: "Current employer or company name",
+    name: "postalSuburb",
+    label: "Postal Suburb",
+    description: "Suburb for postal address",
     fieldType: "text",
-    category: "personal",
-    config: { maxLength: 200 },
+    category: "address",
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 19,
+  },
+  {
+    name: "postalCity",
+    label: "Postal City",
+    description: "City for postal address",
+    fieldType: "text",
+    category: "address",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 20,
+  },
+  {
+    name: "postalProvince",
+    label: "Postal Province",
+    description: "Province for postal address",
+    fieldType: "text",
+    category: "address",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 21,
+  },
+  {
+    name: "postalPostalCode",
+    label: "Postal Code (Postal)",
+    description: "Postal code for postal address",
+    fieldType: "text",
+    category: "address",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 22,
+  },
+  {
+    name: "postalCountry",
+    label: "Postal Country",
+    description: "Country for postal address",
+    fieldType: "country",
+    category: "address",
+    sortOrder: 23,
   },
 ];
 
-const identityFields: FieldDefinitionSeed[] = [
+// =============================================================================
+// CONSENT FIELDS
+// =============================================================================
+
+const consentFields: FieldDefinitionSeed[] = [
   {
-    name: "idNumber",
-    label: "ID Number",
-    description: "National identity number (e.g., South African ID number, SSN)",
-    fieldType: "text",
-    category: "identity",
-    config: { maxLength: 20 },
+    name: "termsAccepted",
+    label: "Terms and Conditions",
+    description: "Acceptance of terms and conditions",
+    fieldType: "checkbox",
+    category: "consent",
     sortOrder: 1,
   },
   {
-    name: "idType",
-    label: "ID Type",
-    description: "Type of primary identification document",
-    fieldType: "select",
-    category: "identity",
-    config: {
-      options: [
-        { value: "said", label: "South African ID" },
-        { value: "passport", label: "Passport" },
-        { value: "driverslicense", label: "Driver's License" },
-        { value: "birthcertificate", label: "Birth Certificate" },
-        { value: "other", label: "Other" },
-      ],
-    },
+    name: "privacyPolicyAccepted",
+    label: "Privacy Policy",
+    description: "Acceptance of privacy policy",
+    fieldType: "checkbox",
+    category: "consent",
     sortOrder: 2,
   },
   {
-    name: "passportNumber",
-    label: "Passport Number",
-    description: "Passport number as it appears on the document",
-    fieldType: "text",
-    category: "identity",
-    config: { maxLength: 20 },
+    name: "dataProcessingConsent",
+    label: "Data Processing Consent",
+    description: "Consent to process personal data for stated purposes",
+    fieldType: "checkbox",
+    category: "consent",
     sortOrder: 3,
   },
   {
-    name: "passportCountry",
-    label: "Passport Country",
-    description: "Country that issued the passport",
-    fieldType: "country",
-    category: "identity",
+    name: "thirdPartyShareConsent",
+    label: "Third Party Sharing",
+    description: "Consent to share data with third parties",
+    fieldType: "checkbox",
+    category: "consent",
     sortOrder: 4,
   },
   {
-    name: "passportExpiry",
-    label: "Passport Expiry Date",
-    description: "Expiration date of the passport",
-    fieldType: "date",
-    category: "identity",
+    name: "electronicSignature",
+    label: "Electronic Signature",
+    description: "Digital signature to confirm acceptance",
+    fieldType: "signature",
+    category: "consent",
     sortOrder: 5,
   },
   {
-    name: "driversLicenseNumber",
-    label: "Driver's License Number",
-    description: "Driver's license number",
-    fieldType: "text",
-    category: "identity",
-    config: { maxLength: 20 },
+    name: "signatureDate",
+    label: "Signature Date",
+    description: "Date of signature",
+    fieldType: "date",
+    category: "consent",
     sortOrder: 6,
   },
   {
-    name: "driversLicenseExpiry",
-    label: "Driver's License Expiry",
-    description: "Expiration date of driver's license",
-    fieldType: "date",
-    category: "identity",
+    name: "witnessName",
+    label: "Witness Name",
+    description: "Name of witness (if required)",
+    fieldType: "text",
+    category: "consent",
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 7,
   },
   {
-    name: "taxNumber",
-    label: "Tax Number",
-    description: "Tax identification/reference number",
-    fieldType: "text",
-    category: "identity",
-    config: { maxLength: 20 },
+    name: "witnessSignature",
+    label: "Witness Signature",
+    description: "Signature of witness",
+    fieldType: "signature",
+    category: "consent",
     sortOrder: 8,
   },
   {
-    name: "workPermitNumber",
-    label: "Work Permit Number",
-    description: "Work/employment permit number for foreign nationals",
-    fieldType: "text",
-    category: "identity",
-    config: { maxLength: 30 },
+    name: "photoMediaConsent",
+    label: "Photo/Media Consent",
+    description: "Consent for photos and media to be used",
+    fieldType: "checkbox",
+    category: "consent",
     sortOrder: 9,
   },
   {
-    name: "visaNumber",
-    label: "Visa Number",
-    description: "Visa number if applicable",
-    fieldType: "text",
-    category: "identity",
-    config: { maxLength: 30 },
+    name: "liabilityWaiver",
+    label: "Liability Waiver",
+    description: "Acceptance of liability waiver",
+    fieldType: "checkbox",
+    category: "consent",
     sortOrder: 10,
   },
   {
-    name: "visaType",
-    label: "Visa Type",
-    description: "Type of visa held",
-    fieldType: "select",
-    category: "identity",
-    config: {
-      options: [
-        { value: "work", label: "Work Visa" },
-        { value: "study", label: "Study Visa" },
-        { value: "tourist", label: "Tourist Visa" },
-        { value: "business", label: "Business Visa" },
-        { value: "permanent", label: "Permanent Residence" },
-        { value: "other", label: "Other" },
-      ],
-    },
+    name: "consentExpiryDate",
+    label: "Consent Expiry Date",
+    description: "Date when consent expires",
+    fieldType: "date",
+    category: "consent",
     sortOrder: 11,
   },
   {
-    name: "visaExpiry",
-    label: "Visa Expiry Date",
-    description: "Expiration date of the visa",
-    fieldType: "date",
-    category: "identity",
+    name: "parentalConsent",
+    label: "Parental Consent",
+    description: "Parent/guardian consent (for minors)",
+    fieldType: "checkbox",
+    category: "consent",
     sortOrder: 12,
   },
+  {
+    name: "parentalConsentName",
+    label: "Parent/Guardian Name",
+    description: "Name of consenting parent/guardian",
+    fieldType: "text",
+    category: "consent",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 13,
+  },
+  {
+    name: "parentalConsentSignature",
+    label: "Parent/Guardian Signature",
+    description: "Signature of parent/guardian",
+    fieldType: "signature",
+    category: "consent",
+    sortOrder: 14,
+  },
 ];
+
+// =============================================================================
+// CONTACT FIELDS
+// =============================================================================
 
 const contactFields: FieldDefinitionSeed[] = [
   {
@@ -495,12 +520,24 @@ const contactFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "contact",
     config: {
-      options: [
-        { value: "phone", label: "Phone Call" },
-        { value: "sms", label: "SMS" },
-        { value: "email", label: "Email" },
-        { value: "whatsapp", label: "WhatsApp" },
-      ],
+          "options": [
+                {
+                      "value": "phone",
+                      "label": "Phone Call"
+                },
+                {
+                      "value": "sms",
+                      "label": "SMS"
+                },
+                {
+                      "value": "email",
+                      "label": "Email"
+                },
+                {
+                      "value": "whatsapp",
+                      "label": "WhatsApp"
+                }
+          ]
     },
     sortOrder: 8,
   },
@@ -511,1111 +548,32 @@ const contactFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "contact",
     config: {
-      options: [
-        { value: "morning", label: "Morning (8am-12pm)" },
-        { value: "afternoon", label: "Afternoon (12pm-5pm)" },
-        { value: "evening", label: "Evening (5pm-8pm)" },
-        { value: "anytime", label: "Any time" },
-      ],
+          "options": [
+                {
+                      "value": "morning",
+                      "label": "Morning (8am-12pm)"
+                },
+                {
+                      "value": "afternoon",
+                      "label": "Afternoon (12pm-5pm)"
+                },
+                {
+                      "value": "evening",
+                      "label": "Evening (5pm-8pm)"
+                },
+                {
+                      "value": "anytime",
+                      "label": "Any time"
+                }
+          ]
     },
     sortOrder: 9,
-  },
-];
-
-const addressFields: FieldDefinitionSeed[] = [
-  // Primary address field with Google Places autocomplete
-  {
-    name: "streetAddress",
-    label: "Street Address",
-    description: "Street address with Google Places autocomplete - auto-populates related address fields",
-    fieldType: "address",
-    category: "address",
-    config: {
-      // Linked fields that will be auto-populated when an address is selected
-      linkedFields: {
-        complexName: "complexName",
-        unitNumber: "unitNumber",
-        suburb: "suburb",
-        city: "city",
-        province: "stateProvince",
-        postalCode: "postalCode",
-        country: "country",
-        lat: "gpsLat",
-        lng: "gpsLng",
-      },
-    },
-    sortOrder: 1,
-  },
-  {
-    name: "complexName",
-    label: "Building / Complex / Estate",
-    description: "Name of building, complex, estate, or premises",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 200 },
-    sortOrder: 2,
-  },
-  {
-    name: "unitNumber",
-    label: "Unit / Suite / Floor",
-    description: "Unit number, suite, apartment, or floor",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 50 },
-    sortOrder: 3,
-  },
-  {
-    name: "addressLine1",
-    label: "Address Line 1",
-    description: "Street address line 1 (street number and name) - use for manual entry or override",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 200 },
-    sortOrder: 4,
-  },
-  {
-    name: "addressLine2",
-    label: "Address Line 2",
-    description: "Street address line 2 (additional details)",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 200 },
-    sortOrder: 5,
-  },
-  {
-    name: "suburb",
-    label: "Suburb",
-    description: "Suburb or neighborhood name",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 100 },
-    sortOrder: 6,
-  },
-  {
-    name: "city",
-    label: "City",
-    description: "City or town name",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 100 },
-    sortOrder: 7,
-  },
-  {
-    name: "stateProvince",
-    label: "State/Province",
-    description: "State, province, or region",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 100 },
-    sortOrder: 8,
-  },
-  {
-    name: "postalCode",
-    label: "Postal Code",
-    description: "Postal or ZIP code",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 20 },
-    sortOrder: 9,
-  },
-  {
-    name: "country",
-    label: "Country",
-    description: "Country of residence",
-    fieldType: "country",
-    category: "address",
-    config: { defaultCountry: "ZA" },
-    sortOrder: 10,
-  },
-  {
-    name: "gpsLat",
-    label: "GPS Latitude",
-    description: "GPS latitude coordinate",
-    fieldType: "number",
-    category: "address",
-    config: { step: "any", placeholder: "-33.9249" },
-    sortOrder: 11,
-  },
-  {
-    name: "gpsLng",
-    label: "GPS Longitude",
-    description: "GPS longitude coordinate",
-    fieldType: "number",
-    category: "address",
-    config: { step: "any", placeholder: "18.4241" },
-    sortOrder: 12,
-  },
-  {
-    name: "addressType",
-    label: "Address Type",
-    description: "Type of address (residential, postal, business)",
-    fieldType: "select",
-    category: "address",
-    config: {
-      options: [
-        { value: "residential", label: "Residential" },
-        { value: "postal", label: "Postal" },
-        { value: "business", label: "Business" },
-      ],
-    },
-    sortOrder: 13,
-  },
-  // Postal address fields (separate from residential)
-  {
-    name: "postalStreetAddress",
-    label: "Postal Street Address",
-    description: "Postal address with Google Places autocomplete (if different from residential)",
-    fieldType: "address",
-    category: "address",
-    config: {
-      linkedFields: {
-        complexName: "postalComplexName",
-        unitNumber: "postalUnitNumber",
-        suburb: "postalSuburb",
-        city: "postalCity",
-        province: "postalProvince",
-        postalCode: "postalPostalCode",
-        country: "postalCountry",
-      },
-    },
-    sortOrder: 14,
-  },
-  {
-    name: "postalComplexName",
-    label: "Postal Building / Complex",
-    description: "Building or complex name for postal address",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 200 },
-    sortOrder: 15,
-  },
-  {
-    name: "postalUnitNumber",
-    label: "Postal Unit / Suite",
-    description: "Unit number for postal address",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 50 },
-    sortOrder: 16,
-  },
-  {
-    name: "postalAddressLine1",
-    label: "Postal Address Line 1",
-    description: "Postal address line 1 (for manual entry)",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 200 },
-    sortOrder: 17,
-  },
-  {
-    name: "postalAddressLine2",
-    label: "Postal Address Line 2",
-    description: "Postal address line 2",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 200 },
-    sortOrder: 18,
-  },
-  {
-    name: "postalSuburb",
-    label: "Postal Suburb",
-    description: "Suburb for postal address",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 100 },
-    sortOrder: 19,
-  },
-  {
-    name: "postalCity",
-    label: "Postal City",
-    description: "City for postal address",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 100 },
-    sortOrder: 20,
-  },
-  {
-    name: "postalProvince",
-    label: "Postal Province",
-    description: "Province for postal address",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 100 },
-    sortOrder: 21,
-  },
-  {
-    name: "postalPostalCode",
-    label: "Postal Code (Postal)",
-    description: "Postal code for postal address",
-    fieldType: "text",
-    category: "address",
-    config: { maxLength: 20 },
-    sortOrder: 22,
-  },
-  {
-    name: "postalCountry",
-    label: "Postal Country",
-    description: "Country for postal address",
-    fieldType: "country",
-    category: "address",
-    sortOrder: 23,
-  },
-];
-
-const emergencyFields: FieldDefinitionSeed[] = [
-  {
-    name: "emergencyContactName",
-    label: "Emergency Contact Name",
-    description: "Full name of primary emergency contact person",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 200 },
-    sortOrder: 1,
-  },
-  {
-    name: "emergencyContactRelationship",
-    label: "Relationship",
-    description: "Relationship of emergency contact to the person",
-    fieldType: "select",
-    category: "emergency",
-    config: {
-      options: [
-        { value: "spouse", label: "Spouse/Partner" },
-        { value: "parent", label: "Parent" },
-        { value: "child", label: "Child" },
-        { value: "sibling", label: "Sibling" },
-        { value: "grandparent", label: "Grandparent" },
-        { value: "friend", label: "Friend" },
-        { value: "colleague", label: "Colleague" },
-        { value: "other", label: "Other" },
-      ],
-    },
-    sortOrder: 2,
-  },
-  {
-    name: "emergencyContactPhone",
-    label: "Emergency Contact Phone",
-    description: "Phone number of emergency contact",
-    fieldType: "phone",
-    category: "emergency",
-    sortOrder: 3,
-  },
-  {
-    name: "emergencyContactEmail",
-    label: "Emergency Contact Email",
-    description: "Email address of emergency contact",
-    fieldType: "email",
-    category: "emergency",
-    sortOrder: 4,
-  },
-  {
-    name: "emergencyContactStreetAddress",
-    label: "Emergency Contact Address",
-    description: "Street address of emergency contact with autocomplete",
-    fieldType: "address",
-    category: "emergency",
-    config: {
-      linkedFields: {
-        complexName: "emergencyContactComplexName",
-        unitNumber: "emergencyContactUnitNumber",
-        suburb: "emergencyContactAddressSuburb",
-        city: "emergencyContactAddressCity",
-        province: "emergencyContactAddressProvince",
-        postalCode: "emergencyContactAddressPostalCode",
-        country: "emergencyContactAddressCountry",
-      },
-    },
-    sortOrder: 5,
-  },
-  {
-    name: "emergencyContactComplexName",
-    label: "Emergency Contact Building/Complex",
-    description: "Building, complex, or estate name of emergency contact",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 200 },
-    sortOrder: 6,
-  },
-  {
-    name: "emergencyContactUnitNumber",
-    label: "Emergency Contact Unit/Suite",
-    description: "Unit, suite, or apartment of emergency contact",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 50 },
-    sortOrder: 7,
-  },
-  {
-    name: "emergencyContactAddressLine1",
-    label: "Emergency Contact Address Line 1",
-    description: "Street address of emergency contact (manual entry)",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 200 },
-    sortOrder: 8,
-  },
-  {
-    name: "emergencyContactAddressLine2",
-    label: "Emergency Contact Address Line 2",
-    description: "Additional address details of emergency contact",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 200 },
-    sortOrder: 9,
-  },
-  {
-    name: "emergencyContactAddressSuburb",
-    label: "Emergency Contact Suburb",
-    description: "Suburb of emergency contact",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 100 },
-    sortOrder: 10,
-  },
-  {
-    name: "emergencyContactAddressCity",
-    label: "Emergency Contact City",
-    description: "City of emergency contact",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 100 },
-    sortOrder: 11,
-  },
-  {
-    name: "emergencyContactAddressProvince",
-    label: "Emergency Contact Province",
-    description: "Province/state of emergency contact",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 100 },
-    sortOrder: 12,
-  },
-  {
-    name: "emergencyContactAddressPostalCode",
-    label: "Emergency Contact Postal Code",
-    description: "Postal code of emergency contact",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 20 },
-    sortOrder: 13,
-  },
-  {
-    name: "emergencyContactAddressCountry",
-    label: "Emergency Contact Country",
-    description: "Country of emergency contact",
-    fieldType: "country",
-    category: "emergency",
-    config: { defaultCountry: "ZA" },
-    sortOrder: 14,
-  },
-  {
-    name: "emergencyContact2Name",
-    label: "Second Emergency Contact",
-    description: "Full name of alternative/second emergency contact",
-    fieldType: "text",
-    category: "emergency",
-    config: { maxLength: 200 },
-    sortOrder: 13,
-  },
-  {
-    name: "emergencyContact2Relationship",
-    label: "Second Contact Relationship",
-    description: "Relationship of second emergency contact",
-    fieldType: "select",
-    category: "emergency",
-    config: {
-      options: [
-        { value: "spouse", label: "Spouse/Partner" },
-        { value: "parent", label: "Parent" },
-        { value: "child", label: "Child" },
-        { value: "sibling", label: "Sibling" },
-        { value: "friend", label: "Friend" },
-        { value: "other", label: "Other" },
-      ],
-    },
-    sortOrder: 14,
-  },
-  {
-    name: "emergencyContact2Phone",
-    label: "Second Contact Phone",
-    description: "Phone number of second emergency contact",
-    fieldType: "phone",
-    category: "emergency",
-    sortOrder: 15,
-  },
-];
-
-const responsibleFields: FieldDefinitionSeed[] = [
-  {
-    name: "responsiblePartyName",
-    label: "Responsible Party Name",
-    description: "Full name of person responsible for account/payment (if different from subject)",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 200 },
-    sortOrder: 1,
-  },
-  {
-    name: "responsiblePartyRelationship",
-    label: "Responsible Party Relationship",
-    description: "Relationship of responsible party to the subject",
-    fieldType: "select",
-    category: "responsible",
-    config: {
-      options: [
-        { value: "self", label: "Self" },
-        { value: "parent", label: "Parent" },
-        { value: "guardian", label: "Legal Guardian" },
-        { value: "spouse", label: "Spouse" },
-        { value: "employer", label: "Employer" },
-        { value: "other", label: "Other" },
-      ],
-    },
-    sortOrder: 2,
-  },
-  {
-    name: "responsiblePartyIdNumber",
-    label: "Responsible Party ID",
-    description: "ID number of responsible party",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 20 },
-    sortOrder: 3,
-  },
-  {
-    name: "responsiblePartyPhone",
-    label: "Responsible Party Phone",
-    description: "Phone number of responsible party",
-    fieldType: "phone",
-    category: "responsible",
-    sortOrder: 4,
-  },
-  {
-    name: "responsiblePartyEmail",
-    label: "Responsible Party Email",
-    description: "Email address of responsible party",
-    fieldType: "email",
-    category: "responsible",
-    sortOrder: 5,
-  },
-  {
-    name: "responsiblePartyStreetAddress",
-    label: "Responsible Party Address",
-    description: "Street address of responsible party with autocomplete",
-    fieldType: "address",
-    category: "responsible",
-    config: {
-      linkedFields: {
-        complexName: "responsiblePartyComplexName",
-        unitNumber: "responsiblePartyUnitNumber",
-        suburb: "responsiblePartyAddressSuburb",
-        city: "responsiblePartyAddressCity",
-        province: "responsiblePartyAddressProvince",
-        postalCode: "responsiblePartyAddressPostalCode",
-        country: "responsiblePartyAddressCountry",
-      },
-    },
-    sortOrder: 6,
-  },
-  {
-    name: "responsiblePartyComplexName",
-    label: "Responsible Party Building/Complex",
-    description: "Building, complex, or estate name of responsible party",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 200 },
-    sortOrder: 7,
-  },
-  {
-    name: "responsiblePartyUnitNumber",
-    label: "Responsible Party Unit/Suite",
-    description: "Unit, suite, or apartment of responsible party",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 50 },
-    sortOrder: 8,
-  },
-  {
-    name: "responsiblePartyAddressLine1",
-    label: "Responsible Party Address Line 1",
-    description: "Street address of responsible party (manual entry)",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 200 },
-    sortOrder: 9,
-  },
-  {
-    name: "responsiblePartyAddressLine2",
-    label: "Responsible Party Address Line 2",
-    description: "Additional address details of responsible party",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 200 },
-    sortOrder: 10,
-  },
-  {
-    name: "responsiblePartyAddressSuburb",
-    label: "Responsible Party Suburb",
-    description: "Suburb of responsible party",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 100 },
-    sortOrder: 11,
-  },
-  {
-    name: "responsiblePartyAddressCity",
-    label: "Responsible Party City",
-    description: "City of responsible party",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 100 },
-    sortOrder: 12,
-  },
-  {
-    name: "responsiblePartyAddressProvince",
-    label: "Responsible Party Province",
-    description: "Province/state of responsible party",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 100 },
-    sortOrder: 13,
-  },
-  {
-    name: "responsiblePartyAddressPostalCode",
-    label: "Responsible Party Postal Code",
-    description: "Postal code of responsible party",
-    fieldType: "text",
-    category: "responsible",
-    config: { maxLength: 20 },
-    sortOrder: 14,
-  },
-  {
-    name: "responsiblePartyAddressCountry",
-    label: "Responsible Party Country",
-    description: "Country of responsible party",
-    fieldType: "country",
-    category: "responsible",
-    config: { defaultCountry: "ZA" },
-    sortOrder: 15,
-  },
-];
-
-const preferencesFields: FieldDefinitionSeed[] = [
-  {
-    name: "dietaryRequirements",
-    label: "Dietary Requirements",
-    description: "Dietary restrictions or preferences",
-    fieldType: "multiselect",
-    category: "preferences",
-    config: {
-      options: [
-        { value: "none", label: "None" },
-        { value: "vegetarian", label: "Vegetarian" },
-        { value: "vegan", label: "Vegan" },
-        { value: "halal", label: "Halal" },
-        { value: "kosher", label: "Kosher" },
-        { value: "glutenfree", label: "Gluten-free" },
-        { value: "dairyfree", label: "Dairy-free" },
-        { value: "nutallergy", label: "Nut allergy" },
-        { value: "shellfishallergy", label: "Shellfish allergy" },
-        { value: "other", label: "Other" },
-      ],
-    },
-    sortOrder: 1,
-  },
-  {
-    name: "dietaryNotes",
-    label: "Dietary Notes",
-    description: "Additional dietary information or specific requirements",
-    fieldType: "textarea",
-    category: "preferences",
-    config: { maxLength: 500 },
-    sortOrder: 2,
-  },
-  {
-    name: "accessibilityNeeds",
-    label: "Accessibility Needs",
-    description: "Accessibility requirements or accommodations needed",
-    fieldType: "multiselect",
-    category: "preferences",
-    config: {
-      options: [
-        { value: "none", label: "None" },
-        { value: "wheelchair", label: "Wheelchair access" },
-        { value: "hearing", label: "Hearing assistance" },
-        { value: "visual", label: "Visual assistance" },
-        { value: "mobility", label: "Mobility assistance" },
-        { value: "signlanguage", label: "Sign language interpreter" },
-        { value: "other", label: "Other" },
-      ],
-    },
-    sortOrder: 3,
-  },
-  {
-    name: "accessibilityNotes",
-    label: "Accessibility Notes",
-    description: "Additional accessibility information or specific needs",
-    fieldType: "textarea",
-    category: "preferences",
-    config: { maxLength: 500 },
-    sortOrder: 4,
-  },
-  {
-    name: "specialRequirements",
-    label: "Special Requirements",
-    description: "Any other special requirements or accommodations",
-    fieldType: "textarea",
-    category: "preferences",
-    config: { maxLength: 1000 },
-    sortOrder: 5,
-  },
-  {
-    name: "communicationPreference",
-    label: "Communication Preference",
-    description: "Preferred channels for receiving communications",
-    fieldType: "multiselect",
-    category: "preferences",
-    config: {
-      options: [
-        { value: "email", label: "Email" },
-        { value: "sms", label: "SMS" },
-        { value: "phone", label: "Phone" },
-        { value: "whatsapp", label: "WhatsApp" },
-        { value: "post", label: "Post" },
-      ],
-    },
-    sortOrder: 6,
-  },
-  {
-    name: "marketingConsent",
-    label: "Marketing Consent",
-    description: "Consent to receive marketing and promotional communications",
-    fieldType: "checkbox",
-    category: "preferences",
-    sortOrder: 7,
   },
 ];
 
 // =============================================================================
-// INDUSTRY EXTENSION CATEGORIES
+// EDUCATION FIELDS
 // =============================================================================
-
-const medicalFields: FieldDefinitionSeed[] = [
-  {
-    name: "medicalAidName",
-    label: "Medical Aid Name",
-    description: "Name of medical aid/health insurance provider",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 100 },
-    sortOrder: 1,
-  },
-  {
-    name: "medicalAidPlan",
-    label: "Medical Aid Plan",
-    description: "Name of medical aid plan/option",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 100 },
-    sortOrder: 2,
-  },
-  {
-    name: "medicalAidNumber",
-    label: "Medical Aid Number",
-    description: "Medical aid membership number",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 30 },
-    sortOrder: 3,
-  },
-  {
-    name: "medicalAidMainMember",
-    label: "Main Member Name",
-    description: "Name of main member on medical aid account",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 200 },
-    sortOrder: 4,
-  },
-  {
-    name: "dependentCode",
-    label: "Dependent Code",
-    description: "Dependent code on medical aid (00 for main member, 01+ for dependents)",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 5 },
-    sortOrder: 5,
-  },
-  {
-    name: "gapCover",
-    label: "Gap Cover",
-    description: "Whether the person has gap cover insurance",
-    fieldType: "checkbox",
-    category: "medical",
-    sortOrder: 6,
-  },
-  {
-    name: "gapCoverProvider",
-    label: "Gap Cover Provider",
-    description: "Name of gap cover insurance provider",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 100 },
-    sortOrder: 7,
-  },
-  {
-    name: "bloodType",
-    label: "Blood Type",
-    description: "Blood type and Rh factor",
-    fieldType: "select",
-    category: "medical",
-    config: {
-      options: [
-        { value: "apos", label: "A+" },
-        { value: "aneg", label: "A-" },
-        { value: "bpos", label: "B+" },
-        { value: "bneg", label: "B-" },
-        { value: "abpos", label: "AB+" },
-        { value: "abneg", label: "AB-" },
-        { value: "opos", label: "O+" },
-        { value: "oneg", label: "O-" },
-        { value: "unknown", label: "Unknown" },
-      ],
-    },
-    sortOrder: 8,
-    specialPersonalInfo: true,
-  },
-  {
-    name: "allergies",
-    label: "Allergies",
-    description: "Known allergies (medications, foods, environmental factors)",
-    fieldType: "textarea",
-    category: "medical",
-    config: { maxLength: 1000, placeholder: "List all known allergies..." },
-    sortOrder: 9,
-    specialPersonalInfo: true,
-  },
-  {
-    name: "chronicConditions",
-    label: "Chronic Conditions",
-    description: "Chronic medical conditions or ongoing health issues",
-    fieldType: "textarea",
-    category: "medical",
-    config: { maxLength: 1000 },
-    sortOrder: 10,
-    specialPersonalInfo: true,
-  },
-  {
-    name: "currentMedications",
-    label: "Current Medications",
-    description: "List of current medications being taken",
-    fieldType: "textarea",
-    category: "medical",
-    config: { maxLength: 1000 },
-    sortOrder: 11,
-    specialPersonalInfo: true,
-  },
-  {
-    name: "previousSurgeries",
-    label: "Previous Surgeries",
-    description: "Previous surgical procedures with approximate dates",
-    fieldType: "textarea",
-    category: "medical",
-    config: { maxLength: 1000 },
-    sortOrder: 12,
-    specialPersonalInfo: true,
-  },
-  {
-    name: "familyMedicalHistory",
-    label: "Family Medical History",
-    description: "Relevant family medical history (hereditary conditions, etc.)",
-    fieldType: "textarea",
-    category: "medical",
-    config: { maxLength: 1000 },
-    sortOrder: 13,
-    specialPersonalInfo: true,
-  },
-  {
-    name: "primaryPhysician",
-    label: "Primary Physician",
-    description: "Name of primary care physician/general practitioner",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 200 },
-    sortOrder: 14,
-  },
-  {
-    name: "primaryPhysicianPhone",
-    label: "Primary Physician Phone",
-    description: "Phone number of primary care physician",
-    fieldType: "phone",
-    category: "medical",
-    sortOrder: 15,
-  },
-  // --- Referral Doctor Fields ---
-  // These fields capture referring doctor information for specialist practices
-  // Stored in patient profile for reuse across forms
-  {
-    name: "referralDoctor",
-    label: "Referral Doctor",
-    description: "Composite field for referring doctor information. Stores: doctorName, practiceName, specialty, phone, fax, email, practiceNumber, address, isPrimary.",
-    fieldType: "referral-doctor",
-    category: "medical",
-    config: {
-      // Field configuration for the composite referral doctor input
-      fields: [
-        "referralDoctorName",
-        "referralDoctorPractice",
-        "referralDoctorSpecialty",
-        "referralDoctorPhone",
-        "referralDoctorFax",
-        "referralDoctorEmail",
-        "referralDoctorPracticeNumber",
-        "referralDoctorAddress",
-        "referralDoctorIsPrimary",
-      ],
-    },
-    sortOrder: 50,
-  },
-  {
-    name: "referralDoctorName",
-    label: "Doctor Name",
-    description: "Full name of the referring doctor (e.g., Dr. John Smith)",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 200, placeholder: "e.g., Dr. John Smith" },
-    sortOrder: 51,
-  },
-  {
-    name: "referralDoctorPractice",
-    label: "Practice Name",
-    description: "Name of the referring doctor's practice or clinic",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 200, placeholder: "e.g., Smith Family Practice" },
-    sortOrder: 52,
-  },
-  {
-    name: "referralDoctorSpecialty",
-    label: "Specialty",
-    description: "Medical specialty of the referring doctor",
-    fieldType: "select",
-    category: "medical",
-    config: {
-      // Default specialty options - can be extended via admin configuration
-      options: [
-        { value: "gp", label: "General Practitioner" },
-        { value: "internal", label: "Internal Medicine" },
-        { value: "cardiology", label: "Cardiology" },
-        { value: "dermatology", label: "Dermatology" },
-        { value: "endocrinology", label: "Endocrinology" },
-        { value: "gastroenterology", label: "Gastroenterology" },
-        { value: "neurology", label: "Neurology" },
-        { value: "obstetrics", label: "Obstetrics & Gynaecology" },
-        { value: "oncology", label: "Oncology" },
-        { value: "ophthalmology", label: "Ophthalmology" },
-        { value: "orthopaedics", label: "Orthopaedics" },
-        { value: "paediatrics", label: "Paediatrics" },
-        { value: "psychiatry", label: "Psychiatry" },
-        { value: "pulmonology", label: "Pulmonology" },
-        { value: "radiology", label: "Radiology" },
-        { value: "rheumatology", label: "Rheumatology" },
-        { value: "surgery", label: "General Surgery" },
-        { value: "urology", label: "Urology" },
-        { value: "ent", label: "ENT (Ear, Nose, Throat)" },
-        { value: "physiotherapy", label: "Physiotherapy" },
-        { value: "chiropractic", label: "Chiropractic" },
-        { value: "dental", label: "Dental" },
-        { value: "other", label: "Other" },
-      ],
-      allowOther: true,
-    },
-    sortOrder: 53,
-  },
-  {
-    name: "referralDoctorPhone",
-    label: "Doctor Phone",
-    description: "Phone number of the referring doctor's practice",
-    fieldType: "phone",
-    category: "medical",
-    sortOrder: 54,
-  },
-  {
-    name: "referralDoctorFax",
-    label: "Doctor Fax",
-    description: "Fax number of the referring doctor's practice",
-    fieldType: "phone",
-    category: "medical",
-    config: { placeholder: "Fax number" },
-    sortOrder: 55,
-  },
-  {
-    name: "referralDoctorEmail",
-    label: "Doctor Email",
-    description: "Email address of the referring doctor or practice",
-    fieldType: "email",
-    category: "medical",
-    sortOrder: 56,
-  },
-  {
-    name: "referralDoctorPracticeNumber",
-    label: "Practice Number",
-    description: "BHF/HPCSA practice number of the referring doctor",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 20, placeholder: "e.g., 1234567" },
-    sortOrder: 57,
-  },
-  {
-    name: "referralDoctorAddress",
-    label: "Practice Address",
-    description: "Physical address of the referring doctor's practice",
-    fieldType: "textarea",
-    category: "medical",
-    config: { maxLength: 500, rows: 2 },
-    sortOrder: 58,
-  },
-  {
-    name: "referralDoctorIsPrimary",
-    label: "Primary/Default Doctor",
-    description: "Mark this doctor as the patient's primary referring doctor for future forms",
-    fieldType: "checkbox",
-    category: "medical",
-    sortOrder: 59,
-  },
-  {
-    name: "pharmacy",
-    label: "Preferred Pharmacy",
-    description: "Name of preferred pharmacy for prescriptions",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 200 },
-    sortOrder: 16,
-  },
-  {
-    name: "pharmacyPhone",
-    label: "Pharmacy Phone",
-    description: "Phone number of preferred pharmacy",
-    fieldType: "phone",
-    category: "medical",
-    sortOrder: 17,
-  },
-  {
-    name: "hospitalPreference",
-    label: "Hospital Preference",
-    description: "Preferred hospital for treatment or emergencies",
-    fieldType: "text",
-    category: "medical",
-    config: { maxLength: 200 },
-    sortOrder: 18,
-  },
-  {
-    name: "organDonor",
-    label: "Organ Donor",
-    description: "Whether the person is a registered organ donor",
-    fieldType: "checkbox",
-    category: "medical",
-    sortOrder: 19,
-  },
-  {
-    name: "advanceDirective",
-    label: "Advance Directive",
-    description: "Whether the person has an advance directive or living will",
-    fieldType: "checkbox",
-    category: "medical",
-    sortOrder: 20,
-  },
-  {
-    name: "pregnancyStatus",
-    label: "Pregnancy Status",
-    description: "Current pregnancy status (if applicable)",
-    fieldType: "select",
-    category: "medical",
-    config: {
-      options: [
-        { value: "notpregnant", label: "Not pregnant" },
-        { value: "pregnant", label: "Pregnant" },
-        { value: "possibly", label: "Possibly pregnant" },
-        { value: "na", label: "Not applicable" },
-      ],
-    },
-    sortOrder: 21,
-    specialPersonalInfo: true,
-  },
-  {
-    name: "pregnancyDueDate",
-    label: "Due Date",
-    description: "Expected due date if pregnant",
-    fieldType: "date",
-    category: "medical",
-    sortOrder: 22,
-    specialPersonalInfo: true,
-  },
-];
-
-const insuranceFields: FieldDefinitionSeed[] = [
-  {
-    name: "insuranceProvider",
-    label: "Insurance Provider",
-    description: "Name of insurance company",
-    fieldType: "text",
-    category: "insurance",
-    config: { maxLength: 100 },
-    sortOrder: 1,
-  },
-  {
-    name: "insurancePolicyNumber",
-    label: "Policy Number",
-    description: "Insurance policy number",
-    fieldType: "text",
-    category: "insurance",
-    config: { maxLength: 50 },
-    sortOrder: 2,
-  },
-  {
-    name: "insurancePolicyType",
-    label: "Policy Type",
-    description: "Type of insurance policy",
-    fieldType: "select",
-    category: "insurance",
-    config: {
-      options: [
-        { value: "life", label: "Life Insurance" },
-        { value: "vehicle", label: "Vehicle Insurance" },
-        { value: "home", label: "Home Insurance" },
-        { value: "travel", label: "Travel Insurance" },
-        { value: "liability", label: "Liability Insurance" },
-        { value: "other", label: "Other" },
-      ],
-    },
-    sortOrder: 3,
-  },
-  {
-    name: "insurancePolicyHolder",
-    label: "Policy Holder Name",
-    description: "Name of the policy holder",
-    fieldType: "text",
-    category: "insurance",
-    config: { maxLength: 200 },
-    sortOrder: 4,
-  },
-  {
-    name: "insuranceExpiryDate",
-    label: "Policy Expiry Date",
-    description: "Expiration date of the insurance policy",
-    fieldType: "date",
-    category: "insurance",
-    sortOrder: 5,
-  },
-  {
-    name: "insuranceContactNumber",
-    label: "Insurance Contact",
-    description: "Insurance company contact/claims number",
-    fieldType: "phone",
-    category: "insurance",
-    sortOrder: 6,
-  },
-];
 
 const educationFields: FieldDefinitionSeed[] = [
   {
@@ -1624,7 +582,9 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "Student or learner identification number",
     fieldType: "text",
     category: "education",
-    config: { maxLength: 30 },
+    config: {
+          "maxLength": 30
+    },
     sortOrder: 1,
   },
   {
@@ -1634,24 +594,72 @@ const educationFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "education",
     config: {
-      options: [
-        { value: "grader", label: "Grade R" },
-        { value: "grade1", label: "Grade 1" },
-        { value: "grade2", label: "Grade 2" },
-        { value: "grade3", label: "Grade 3" },
-        { value: "grade4", label: "Grade 4" },
-        { value: "grade5", label: "Grade 5" },
-        { value: "grade6", label: "Grade 6" },
-        { value: "grade7", label: "Grade 7" },
-        { value: "grade8", label: "Grade 8" },
-        { value: "grade9", label: "Grade 9" },
-        { value: "grade10", label: "Grade 10" },
-        { value: "grade11", label: "Grade 11" },
-        { value: "grade12", label: "Grade 12" },
-        { value: "undergraduate", label: "Undergraduate" },
-        { value: "postgraduate", label: "Postgraduate" },
-        { value: "other", label: "Other" },
-      ],
+          "options": [
+                {
+                      "value": "grader",
+                      "label": "Grade R"
+                },
+                {
+                      "value": "grade1",
+                      "label": "Grade 1"
+                },
+                {
+                      "value": "grade2",
+                      "label": "Grade 2"
+                },
+                {
+                      "value": "grade3",
+                      "label": "Grade 3"
+                },
+                {
+                      "value": "grade4",
+                      "label": "Grade 4"
+                },
+                {
+                      "value": "grade5",
+                      "label": "Grade 5"
+                },
+                {
+                      "value": "grade6",
+                      "label": "Grade 6"
+                },
+                {
+                      "value": "grade7",
+                      "label": "Grade 7"
+                },
+                {
+                      "value": "grade8",
+                      "label": "Grade 8"
+                },
+                {
+                      "value": "grade9",
+                      "label": "Grade 9"
+                },
+                {
+                      "value": "grade10",
+                      "label": "Grade 10"
+                },
+                {
+                      "value": "grade11",
+                      "label": "Grade 11"
+                },
+                {
+                      "value": "grade12",
+                      "label": "Grade 12"
+                },
+                {
+                      "value": "undergraduate",
+                      "label": "Undergraduate"
+                },
+                {
+                      "value": "postgraduate",
+                      "label": "Postgraduate"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
     },
     sortOrder: 2,
   },
@@ -1669,7 +677,9 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "Name of previous school or institution",
     fieldType: "text",
     category: "education",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 4,
   },
   {
@@ -1678,7 +688,9 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "City where previous school is located",
     fieldType: "text",
     category: "education",
-    config: { maxLength: 100 },
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 5,
   },
   {
@@ -1695,7 +707,9 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "Primary field of study or major",
     fieldType: "text",
     category: "education",
-    config: { maxLength: 100 },
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 7,
   },
   {
@@ -1704,7 +718,9 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "Full name of parent or legal guardian",
     fieldType: "text",
     category: "education",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 8,
   },
   {
@@ -1714,13 +730,28 @@ const educationFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "education",
     config: {
-      options: [
-        { value: "mother", label: "Mother" },
-        { value: "father", label: "Father" },
-        { value: "guardian", label: "Legal Guardian" },
-        { value: "grandparent", label: "Grandparent" },
-        { value: "other", label: "Other" },
-      ],
+          "options": [
+                {
+                      "value": "mother",
+                      "label": "Mother"
+                },
+                {
+                      "value": "father",
+                      "label": "Father"
+                },
+                {
+                      "value": "guardian",
+                      "label": "Legal Guardian"
+                },
+                {
+                      "value": "grandparent",
+                      "label": "Grandparent"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
     },
     sortOrder: 9,
   },
@@ -1754,7 +785,9 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "Employer name of parent/guardian",
     fieldType: "text",
     category: "education",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 13,
   },
   {
@@ -1763,7 +796,9 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "Names of persons authorized to pick up the student",
     fieldType: "textarea",
     category: "education",
-    config: { maxLength: 500 },
+    config: {
+          "maxLength": 500
+    },
     sortOrder: 14,
   },
   {
@@ -1773,14 +808,32 @@ const educationFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "education",
     config: {
-      options: [
-        { value: "bus", label: "School Bus" },
-        { value: "car", label: "Car (Parent/Guardian)" },
-        { value: "walk", label: "Walk" },
-        { value: "cycle", label: "Bicycle" },
-        { value: "publictransport", label: "Public Transport" },
-        { value: "other", label: "Other" },
-      ],
+          "options": [
+                {
+                      "value": "bus",
+                      "label": "School Bus"
+                },
+                {
+                      "value": "car",
+                      "label": "Car (Parent/Guardian)"
+                },
+                {
+                      "value": "walk",
+                      "label": "Walk"
+                },
+                {
+                      "value": "cycle",
+                      "label": "Bicycle"
+                },
+                {
+                      "value": "publictransport",
+                      "label": "Public Transport"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
     },
     sortOrder: 15,
   },
@@ -1790,7 +843,9 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "School bus route number or name",
     fieldType: "text",
     category: "education",
-    config: { maxLength: 50 },
+    config: {
+          "maxLength": 50
+    },
     sortOrder: 16,
   },
   {
@@ -1800,11 +855,20 @@ const educationFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "education",
     config: {
-      options: [
-        { value: "complete", label: "Complete" },
-        { value: "incomplete", label: "Incomplete" },
-        { value: "exempt", label: "Exempt" },
-      ],
+          "options": [
+                {
+                      "value": "complete",
+                      "label": "Complete"
+                },
+                {
+                      "value": "incomplete",
+                      "label": "Incomplete"
+                },
+                {
+                      "value": "exempt",
+                      "label": "Exempt"
+                }
+          ]
     },
     sortOrder: 17,
     specialPersonalInfo: true,
@@ -1815,11 +879,268 @@ const educationFields: FieldDefinitionSeed[] = [
     description: "Special learning needs or accommodations required",
     fieldType: "textarea",
     category: "education",
-    config: { maxLength: 1000 },
+    config: {
+          "maxLength": 1000
+    },
     sortOrder: 18,
     specialPersonalInfo: true,
   },
 ];
+
+// =============================================================================
+// EMERGENCY FIELDS
+// =============================================================================
+
+const emergencyFields: FieldDefinitionSeed[] = [
+  {
+    name: "emergencyContactName",
+    label: "Emergency Contact Name",
+    description: "Full name of primary emergency contact person",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 1,
+  },
+  {
+    name: "emergencyContactRelationship",
+    label: "Relationship",
+    description: "Relationship of emergency contact to the person",
+    fieldType: "select",
+    category: "emergency",
+    config: {
+          "options": [
+                {
+                      "value": "spouse",
+                      "label": "Spouse/Partner"
+                },
+                {
+                      "value": "parent",
+                      "label": "Parent"
+                },
+                {
+                      "value": "child",
+                      "label": "Child"
+                },
+                {
+                      "value": "sibling",
+                      "label": "Sibling"
+                },
+                {
+                      "value": "grandparent",
+                      "label": "Grandparent"
+                },
+                {
+                      "value": "friend",
+                      "label": "Friend"
+                },
+                {
+                      "value": "colleague",
+                      "label": "Colleague"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 2,
+  },
+  {
+    name: "emergencyContactPhone",
+    label: "Emergency Contact Phone",
+    description: "Phone number of emergency contact",
+    fieldType: "phone",
+    category: "emergency",
+    sortOrder: 3,
+  },
+  {
+    name: "emergencyContactEmail",
+    label: "Emergency Contact Email",
+    description: "Email address of emergency contact",
+    fieldType: "email",
+    category: "emergency",
+    sortOrder: 4,
+  },
+  {
+    name: "emergencyContactStreetAddress",
+    label: "Emergency Contact Address",
+    description: "Street address of emergency contact with autocomplete",
+    fieldType: "address",
+    category: "emergency",
+    config: {
+          "linkedFields": {
+                "complexName": "emergencyContactComplexName",
+                "unitNumber": "emergencyContactUnitNumber",
+                "suburb": "emergencyContactAddressSuburb",
+                "city": "emergencyContactAddressCity",
+                "province": "emergencyContactAddressProvince",
+                "postalCode": "emergencyContactAddressPostalCode",
+                "country": "emergencyContactAddressCountry"
+          }
+    },
+    sortOrder: 5,
+  },
+  {
+    name: "emergencyContactComplexName",
+    label: "Emergency Contact Building/Complex",
+    description: "Building, complex, or estate name of emergency contact",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 6,
+  },
+  {
+    name: "emergencyContactUnitNumber",
+    label: "Emergency Contact Unit/Suite",
+    description: "Unit, suite, or apartment of emergency contact",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 50
+    },
+    sortOrder: 7,
+  },
+  {
+    name: "emergencyContactAddressLine1",
+    label: "Emergency Contact Address Line 1",
+    description: "Street address of emergency contact (manual entry)",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 8,
+  },
+  {
+    name: "emergencyContactAddressLine2",
+    label: "Emergency Contact Address Line 2",
+    description: "Additional address details of emergency contact",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 9,
+  },
+  {
+    name: "emergencyContactAddressSuburb",
+    label: "Emergency Contact Suburb",
+    description: "Suburb of emergency contact",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 10,
+  },
+  {
+    name: "emergencyContactAddressCity",
+    label: "Emergency Contact City",
+    description: "City of emergency contact",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 11,
+  },
+  {
+    name: "emergencyContactAddressProvince",
+    label: "Emergency Contact Province",
+    description: "Province/state of emergency contact",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 12,
+  },
+  {
+    name: "emergencyContact2Name",
+    label: "Second Emergency Contact",
+    description: "Full name of alternative/second emergency contact",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 13,
+  },
+  {
+    name: "emergencyContactAddressPostalCode",
+    label: "Emergency Contact Postal Code",
+    description: "Postal code of emergency contact",
+    fieldType: "text",
+    category: "emergency",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 13,
+  },
+  {
+    name: "emergencyContact2Relationship",
+    label: "Second Contact Relationship",
+    description: "Relationship of second emergency contact",
+    fieldType: "select",
+    category: "emergency",
+    config: {
+          "options": [
+                {
+                      "value": "spouse",
+                      "label": "Spouse/Partner"
+                },
+                {
+                      "value": "parent",
+                      "label": "Parent"
+                },
+                {
+                      "value": "child",
+                      "label": "Child"
+                },
+                {
+                      "value": "sibling",
+                      "label": "Sibling"
+                },
+                {
+                      "value": "friend",
+                      "label": "Friend"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 14,
+  },
+  {
+    name: "emergencyContactAddressCountry",
+    label: "Emergency Contact Country",
+    description: "Country of emergency contact",
+    fieldType: "country",
+    category: "emergency",
+    config: {
+          "defaultCountry": "ZA"
+    },
+    sortOrder: 14,
+  },
+  {
+    name: "emergencyContact2Phone",
+    label: "Second Contact Phone",
+    description: "Phone number of second emergency contact",
+    fieldType: "phone",
+    category: "emergency",
+    sortOrder: 15,
+  },
+];
+
+// =============================================================================
+// EMPLOYMENT FIELDS
+// =============================================================================
 
 const employmentFields: FieldDefinitionSeed[] = [
   {
@@ -1828,7 +1149,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Employee identification number",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 30 },
+    config: {
+          "maxLength": 30
+    },
     sortOrder: 1,
   },
   {
@@ -1837,7 +1160,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Department or division within the organization",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 100 },
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 2,
   },
   {
@@ -1846,7 +1171,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Official job title or position",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 100 },
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 3,
   },
   {
@@ -1856,14 +1183,32 @@ const employmentFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "employment",
     config: {
-      options: [
-        { value: "fulltime", label: "Full-time" },
-        { value: "parttime", label: "Part-time" },
-        { value: "contract", label: "Contract" },
-        { value: "temporary", label: "Temporary" },
-        { value: "intern", label: "Intern" },
-        { value: "freelance", label: "Freelance" },
-      ],
+          "options": [
+                {
+                      "value": "fulltime",
+                      "label": "Full-time"
+                },
+                {
+                      "value": "parttime",
+                      "label": "Part-time"
+                },
+                {
+                      "value": "contract",
+                      "label": "Contract"
+                },
+                {
+                      "value": "temporary",
+                      "label": "Temporary"
+                },
+                {
+                      "value": "intern",
+                      "label": "Intern"
+                },
+                {
+                      "value": "freelance",
+                      "label": "Freelance"
+                }
+          ]
     },
     sortOrder: 4,
   },
@@ -1889,7 +1234,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Name of direct manager or supervisor",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 7,
   },
   {
@@ -1906,7 +1253,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Primary work location or office",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 9,
   },
   {
@@ -1915,7 +1264,10 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Regular work schedule or hours",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 100, placeholder: "e.g., Mon-Fri 08:00-17:00" },
+    config: {
+          "maxLength": 100,
+          "placeholder": "e.g., Mon-Fri 08:00-17:00"
+    },
     sortOrder: 10,
   },
   {
@@ -1924,7 +1276,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Bank name for salary payment",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 100 },
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 11,
   },
   {
@@ -1933,7 +1287,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Bank account number for salary payment",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 30 },
+    config: {
+          "maxLength": 30
+    },
     sortOrder: 12,
   },
   {
@@ -1942,7 +1298,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Bank branch or routing code",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 10 },
+    config: {
+          "maxLength": 10
+    },
     sortOrder: 13,
   },
   {
@@ -1952,11 +1310,20 @@ const employmentFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "employment",
     config: {
-      options: [
-        { value: "cheque", label: "Cheque/Current" },
-        { value: "savings", label: "Savings" },
-        { value: "transmission", label: "Transmission" },
-      ],
+          "options": [
+                {
+                      "value": "cheque",
+                      "label": "Cheque/Current"
+                },
+                {
+                      "value": "savings",
+                      "label": "Savings"
+                },
+                {
+                      "value": "transmission",
+                      "label": "Transmission"
+                }
+          ]
     },
     sortOrder: 14,
   },
@@ -1967,11 +1334,20 @@ const employmentFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "employment",
     config: {
-      options: [
-        { value: "resident", label: "Tax Resident" },
-        { value: "nonresident", label: "Non-Resident" },
-        { value: "exempt", label: "Tax Exempt" },
-      ],
+          "options": [
+                {
+                      "value": "resident",
+                      "label": "Tax Resident"
+                },
+                {
+                      "value": "nonresident",
+                      "label": "Non-Resident"
+                },
+                {
+                      "value": "exempt",
+                      "label": "Tax Exempt"
+                }
+          ]
     },
     sortOrder: 15,
   },
@@ -1981,7 +1357,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Name of pension or retirement fund",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 100 },
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 16,
   },
   {
@@ -1990,7 +1368,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Pension fund member number",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 30 },
+    config: {
+          "maxLength": 30
+    },
     sortOrder: 17,
   },
   {
@@ -1999,7 +1379,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Name of previous employer",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 18,
   },
   {
@@ -2016,7 +1398,9 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Reason for leaving previous employment",
     fieldType: "text",
     category: "employment",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 20,
   },
   {
@@ -2035,12 +1419,18 @@ const employmentFields: FieldDefinitionSeed[] = [
     description: "Details of criminal record if applicable",
     fieldType: "textarea",
     category: "employment",
-    config: { maxLength: 1000 },
+    config: {
+          "maxLength": 1000
+    },
     sortOrder: 22,
     specialPersonalInfo: true,
     requiresExplicitConsent: true,
   },
 ];
+
+// =============================================================================
+// EVENTS FIELDS
+// =============================================================================
 
 const eventsFields: FieldDefinitionSeed[] = [
   {
@@ -2049,7 +1439,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Ticket or booking reference number",
     fieldType: "text",
     category: "events",
-    config: { maxLength: 50 },
+    config: {
+          "maxLength": 50
+    },
     sortOrder: 1,
   },
   {
@@ -2058,7 +1450,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Name of the event",
     fieldType: "text",
     category: "events",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 2,
   },
   {
@@ -2075,7 +1469,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Preferred sessions or tracks at the event",
     fieldType: "multiselect",
     category: "events",
-    config: { options: [] }, // To be configured per event
+    config: {
+          "options": []
+    },
     sortOrder: 4,
   },
   {
@@ -2085,14 +1481,32 @@ const eventsFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "events",
     config: {
-      options: [
-        { value: "standard", label: "Standard" },
-        { value: "vegetarian", label: "Vegetarian" },
-        { value: "vegan", label: "Vegan" },
-        { value: "halal", label: "Halal" },
-        { value: "kosher", label: "Kosher" },
-        { value: "none", label: "No meal required" },
-      ],
+          "options": [
+                {
+                      "value": "standard",
+                      "label": "Standard"
+                },
+                {
+                      "value": "vegetarian",
+                      "label": "Vegetarian"
+                },
+                {
+                      "value": "vegan",
+                      "label": "Vegan"
+                },
+                {
+                      "value": "halal",
+                      "label": "Halal"
+                },
+                {
+                      "value": "kosher",
+                      "label": "Kosher"
+                },
+                {
+                      "value": "none",
+                      "label": "No meal required"
+                }
+          ]
     },
     sortOrder: 5,
   },
@@ -2102,7 +1516,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Seating or table preference",
     fieldType: "text",
     category: "events",
-    config: { maxLength: 100 },
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 6,
   },
   {
@@ -2127,7 +1543,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Expected time of arrival",
     fieldType: "text",
     category: "events",
-    config: { placeholder: "HH:MM" },
+    config: {
+          "placeholder": "HH:MM"
+    },
     sortOrder: 9,
   },
   {
@@ -2136,7 +1554,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Expected time of departure",
     fieldType: "text",
     category: "events",
-    config: { placeholder: "HH:MM" },
+    config: {
+          "placeholder": "HH:MM"
+    },
     sortOrder: 10,
   },
   {
@@ -2146,13 +1566,28 @@ const eventsFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "events",
     config: {
-      options: [
-        { value: "single", label: "Single" },
-        { value: "double", label: "Double" },
-        { value: "twin", label: "Twin" },
-        { value: "suite", label: "Suite" },
-        { value: "family", label: "Family" },
-      ],
+          "options": [
+                {
+                      "value": "single",
+                      "label": "Single"
+                },
+                {
+                      "value": "double",
+                      "label": "Double"
+                },
+                {
+                      "value": "twin",
+                      "label": "Twin"
+                },
+                {
+                      "value": "suite",
+                      "label": "Suite"
+                },
+                {
+                      "value": "family",
+                      "label": "Family"
+                }
+          ]
     },
     sortOrder: 11,
   },
@@ -2162,7 +1597,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Assigned room number",
     fieldType: "text",
     category: "events",
-    config: { maxLength: 20 },
+    config: {
+          "maxLength": 20
+    },
     sortOrder: 12,
   },
   {
@@ -2171,7 +1608,10 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Total number of guests in the party",
     fieldType: "number",
     category: "events",
-    config: { min: 1, max: 20 },
+    config: {
+          "min": 1,
+          "max": 20
+    },
     sortOrder: 13,
   },
   {
@@ -2180,7 +1620,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Names of additional guests in the party",
     fieldType: "textarea",
     category: "events",
-    config: { maxLength: 500 },
+    config: {
+          "maxLength": 500
+    },
     sortOrder: 14,
   },
   {
@@ -2189,7 +1631,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Vehicle registration/license plate number",
     fieldType: "text",
     category: "events",
-    config: { maxLength: 20 },
+    config: {
+          "maxLength": 20
+    },
     sortOrder: 15,
   },
   {
@@ -2206,7 +1650,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Loyalty program or membership number",
     fieldType: "text",
     category: "events",
-    config: { maxLength: 30 },
+    config: {
+          "maxLength": 30
+    },
     sortOrder: 17,
   },
   {
@@ -2215,7 +1661,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Special occasion being celebrated (birthday, anniversary, etc.)",
     fieldType: "text",
     category: "events",
-    config: { maxLength: 100 },
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 18,
   },
   {
@@ -2225,16 +1673,40 @@ const eventsFields: FieldDefinitionSeed[] = [
     fieldType: "multiselect",
     category: "events",
     config: {
-      options: [
-        { value: "highfloor", label: "High floor" },
-        { value: "lowfloor", label: "Low floor" },
-        { value: "quiet", label: "Quiet room" },
-        { value: "nearelevator", label: "Near elevator" },
-        { value: "awayelevator", label: "Away from elevator" },
-        { value: "accessible", label: "Accessible" },
-        { value: "smoking", label: "Smoking allowed" },
-        { value: "nonsmoking", label: "Non-smoking" },
-      ],
+          "options": [
+                {
+                      "value": "highfloor",
+                      "label": "High floor"
+                },
+                {
+                      "value": "lowfloor",
+                      "label": "Low floor"
+                },
+                {
+                      "value": "quiet",
+                      "label": "Quiet room"
+                },
+                {
+                      "value": "nearelevator",
+                      "label": "Near elevator"
+                },
+                {
+                      "value": "awayelevator",
+                      "label": "Away from elevator"
+                },
+                {
+                      "value": "accessible",
+                      "label": "Accessible"
+                },
+                {
+                      "value": "smoking",
+                      "label": "Smoking allowed"
+                },
+                {
+                      "value": "nonsmoking",
+                      "label": "Non-smoking"
+                }
+          ]
     },
     sortOrder: 19,
   },
@@ -2244,7 +1716,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Preferred check-in time",
     fieldType: "text",
     category: "events",
-    config: { placeholder: "HH:MM" },
+    config: {
+          "placeholder": "HH:MM"
+    },
     sortOrder: 20,
   },
   {
@@ -2253,7 +1727,9 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Preferred check-out time",
     fieldType: "text",
     category: "events",
-    config: { placeholder: "HH:MM" },
+    config: {
+          "placeholder": "HH:MM"
+    },
     sortOrder: 21,
   },
   {
@@ -2262,10 +1738,1521 @@ const eventsFields: FieldDefinitionSeed[] = [
     description: "Requested wake-up call time",
     fieldType: "text",
     category: "events",
-    config: { placeholder: "HH:MM" },
+    config: {
+          "placeholder": "HH:MM"
+    },
     sortOrder: 22,
   },
 ];
+
+// =============================================================================
+// FINANCIAL FIELDS
+// =============================================================================
+
+const financialFields: FieldDefinitionSeed[] = [
+  {
+    name: "sourceOfFunds",
+    label: "Source of Funds",
+    description: "Primary source of funds or income",
+    fieldType: "select",
+    category: "financial",
+    config: {
+          "options": [
+                {
+                      "value": "employment",
+                      "label": "Employment/Salary"
+                },
+                {
+                      "value": "business",
+                      "label": "Business Income"
+                },
+                {
+                      "value": "investments",
+                      "label": "Investments"
+                },
+                {
+                      "value": "inheritance",
+                      "label": "Inheritance"
+                },
+                {
+                      "value": "pension",
+                      "label": "Pension"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 1,
+  },
+  {
+    name: "annualIncome",
+    label: "Annual Income",
+    description: "Annual income bracket",
+    fieldType: "select",
+    category: "financial",
+    config: {
+          "options": [
+                {
+                      "value": "under100k",
+                      "label": "Under R100,000"
+                },
+                {
+                      "value": "100k250k",
+                      "label": "R100,000 - R250,000"
+                },
+                {
+                      "value": "250k500k",
+                      "label": "R250,000 - R500,000"
+                },
+                {
+                      "value": "500k1m",
+                      "label": "R500,000 - R1,000,000"
+                },
+                {
+                      "value": "over1m",
+                      "label": "Over R1,000,000"
+                },
+                {
+                      "value": "prefernottosay",
+                      "label": "Prefer not to say"
+                }
+          ]
+    },
+    sortOrder: 2,
+  },
+  {
+    name: "employmentStatus",
+    label: "Employment Status",
+    description: "Current employment status",
+    fieldType: "select",
+    category: "financial",
+    config: {
+          "options": [
+                {
+                      "value": "employed",
+                      "label": "Employed"
+                },
+                {
+                      "value": "selfemployed",
+                      "label": "Self-Employed"
+                },
+                {
+                      "value": "unemployed",
+                      "label": "Unemployed"
+                },
+                {
+                      "value": "retired",
+                      "label": "Retired"
+                },
+                {
+                      "value": "student",
+                      "label": "Student"
+                },
+                {
+                      "value": "homemaker",
+                      "label": "Homemaker"
+                }
+          ]
+    },
+    sortOrder: 3,
+  },
+  {
+    name: "sourceOfWealth",
+    label: "Source of Wealth",
+    description: "Description of source of wealth",
+    fieldType: "textarea",
+    category: "financial",
+    config: {
+          "maxLength": 1000
+    },
+    sortOrder: 4,
+  },
+  {
+    name: "pep",
+    label: "Politically Exposed Person",
+    description: "Whether the person is a politically exposed person (PEP)",
+    fieldType: "checkbox",
+    category: "financial",
+    sortOrder: 5,
+  },
+  {
+    name: "pepDetails",
+    label: "PEP Details",
+    description: "Details if person is politically exposed",
+    fieldType: "textarea",
+    category: "financial",
+    config: {
+          "maxLength": 1000
+    },
+    sortOrder: 6,
+  },
+  {
+    name: "ultimateBeneficialOwner",
+    label: "Ultimate Beneficial Owner",
+    description: "Name of ultimate beneficial owner (for corporate clients)",
+    fieldType: "text",
+    category: "financial",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 7,
+  },
+  {
+    name: "uboIdNumber",
+    label: "UBO ID Number",
+    description: "ID number of ultimate beneficial owner",
+    fieldType: "text",
+    category: "financial",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 8,
+  },
+  {
+    name: "uboOwnershipPercent",
+    label: "UBO Ownership Percentage",
+    description: "Percentage ownership of ultimate beneficial owner",
+    fieldType: "number",
+    category: "financial",
+    config: {
+          "min": 0,
+          "max": 100,
+          "decimalPlaces": 2
+    },
+    sortOrder: 9,
+  },
+  {
+    name: "riskRating",
+    label: "Risk Rating",
+    description: "Customer risk rating for AML purposes",
+    fieldType: "select",
+    category: "financial",
+    config: {
+          "options": [
+                {
+                      "value": "low",
+                      "label": "Low"
+                },
+                {
+                      "value": "medium",
+                      "label": "Medium"
+                },
+                {
+                      "value": "high",
+                      "label": "High"
+                }
+          ]
+    },
+    sortOrder: 10,
+  },
+  {
+    name: "sanctionsCheck",
+    label: "Sanctions Check",
+    description: "Whether sanctions screening has been completed",
+    fieldType: "checkbox",
+    category: "financial",
+    sortOrder: 11,
+  },
+  {
+    name: "proofOfAddress",
+    label: "Proof of Address",
+    description: "Upload proof of address document",
+    fieldType: "file",
+    category: "financial",
+    config: {
+          "allowedTypes": [
+                "image/*",
+                "application/pdf"
+          ],
+          "maxSizeMB": 10
+    },
+    sortOrder: 12,
+  },
+  {
+    name: "proofOfIdentity",
+    label: "Proof of Identity",
+    description: "Upload proof of identity document",
+    fieldType: "file",
+    category: "financial",
+    config: {
+          "allowedTypes": [
+                "image/*",
+                "application/pdf"
+          ],
+          "maxSizeMB": 10
+    },
+    sortOrder: 13,
+  },
+  {
+    name: "proofOfIncome",
+    label: "Proof of Income",
+    description: "Upload proof of income document",
+    fieldType: "file",
+    category: "financial",
+    config: {
+          "allowedTypes": [
+                "image/*",
+                "application/pdf"
+          ],
+          "maxSizeMB": 10
+    },
+    sortOrder: 14,
+  },
+  {
+    name: "facaStatus",
+    label: "FATCA Status",
+    description: "Foreign Account Tax Compliance Act status",
+    fieldType: "select",
+    category: "financial",
+    config: {
+          "options": [
+                {
+                      "value": "notus",
+                      "label": "Not a US Person"
+                },
+                {
+                      "value": "uscitizen",
+                      "label": "US Citizen"
+                },
+                {
+                      "value": "usresident",
+                      "label": "US Resident"
+                },
+                {
+                      "value": "uncertain",
+                      "label": "Uncertain"
+                }
+          ]
+    },
+    sortOrder: 15,
+  },
+];
+
+// =============================================================================
+// IDENTITY FIELDS
+// =============================================================================
+
+const identityFields: FieldDefinitionSeed[] = [
+  {
+    name: "idNumber",
+    label: "ID Number",
+    description: "National identity number (e.g., South African ID number, SSN)",
+    fieldType: "text",
+    category: "identity",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 1,
+  },
+  {
+    name: "idType",
+    label: "ID Type",
+    description: "Type of primary identification document",
+    fieldType: "select",
+    category: "identity",
+    config: {
+          "options": [
+                {
+                      "value": "said",
+                      "label": "South African ID"
+                },
+                {
+                      "value": "passport",
+                      "label": "Passport"
+                },
+                {
+                      "value": "driverslicense",
+                      "label": "Driver's License"
+                },
+                {
+                      "value": "birthcertificate",
+                      "label": "Birth Certificate"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 2,
+  },
+  {
+    name: "passportNumber",
+    label: "Passport Number",
+    description: "Passport number as it appears on the document",
+    fieldType: "text",
+    category: "identity",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 3,
+  },
+  {
+    name: "passportCountry",
+    label: "Passport Country",
+    description: "Country that issued the passport",
+    fieldType: "country",
+    category: "identity",
+    sortOrder: 4,
+  },
+  {
+    name: "passportExpiry",
+    label: "Passport Expiry Date",
+    description: "Expiration date of the passport",
+    fieldType: "date",
+    category: "identity",
+    sortOrder: 5,
+  },
+  {
+    name: "driversLicenseNumber",
+    label: "Driver's License Number",
+    description: "Driver's license number",
+    fieldType: "text",
+    category: "identity",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 6,
+  },
+  {
+    name: "driversLicenseExpiry",
+    label: "Driver's License Expiry",
+    description: "Expiration date of driver's license",
+    fieldType: "date",
+    category: "identity",
+    sortOrder: 7,
+  },
+  {
+    name: "taxNumber",
+    label: "Tax Number",
+    description: "Tax identification/reference number",
+    fieldType: "text",
+    category: "identity",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 8,
+  },
+  {
+    name: "workPermitNumber",
+    label: "Work Permit Number",
+    description: "Work/employment permit number for foreign nationals",
+    fieldType: "text",
+    category: "identity",
+    config: {
+          "maxLength": 30
+    },
+    sortOrder: 9,
+  },
+  {
+    name: "visaNumber",
+    label: "Visa Number",
+    description: "Visa number if applicable",
+    fieldType: "text",
+    category: "identity",
+    config: {
+          "maxLength": 30
+    },
+    sortOrder: 10,
+  },
+  {
+    name: "visaType",
+    label: "Visa Type",
+    description: "Type of visa held",
+    fieldType: "select",
+    category: "identity",
+    config: {
+          "options": [
+                {
+                      "value": "work",
+                      "label": "Work Visa"
+                },
+                {
+                      "value": "study",
+                      "label": "Study Visa"
+                },
+                {
+                      "value": "tourist",
+                      "label": "Tourist Visa"
+                },
+                {
+                      "value": "business",
+                      "label": "Business Visa"
+                },
+                {
+                      "value": "permanent",
+                      "label": "Permanent Residence"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 11,
+  },
+  {
+    name: "visaExpiry",
+    label: "Visa Expiry Date",
+    description: "Expiration date of the visa",
+    fieldType: "date",
+    category: "identity",
+    sortOrder: 12,
+  },
+];
+
+// =============================================================================
+// INSURANCE FIELDS
+// =============================================================================
+
+const insuranceFields: FieldDefinitionSeed[] = [
+  {
+    name: "insuranceProvider",
+    label: "Insurance Provider",
+    description: "Name of insurance company",
+    fieldType: "text",
+    category: "insurance",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 1,
+  },
+  {
+    name: "insurancePolicyNumber",
+    label: "Policy Number",
+    description: "Insurance policy number",
+    fieldType: "text",
+    category: "insurance",
+    config: {
+          "maxLength": 50
+    },
+    sortOrder: 2,
+  },
+  {
+    name: "insurancePolicyType",
+    label: "Policy Type",
+    description: "Type of insurance policy",
+    fieldType: "select",
+    category: "insurance",
+    config: {
+          "options": [
+                {
+                      "value": "life",
+                      "label": "Life Insurance"
+                },
+                {
+                      "value": "vehicle",
+                      "label": "Vehicle Insurance"
+                },
+                {
+                      "value": "home",
+                      "label": "Home Insurance"
+                },
+                {
+                      "value": "travel",
+                      "label": "Travel Insurance"
+                },
+                {
+                      "value": "liability",
+                      "label": "Liability Insurance"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 3,
+  },
+  {
+    name: "insurancePolicyHolder",
+    label: "Policy Holder Name",
+    description: "Name of the policy holder",
+    fieldType: "text",
+    category: "insurance",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 4,
+  },
+  {
+    name: "insuranceExpiryDate",
+    label: "Policy Expiry Date",
+    description: "Expiration date of the insurance policy",
+    fieldType: "date",
+    category: "insurance",
+    sortOrder: 5,
+  },
+  {
+    name: "insuranceContactNumber",
+    label: "Insurance Contact",
+    description: "Insurance company contact/claims number",
+    fieldType: "phone",
+    category: "insurance",
+    sortOrder: 6,
+  },
+];
+
+// =============================================================================
+// LEGAL FIELDS
+// =============================================================================
+
+const legalFields: FieldDefinitionSeed[] = [
+  {
+    name: "clientNumber",
+    label: "Client Number",
+    description: "Client reference number",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 30
+    },
+    sortOrder: 1,
+  },
+  {
+    name: "matterReference",
+    label: "Matter/Case Reference",
+    description: "Legal matter or case reference number",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 50
+    },
+    sortOrder: 2,
+  },
+  {
+    name: "clientType",
+    label: "Client Type",
+    description: "Type of client entity",
+    fieldType: "select",
+    category: "legal",
+    config: {
+          "options": [
+                {
+                      "value": "individual",
+                      "label": "Individual"
+                },
+                {
+                      "value": "corporate",
+                      "label": "Corporate/Company"
+                },
+                {
+                      "value": "trust",
+                      "label": "Trust"
+                },
+                {
+                      "value": "estate",
+                      "label": "Estate"
+                },
+                {
+                      "value": "partnership",
+                      "label": "Partnership"
+                },
+                {
+                      "value": "nonprofit",
+                      "label": "Non-Profit"
+                }
+          ]
+    },
+    sortOrder: 3,
+  },
+  {
+    name: "companyName",
+    label: "Company Name",
+    description: "Registered company or organization name",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 4,
+  },
+  {
+    name: "companyRegistration",
+    label: "Company Registration Number",
+    description: "Company registration number",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 30
+    },
+    sortOrder: 5,
+  },
+  {
+    name: "vatNumber",
+    label: "VAT Number",
+    description: "VAT registration number",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 6,
+  },
+  {
+    name: "tradingName",
+    label: "Trading As",
+    description: "Trading or business name",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 7,
+  },
+  {
+    name: "industryType",
+    label: "Industry",
+    description: "Industry or sector classification",
+    fieldType: "select",
+    category: "legal",
+    config: {
+          "options": [
+                {
+                      "value": "agriculture",
+                      "label": "Agriculture"
+                },
+                {
+                      "value": "construction",
+                      "label": "Construction"
+                },
+                {
+                      "value": "education",
+                      "label": "Education"
+                },
+                {
+                      "value": "finance",
+                      "label": "Finance"
+                },
+                {
+                      "value": "healthcare",
+                      "label": "Healthcare"
+                },
+                {
+                      "value": "hospitality",
+                      "label": "Hospitality"
+                },
+                {
+                      "value": "it",
+                      "label": "IT/Technology"
+                },
+                {
+                      "value": "legal",
+                      "label": "Legal"
+                },
+                {
+                      "value": "manufacturing",
+                      "label": "Manufacturing"
+                },
+                {
+                      "value": "retail",
+                      "label": "Retail"
+                },
+                {
+                      "value": "transport",
+                      "label": "Transport"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 8,
+  },
+  {
+    name: "website",
+    label: "Website",
+    description: "Company website URL",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 200,
+          "placeholder": "https://..."
+    },
+    sortOrder: 9,
+  },
+  {
+    name: "referralSource",
+    label: "Referral Source",
+    description: "How the client found your services",
+    fieldType: "select",
+    category: "legal",
+    config: {
+          "options": [
+                {
+                      "value": "referral",
+                      "label": "Client Referral"
+                },
+                {
+                      "value": "website",
+                      "label": "Website"
+                },
+                {
+                      "value": "socialmedia",
+                      "label": "Social Media"
+                },
+                {
+                      "value": "advertising",
+                      "label": "Advertising"
+                },
+                {
+                      "value": "directory",
+                      "label": "Directory/Listing"
+                },
+                {
+                      "value": "event",
+                      "label": "Event/Networking"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 10,
+  },
+  {
+    name: "conflictCheck",
+    label: "Conflict Check Completed",
+    description: "Whether conflict of interest check has been completed",
+    fieldType: "checkbox",
+    category: "legal",
+    sortOrder: 11,
+  },
+  {
+    name: "engagementDate",
+    label: "Engagement Date",
+    description: "Date of formal engagement",
+    fieldType: "date",
+    category: "legal",
+    sortOrder: 12,
+  },
+  {
+    name: "authorizedSignatory",
+    label: "Authorized Signatory",
+    description: "Name of person authorized to sign on behalf of entity",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 13,
+  },
+  {
+    name: "signatoryPosition",
+    label: "Signatory Position",
+    description: "Position/title of authorized signatory",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 14,
+  },
+  {
+    name: "billingContact",
+    label: "Billing Contact Name",
+    description: "Name of person to contact for billing matters",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 15,
+  },
+  {
+    name: "billingEmail",
+    label: "Billing Email",
+    description: "Email address for invoices",
+    fieldType: "email",
+    category: "legal",
+    sortOrder: 16,
+  },
+  {
+    name: "billingStreetAddress",
+    label: "Billing Address",
+    description: "Billing address with autocomplete",
+    fieldType: "address",
+    category: "legal",
+    config: {
+          "linkedFields": {
+                "complexName": "billingComplexName",
+                "unitNumber": "billingUnitNumber",
+                "suburb": "billingAddressSuburb",
+                "city": "billingAddressCity",
+                "province": "billingAddressProvince",
+                "postalCode": "billingAddressPostalCode",
+                "country": "billingAddressCountry"
+          }
+    },
+    sortOrder: 17,
+  },
+  {
+    name: "billingComplexName",
+    label: "Billing Building/Complex",
+    description: "Building, complex, or estate for billing address",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 18,
+  },
+  {
+    name: "billingUnitNumber",
+    label: "Billing Unit/Suite",
+    description: "Unit, suite, or floor for billing address",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 50
+    },
+    sortOrder: 19,
+  },
+  {
+    name: "billingAddressLine1",
+    label: "Billing Address Line 1",
+    description: "Street address for billing (manual entry)",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 20,
+  },
+  {
+    name: "billingAddressLine2",
+    label: "Billing Address Line 2",
+    description: "Additional billing address details",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 21,
+  },
+  {
+    name: "billingAddressSuburb",
+    label: "Billing Address Suburb",
+    description: "Suburb for billing address",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 22,
+  },
+  {
+    name: "billingAddressCity",
+    label: "Billing Address City",
+    description: "City for billing address",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 23,
+  },
+  {
+    name: "billingAddressProvince",
+    label: "Billing Address Province",
+    description: "Province/state for billing address",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 24,
+  },
+  {
+    name: "paymentTerms",
+    label: "Payment Terms",
+    description: "Agreed payment terms",
+    fieldType: "select",
+    category: "legal",
+    config: {
+          "options": [
+                {
+                      "value": "cod",
+                      "label": "COD (Cash on Delivery)"
+                },
+                {
+                      "value": "7days",
+                      "label": "7 Days"
+                },
+                {
+                      "value": "14days",
+                      "label": "14 Days"
+                },
+                {
+                      "value": "30days",
+                      "label": "30 Days"
+                },
+                {
+                      "value": "60days",
+                      "label": "60 Days"
+                },
+                {
+                      "value": "90days",
+                      "label": "90 Days"
+                }
+          ]
+    },
+    sortOrder: 25,
+  },
+  {
+    name: "billingAddressPostalCode",
+    label: "Billing Address Postal Code",
+    description: "Postal code for billing address",
+    fieldType: "text",
+    category: "legal",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 25,
+  },
+  {
+    name: "creditLimit",
+    label: "Credit Limit",
+    description: "Approved credit limit",
+    fieldType: "currency",
+    category: "legal",
+    config: {
+          "currencyCode": "ZAR",
+          "decimalPlaces": 2
+    },
+    sortOrder: 26,
+  },
+  {
+    name: "billingAddressCountry",
+    label: "Billing Address Country",
+    description: "Country for billing address",
+    fieldType: "country",
+    category: "legal",
+    config: {
+          "defaultCountry": "ZA"
+    },
+    sortOrder: 26,
+  },
+];
+
+// =============================================================================
+// MEDICAL FIELDS
+// =============================================================================
+
+const medicalFields: FieldDefinitionSeed[] = [
+  {
+    name: "medicalAidName",
+    label: "Medical Aid Name",
+    description: "Name of medical aid/health insurance provider",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 1,
+  },
+  {
+    name: "medicalAidPlan",
+    label: "Medical Aid Plan",
+    description: "Name of medical aid plan/option",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 2,
+  },
+  {
+    name: "medicalAidNumber",
+    label: "Medical Aid Number",
+    description: "Medical aid membership number",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 30
+    },
+    sortOrder: 3,
+  },
+  {
+    name: "medicalAidMainMember",
+    label: "Main Member Name",
+    description: "Name of main member on medical aid account",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 4,
+  },
+  {
+    name: "dependentCode",
+    label: "Dependent Code",
+    description: "Dependent code on medical aid (00 for main member, 01+ for dependents)",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 5
+    },
+    sortOrder: 5,
+  },
+  {
+    name: "mainMemberId",
+    label: "Main Member ID",
+    description: "ID of the Medical Aid Main Member",
+    fieldType: "text",
+    category: "medical",
+    sortOrder: 5,
+  },
+  {
+    name: "gapCover",
+    label: "Gap Cover",
+    description: "Whether the person has gap cover insurance",
+    fieldType: "checkbox",
+    category: "medical",
+    sortOrder: 6,
+  },
+  {
+    name: "gapCoverProvider",
+    label: "Gap Cover Provider",
+    description: "Name of gap cover insurance provider",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 7,
+  },
+  {
+    name: "bloodType",
+    label: "Blood Type",
+    description: "Blood type and Rh factor",
+    fieldType: "select",
+    category: "medical",
+    config: {
+          "options": [
+                {
+                      "value": "apos",
+                      "label": "A+"
+                },
+                {
+                      "value": "aneg",
+                      "label": "A-"
+                },
+                {
+                      "value": "bpos",
+                      "label": "B+"
+                },
+                {
+                      "value": "bneg",
+                      "label": "B-"
+                },
+                {
+                      "value": "abpos",
+                      "label": "AB+"
+                },
+                {
+                      "value": "abneg",
+                      "label": "AB-"
+                },
+                {
+                      "value": "opos",
+                      "label": "O+"
+                },
+                {
+                      "value": "oneg",
+                      "label": "O-"
+                },
+                {
+                      "value": "unknown",
+                      "label": "Unknown"
+                }
+          ]
+    },
+    sortOrder: 8,
+    specialPersonalInfo: true,
+  },
+  {
+    name: "allergies",
+    label: "Allergies",
+    description: "Known allergies (medications, foods, environmental factors)",
+    fieldType: "textarea",
+    category: "medical",
+    config: {
+          "maxLength": 1000,
+          "placeholder": "List all known allergies..."
+    },
+    sortOrder: 9,
+    specialPersonalInfo: true,
+  },
+  {
+    name: "chronicConditions",
+    label: "Chronic Conditions",
+    description: "Chronic medical conditions or ongoing health issues",
+    fieldType: "textarea",
+    category: "medical",
+    config: {
+          "maxLength": 1000
+    },
+    sortOrder: 10,
+    specialPersonalInfo: true,
+  },
+  {
+    name: "currentMedications",
+    label: "Current Medications",
+    description: "List of current medications being taken",
+    fieldType: "textarea",
+    category: "medical",
+    config: {
+          "maxLength": 1000
+    },
+    sortOrder: 11,
+    specialPersonalInfo: true,
+  },
+  {
+    name: "previousSurgeries",
+    label: "Previous Surgeries",
+    description: "Previous surgical procedures with approximate dates",
+    fieldType: "textarea",
+    category: "medical",
+    config: {
+          "maxLength": 1000
+    },
+    sortOrder: 12,
+    specialPersonalInfo: true,
+  },
+  {
+    name: "familyMedicalHistory",
+    label: "Family Medical History",
+    description: "Relevant family medical history (hereditary conditions, etc.)",
+    fieldType: "textarea",
+    category: "medical",
+    config: {
+          "maxLength": 1000
+    },
+    sortOrder: 13,
+    specialPersonalInfo: true,
+  },
+  {
+    name: "primaryPhysician",
+    label: "Primary Physician",
+    description: "Name of primary care physician/general practitioner",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 14,
+  },
+  {
+    name: "primaryPhysicianPhone",
+    label: "Primary Physician Phone",
+    description: "Phone number of primary care physician",
+    fieldType: "phone",
+    category: "medical",
+    sortOrder: 15,
+  },
+  {
+    name: "pharmacy",
+    label: "Preferred Pharmacy",
+    description: "Name of preferred pharmacy for prescriptions",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 16,
+  },
+  {
+    name: "pharmacyPhone",
+    label: "Pharmacy Phone",
+    description: "Phone number of preferred pharmacy",
+    fieldType: "phone",
+    category: "medical",
+    sortOrder: 17,
+  },
+  {
+    name: "hospitalPreference",
+    label: "Hospital Preference",
+    description: "Preferred hospital for treatment or emergencies",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 18,
+  },
+  {
+    name: "organDonor",
+    label: "Organ Donor",
+    description: "Whether the person is a registered organ donor",
+    fieldType: "checkbox",
+    category: "medical",
+    sortOrder: 19,
+  },
+  {
+    name: "advanceDirective",
+    label: "Advance Directive",
+    description: "Whether the person has an advance directive or living will",
+    fieldType: "checkbox",
+    category: "medical",
+    sortOrder: 20,
+  },
+  {
+    name: "pregnancyStatus",
+    label: "Pregnancy Status",
+    description: "Current pregnancy status (if applicable)",
+    fieldType: "select",
+    category: "medical",
+    config: {
+          "options": [
+                {
+                      "value": "notpregnant",
+                      "label": "Not pregnant"
+                },
+                {
+                      "value": "pregnant",
+                      "label": "Pregnant"
+                },
+                {
+                      "value": "possibly",
+                      "label": "Possibly pregnant"
+                },
+                {
+                      "value": "na",
+                      "label": "Not applicable"
+                }
+          ]
+    },
+    sortOrder: 21,
+    specialPersonalInfo: true,
+  },
+  {
+    name: "pregnancyDueDate",
+    label: "Due Date",
+    description: "Expected due date if pregnant",
+    fieldType: "date",
+    category: "medical",
+    sortOrder: 22,
+    specialPersonalInfo: true,
+  },
+  {
+    name: "referralDoctor",
+    label: "Referral Doctor",
+    description: "Composite field for referring doctor information. Stores: doctorName, practiceName, specialty, phone, fax, email, practiceNumber, address, isPrimary.",
+    fieldType: "referral-doctor",
+    category: "medical",
+    config: {
+          "fields": [
+                "referralDoctorName",
+                "referralDoctorPractice",
+                "referralDoctorSpecialty",
+                "referralDoctorPhone",
+                "referralDoctorFax",
+                "referralDoctorEmail",
+                "referralDoctorPracticeNumber",
+                "referralDoctorAddress",
+                "referralDoctorIsPrimary"
+          ]
+    },
+    sortOrder: 50,
+  },
+  {
+    name: "referralDoctorName",
+    label: "Doctor Name",
+    description: "Full name of the referring doctor (e.g., Dr. John Smith)",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 200,
+          "placeholder": "e.g., Dr. John Smith"
+    },
+    sortOrder: 51,
+  },
+  {
+    name: "referralDoctorPractice",
+    label: "Practice Name",
+    description: "Name of the referring doctor's practice or clinic",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 200,
+          "placeholder": "e.g., Smith Family Practice"
+    },
+    sortOrder: 52,
+  },
+  {
+    name: "referralDoctorSpecialty",
+    label: "Specialty",
+    description: "Medical specialty of the referring doctor",
+    fieldType: "select",
+    category: "medical",
+    config: {
+          "options": [
+                {
+                      "value": "gp",
+                      "label": "General Practitioner"
+                },
+                {
+                      "value": "internal",
+                      "label": "Internal Medicine"
+                },
+                {
+                      "value": "cardiology",
+                      "label": "Cardiology"
+                },
+                {
+                      "value": "dermatology",
+                      "label": "Dermatology"
+                },
+                {
+                      "value": "endocrinology",
+                      "label": "Endocrinology"
+                },
+                {
+                      "value": "gastroenterology",
+                      "label": "Gastroenterology"
+                },
+                {
+                      "value": "neurology",
+                      "label": "Neurology"
+                },
+                {
+                      "value": "obstetrics",
+                      "label": "Obstetrics & Gynaecology"
+                },
+                {
+                      "value": "oncology",
+                      "label": "Oncology"
+                },
+                {
+                      "value": "ophthalmology",
+                      "label": "Ophthalmology"
+                },
+                {
+                      "value": "orthopaedics",
+                      "label": "Orthopaedics"
+                },
+                {
+                      "value": "paediatrics",
+                      "label": "Paediatrics"
+                },
+                {
+                      "value": "psychiatry",
+                      "label": "Psychiatry"
+                },
+                {
+                      "value": "pulmonology",
+                      "label": "Pulmonology"
+                },
+                {
+                      "value": "radiology",
+                      "label": "Radiology"
+                },
+                {
+                      "value": "rheumatology",
+                      "label": "Rheumatology"
+                },
+                {
+                      "value": "surgery",
+                      "label": "General Surgery"
+                },
+                {
+                      "value": "urology",
+                      "label": "Urology"
+                },
+                {
+                      "value": "ent",
+                      "label": "ENT (Ear, Nose, Throat)"
+                },
+                {
+                      "value": "physiotherapy",
+                      "label": "Physiotherapy"
+                },
+                {
+                      "value": "chiropractic",
+                      "label": "Chiropractic"
+                },
+                {
+                      "value": "dental",
+                      "label": "Dental"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ],
+          "allowOther": true
+    },
+    sortOrder: 53,
+  },
+  {
+    name: "referralDoctorPhone",
+    label: "Doctor Phone",
+    description: "Phone number of the referring doctor's practice",
+    fieldType: "phone",
+    category: "medical",
+    sortOrder: 54,
+  },
+  {
+    name: "referralDoctorFax",
+    label: "Doctor Fax",
+    description: "Fax number of the referring doctor's practice",
+    fieldType: "phone",
+    category: "medical",
+    config: {
+          "placeholder": "Fax number"
+    },
+    sortOrder: 55,
+  },
+  {
+    name: "referralDoctorEmail",
+    label: "Doctor Email",
+    description: "Email address of the referring doctor or practice",
+    fieldType: "email",
+    category: "medical",
+    sortOrder: 56,
+  },
+  {
+    name: "referralDoctorPracticeNumber",
+    label: "Practice Number",
+    description: "BHF/HPCSA practice number of the referring doctor",
+    fieldType: "text",
+    category: "medical",
+    config: {
+          "maxLength": 20,
+          "placeholder": "e.g., 1234567"
+    },
+    sortOrder: 57,
+  },
+  {
+    name: "referralDoctorAddress",
+    label: "Practice Address",
+    description: "Physical address of the referring doctor's practice",
+    fieldType: "textarea",
+    category: "medical",
+    config: {
+          "maxLength": 500,
+          "rows": 2
+    },
+    sortOrder: 58,
+  },
+  {
+    name: "referralDoctorIsPrimary",
+    label: "Primary/Default Doctor",
+    description: "Mark this doctor as the patient's primary referring doctor for future forms",
+    fieldType: "checkbox",
+    category: "medical",
+    sortOrder: 59,
+  },
+];
+
+// =============================================================================
+// MEMBERSHIP FIELDS
+// =============================================================================
 
 const membershipFields: FieldDefinitionSeed[] = [
   {
@@ -2274,7 +3261,9 @@ const membershipFields: FieldDefinitionSeed[] = [
     description: "Membership identification number",
     fieldType: "text",
     category: "membership",
-    config: { maxLength: 30 },
+    config: {
+          "maxLength": 30
+    },
     sortOrder: 1,
   },
   {
@@ -2284,15 +3273,36 @@ const membershipFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "membership",
     config: {
-      options: [
-        { value: "basic", label: "Basic" },
-        { value: "standard", label: "Standard" },
-        { value: "premium", label: "Premium" },
-        { value: "vip", label: "VIP" },
-        { value: "corporate", label: "Corporate" },
-        { value: "student", label: "Student" },
-        { value: "senior", label: "Senior" },
-      ],
+          "options": [
+                {
+                      "value": "basic",
+                      "label": "Basic"
+                },
+                {
+                      "value": "standard",
+                      "label": "Standard"
+                },
+                {
+                      "value": "premium",
+                      "label": "Premium"
+                },
+                {
+                      "value": "vip",
+                      "label": "VIP"
+                },
+                {
+                      "value": "corporate",
+                      "label": "Corporate"
+                },
+                {
+                      "value": "student",
+                      "label": "Student"
+                },
+                {
+                      "value": "senior",
+                      "label": "Senior"
+                }
+          ]
     },
     sortOrder: 2,
   },
@@ -2319,15 +3329,36 @@ const membershipFields: FieldDefinitionSeed[] = [
     fieldType: "multiselect",
     category: "membership",
     config: {
-      options: [
-        { value: "weightloss", label: "Weight Loss" },
-        { value: "musclegain", label: "Muscle Gain" },
-        { value: "endurance", label: "Endurance" },
-        { value: "flexibility", label: "Flexibility" },
-        { value: "general", label: "General Fitness" },
-        { value: "rehabilitation", label: "Rehabilitation" },
-        { value: "stress", label: "Stress Relief" },
-      ],
+          "options": [
+                {
+                      "value": "weightloss",
+                      "label": "Weight Loss"
+                },
+                {
+                      "value": "musclegain",
+                      "label": "Muscle Gain"
+                },
+                {
+                      "value": "endurance",
+                      "label": "Endurance"
+                },
+                {
+                      "value": "flexibility",
+                      "label": "Flexibility"
+                },
+                {
+                      "value": "general",
+                      "label": "General Fitness"
+                },
+                {
+                      "value": "rehabilitation",
+                      "label": "Rehabilitation"
+                },
+                {
+                      "value": "stress",
+                      "label": "Stress Relief"
+                }
+          ]
     },
     sortOrder: 5,
   },
@@ -2338,12 +3369,24 @@ const membershipFields: FieldDefinitionSeed[] = [
     fieldType: "select",
     category: "membership",
     config: {
-      options: [
-        { value: "beginner", label: "Beginner" },
-        { value: "intermediate", label: "Intermediate" },
-        { value: "advanced", label: "Advanced" },
-        { value: "athlete", label: "Athlete" },
-      ],
+          "options": [
+                {
+                      "value": "beginner",
+                      "label": "Beginner"
+                },
+                {
+                      "value": "intermediate",
+                      "label": "Intermediate"
+                },
+                {
+                      "value": "advanced",
+                      "label": "Advanced"
+                },
+                {
+                      "value": "athlete",
+                      "label": "Athlete"
+                }
+          ]
     },
     sortOrder: 6,
   },
@@ -2354,17 +3397,44 @@ const membershipFields: FieldDefinitionSeed[] = [
     fieldType: "multiselect",
     category: "membership",
     config: {
-      options: [
-        { value: "gym", label: "Gym/Weights" },
-        { value: "cardio", label: "Cardio" },
-        { value: "yoga", label: "Yoga" },
-        { value: "pilates", label: "Pilates" },
-        { value: "swimming", label: "Swimming" },
-        { value: "spinning", label: "Spinning" },
-        { value: "aerobics", label: "Aerobics" },
-        { value: "crossfit", label: "CrossFit" },
-        { value: "personaltraining", label: "Personal Training" },
-      ],
+          "options": [
+                {
+                      "value": "gym",
+                      "label": "Gym/Weights"
+                },
+                {
+                      "value": "cardio",
+                      "label": "Cardio"
+                },
+                {
+                      "value": "yoga",
+                      "label": "Yoga"
+                },
+                {
+                      "value": "pilates",
+                      "label": "Pilates"
+                },
+                {
+                      "value": "swimming",
+                      "label": "Swimming"
+                },
+                {
+                      "value": "spinning",
+                      "label": "Spinning"
+                },
+                {
+                      "value": "aerobics",
+                      "label": "Aerobics"
+                },
+                {
+                      "value": "crossfit",
+                      "label": "CrossFit"
+                },
+                {
+                      "value": "personaltraining",
+                      "label": "Personal Training"
+                }
+          ]
     },
     sortOrder: 7,
   },
@@ -2374,7 +3444,9 @@ const membershipFields: FieldDefinitionSeed[] = [
     description: "Health conditions that may affect exercise",
     fieldType: "textarea",
     category: "membership",
-    config: { maxLength: 1000 },
+    config: {
+          "maxLength": 1000
+    },
     sortOrder: 8,
     specialPersonalInfo: true,
   },
@@ -2384,7 +3456,9 @@ const membershipFields: FieldDefinitionSeed[] = [
     description: "Previous injuries relevant to fitness activities",
     fieldType: "textarea",
     category: "membership",
-    config: { maxLength: 1000 },
+    config: {
+          "maxLength": 1000
+    },
     sortOrder: 9,
     specialPersonalInfo: true,
   },
@@ -2394,7 +3468,9 @@ const membershipFields: FieldDefinitionSeed[] = [
     description: "Name of assigned personal trainer",
     fieldType: "text",
     category: "membership",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 10,
   },
   {
@@ -2403,7 +3479,9 @@ const membershipFields: FieldDefinitionSeed[] = [
     description: "Assigned locker number",
     fieldType: "text",
     category: "membership",
-    config: { maxLength: 10 },
+    config: {
+          "maxLength": 10
+    },
     sortOrder: 11,
   },
   {
@@ -2412,7 +3490,9 @@ const membershipFields: FieldDefinitionSeed[] = [
     description: "Access card or key fob number",
     fieldType: "text",
     category: "membership",
-    config: { maxLength: 30 },
+    config: {
+          "maxLength": 30
+    },
     sortOrder: 12,
   },
   {
@@ -2421,7 +3501,9 @@ const membershipFields: FieldDefinitionSeed[] = [
     description: "Name of person who referred them",
     fieldType: "text",
     category: "membership",
-    config: { maxLength: 200 },
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 13,
   },
   {
@@ -2434,601 +3516,997 @@ const membershipFields: FieldDefinitionSeed[] = [
   },
 ];
 
-const legalFields: FieldDefinitionSeed[] = [
+// =============================================================================
+// PERSONAL FIELDS
+// =============================================================================
+
+const personalFields: FieldDefinitionSeed[] = [
   {
-    name: "clientNumber",
-    label: "Client Number",
-    description: "Client reference number",
+    name: "title",
+    label: "Title",
+    description: "Personal title or honorific (Mr, Mrs, Ms, Dr, Prof, etc.)",
+    fieldType: "select",
+    category: "personal",
+    config: {
+          "options": [
+                {
+                      "value": "mr",
+                      "label": "Mr"
+                },
+                {
+                      "value": "mrs",
+                      "label": "Mrs"
+                },
+                {
+                      "value": "ms",
+                      "label": "Ms"
+                },
+                {
+                      "value": "miss",
+                      "label": "Miss"
+                },
+                {
+                      "value": "dr",
+                      "label": "Dr"
+                },
+                {
+                      "value": "prof",
+                      "label": "Prof"
+                },
+                {
+                      "value": "rev",
+                      "label": "Rev"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 0,
+  },
+  {
+    name: "firstName",
+    label: "First Name",
+    description: "Person's given/first name as it appears on official documents",
     fieldType: "text",
-    category: "legal",
-    config: { maxLength: 30 },
+    category: "personal",
+    config: {
+          "minLength": 1,
+          "maxLength": 100
+    },
     sortOrder: 1,
   },
   {
-    name: "matterReference",
-    label: "Matter/Case Reference",
-    description: "Legal matter or case reference number",
+    name: "preferredName",
+    label: "Preferred Name",
+    description: "Name the person prefers to be called (nickname or informal name)",
     fieldType: "text",
-    category: "legal",
-    config: { maxLength: 50 },
+    category: "personal",
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 2,
   },
   {
-    name: "clientType",
-    label: "Client Type",
-    description: "Type of client entity",
-    fieldType: "select",
-    category: "legal",
+    name: "middleName",
+    label: "Middle Name",
+    description: "Person's middle name(s) as they appear on official documents",
+    fieldType: "text",
+    category: "personal",
     config: {
-      options: [
-        { value: "individual", label: "Individual" },
-        { value: "corporate", label: "Corporate/Company" },
-        { value: "trust", label: "Trust" },
-        { value: "estate", label: "Estate" },
-        { value: "partnership", label: "Partnership" },
-        { value: "nonprofit", label: "Non-Profit" },
-      ],
+          "maxLength": 100
     },
     sortOrder: 3,
   },
   {
-    name: "companyName",
-    label: "Company Name",
-    description: "Registered company or organization name",
+    name: "lastName",
+    label: "Last Name",
+    description: "Person's family name/surname as it appears on official documents",
     fieldType: "text",
-    category: "legal",
-    config: { maxLength: 200 },
+    category: "personal",
+    config: {
+          "minLength": 1,
+          "maxLength": 100
+    },
     sortOrder: 4,
   },
   {
-    name: "companyRegistration",
-    label: "Company Registration Number",
-    description: "Company registration number",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 30 },
+    name: "dateOfBirth",
+    label: "Date of Birth",
+    description: "Person's date of birth",
+    fieldType: "date",
+    category: "personal",
     sortOrder: 5,
   },
   {
-    name: "vatNumber",
-    label: "VAT Number",
-    description: "VAT registration number",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 20 },
+    name: "gender",
+    label: "Gender",
+    description: "Person's gender identity",
+    fieldType: "select",
+    category: "personal",
+    config: {
+          "options": [
+                {
+                      "value": "male",
+                      "label": "Male"
+                },
+                {
+                      "value": "female",
+                      "label": "Female"
+                },
+                {
+                      "value": "nonbinary",
+                      "label": "Non-binary"
+                },
+                {
+                      "value": "prefernottosay",
+                      "label": "Prefer not to say"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
     sortOrder: 6,
   },
   {
-    name: "tradingName",
-    label: "Trading As",
-    description: "Trading or business name",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 200 },
+    name: "biologicalSex",
+    label: "Biological Sex",
+    description: "Biological sex at birth (for medical purposes)",
+    fieldType: "select",
+    category: "personal",
+    config: {
+          "options": [
+                {
+                      "value": "male",
+                      "label": "Male"
+                },
+                {
+                      "value": "female",
+                      "label": "Female"
+                },
+                {
+                      "value": "intersex",
+                      "label": "Intersex"
+                }
+          ]
+    },
     sortOrder: 7,
+    specialPersonalInfo: true,
   },
   {
-    name: "industryType",
-    label: "Industry",
-    description: "Industry or sector classification",
+    name: "maritalStatus",
+    label: "Marital Status",
+    description: "Current marital/civil status",
     fieldType: "select",
-    category: "legal",
+    category: "personal",
     config: {
-      options: [
-        { value: "agriculture", label: "Agriculture" },
-        { value: "construction", label: "Construction" },
-        { value: "education", label: "Education" },
-        { value: "finance", label: "Finance" },
-        { value: "healthcare", label: "Healthcare" },
-        { value: "hospitality", label: "Hospitality" },
-        { value: "it", label: "IT/Technology" },
-        { value: "legal", label: "Legal" },
-        { value: "manufacturing", label: "Manufacturing" },
-        { value: "retail", label: "Retail" },
-        { value: "transport", label: "Transport" },
-        { value: "other", label: "Other" },
-      ],
+          "options": [
+                {
+                      "value": "single",
+                      "label": "Single"
+                },
+                {
+                      "value": "married",
+                      "label": "Married"
+                },
+                {
+                      "value": "divorced",
+                      "label": "Divorced"
+                },
+                {
+                      "value": "widowed",
+                      "label": "Widowed"
+                },
+                {
+                      "value": "separated",
+                      "label": "Separated"
+                },
+                {
+                      "value": "civilpartnership",
+                      "label": "Civil Partnership"
+                },
+                {
+                      "value": "cohabiting",
+                      "label": "Cohabiting"
+                }
+          ]
     },
     sortOrder: 8,
   },
   {
-    name: "website",
-    label: "Website",
-    description: "Company website URL",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 200, placeholder: "https://..." },
+    name: "nationality",
+    label: "Nationality",
+    description: "Country of citizenship",
+    fieldType: "country",
+    category: "personal",
     sortOrder: 9,
   },
   {
-    name: "referralSource",
-    label: "Referral Source",
-    description: "How the client found your services",
-    fieldType: "select",
-    category: "legal",
-    config: {
-      options: [
-        { value: "referral", label: "Client Referral" },
-        { value: "website", label: "Website" },
-        { value: "socialmedia", label: "Social Media" },
-        { value: "advertising", label: "Advertising" },
-        { value: "directory", label: "Directory/Listing" },
-        { value: "event", label: "Event/Networking" },
-        { value: "other", label: "Other" },
-      ],
-    },
+    name: "countryOfBirth",
+    label: "Country of Birth",
+    description: "Country where the person was born",
+    fieldType: "country",
+    category: "personal",
     sortOrder: 10,
   },
   {
-    name: "conflictCheck",
-    label: "Conflict Check Completed",
-    description: "Whether conflict of interest check has been completed",
-    fieldType: "checkbox",
-    category: "legal",
+    name: "placeOfBirth",
+    label: "Place of Birth",
+    description: "City or town where the person was born",
+    fieldType: "text",
+    category: "personal",
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 11,
   },
   {
-    name: "engagementDate",
-    label: "Engagement Date",
-    description: "Date of formal engagement",
-    fieldType: "date",
-    category: "legal",
+    name: "ethnicity",
+    label: "Ethnicity",
+    description: "Ethnic background or heritage",
+    fieldType: "select",
+    category: "personal",
+    config: {
+          "options": [
+                {
+                      "value": "black",
+                      "label": "Black African"
+                },
+                {
+                      "value": "coloured",
+                      "label": "Coloured"
+                },
+                {
+                      "value": "indian",
+                      "label": "Indian/Asian"
+                },
+                {
+                      "value": "white",
+                      "label": "White"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                },
+                {
+                      "value": "prefernottosay",
+                      "label": "Prefer not to say"
+                }
+          ]
+    },
     sortOrder: 12,
+    specialPersonalInfo: true,
+    requiresExplicitConsent: true,
   },
   {
-    name: "authorizedSignatory",
-    label: "Authorized Signatory",
-    description: "Name of person authorized to sign on behalf of entity",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 200 },
+    name: "race",
+    label: "Race",
+    description: "Racial classification (for statistical or compliance purposes)",
+    fieldType: "select",
+    category: "personal",
+    config: {
+          "options": [
+                {
+                      "value": "black",
+                      "label": "Black"
+                },
+                {
+                      "value": "coloured",
+                      "label": "Coloured"
+                },
+                {
+                      "value": "indian",
+                      "label": "Indian"
+                },
+                {
+                      "value": "white",
+                      "label": "White"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
     sortOrder: 13,
+    specialPersonalInfo: true,
+    requiresExplicitConsent: true,
   },
   {
-    name: "signatoryPosition",
-    label: "Signatory Position",
-    description: "Position/title of authorized signatory",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 100 },
+    name: "homeLanguage",
+    label: "Home Language",
+    description: "Primary language spoken at home",
+    fieldType: "select",
+    category: "personal",
+    config: {
+          "options": [
+                {
+                      "value": "english",
+                      "label": "English"
+                },
+                {
+                      "value": "afrikaans",
+                      "label": "Afrikaans"
+                },
+                {
+                      "value": "zulu",
+                      "label": "isiZulu"
+                },
+                {
+                      "value": "xhosa",
+                      "label": "isiXhosa"
+                },
+                {
+                      "value": "sotho",
+                      "label": "Sesotho"
+                },
+                {
+                      "value": "tswana",
+                      "label": "Setswana"
+                },
+                {
+                      "value": "pedi",
+                      "label": "Sepedi"
+                },
+                {
+                      "value": "venda",
+                      "label": "Tshivenda"
+                },
+                {
+                      "value": "tsonga",
+                      "label": "Xitsonga"
+                },
+                {
+                      "value": "swati",
+                      "label": "siSwati"
+                },
+                {
+                      "value": "ndebele",
+                      "label": "isiNdebele"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
     sortOrder: 14,
   },
   {
-    name: "billingContact",
-    label: "Billing Contact Name",
-    description: "Name of person to contact for billing matters",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 200 },
+    name: "preferredLanguage",
+    label: "Preferred Language",
+    description: "Preferred language for communication",
+    fieldType: "select",
+    category: "personal",
+    config: {
+          "options": [
+                {
+                      "value": "english",
+                      "label": "English"
+                },
+                {
+                      "value": "afrikaans",
+                      "label": "Afrikaans"
+                },
+                {
+                      "value": "zulu",
+                      "label": "isiZulu"
+                },
+                {
+                      "value": "xhosa",
+                      "label": "isiXhosa"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
     sortOrder: 15,
   },
   {
-    name: "billingEmail",
-    label: "Billing Email",
-    description: "Email address for invoices",
-    fieldType: "email",
-    category: "legal",
+    name: "religion",
+    label: "Religion",
+    description: "Religious affiliation or belief system",
+    fieldType: "select",
+    category: "personal",
+    config: {
+          "options": [
+                {
+                      "value": "christianity",
+                      "label": "Christianity"
+                },
+                {
+                      "value": "islam",
+                      "label": "Islam"
+                },
+                {
+                      "value": "hinduism",
+                      "label": "Hinduism"
+                },
+                {
+                      "value": "judaism",
+                      "label": "Judaism"
+                },
+                {
+                      "value": "buddhism",
+                      "label": "Buddhism"
+                },
+                {
+                      "value": "traditional",
+                      "label": "Traditional/Indigenous"
+                },
+                {
+                      "value": "none",
+                      "label": "No religion"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                },
+                {
+                      "value": "prefernottosay",
+                      "label": "Prefer not to say"
+                }
+          ]
+    },
     sortOrder: 16,
+    specialPersonalInfo: true,
+    requiresExplicitConsent: true,
   },
   {
-    name: "billingStreetAddress",
-    label: "Billing Address",
-    description: "Billing address with autocomplete",
-    fieldType: "address",
-    category: "legal",
+    name: "occupation",
+    label: "Occupation",
+    description: "Current occupation or job title",
+    fieldType: "text",
+    category: "personal",
     config: {
-      linkedFields: {
-        complexName: "billingComplexName",
-        unitNumber: "billingUnitNumber",
-        suburb: "billingAddressSuburb",
-        city: "billingAddressCity",
-        province: "billingAddressProvince",
-        postalCode: "billingAddressPostalCode",
-        country: "billingAddressCountry",
-      },
+          "maxLength": 100
     },
     sortOrder: 17,
   },
   {
-    name: "billingComplexName",
-    label: "Billing Building/Complex",
-    description: "Building, complex, or estate for billing address",
+    name: "employer",
+    label: "Employer",
+    description: "Current employer or company name",
     fieldType: "text",
-    category: "legal",
-    config: { maxLength: 200 },
-    sortOrder: 18,
-  },
-  {
-    name: "billingUnitNumber",
-    label: "Billing Unit/Suite",
-    description: "Unit, suite, or floor for billing address",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 50 },
-    sortOrder: 19,
-  },
-  {
-    name: "billingAddressLine1",
-    label: "Billing Address Line 1",
-    description: "Street address for billing (manual entry)",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 200 },
-    sortOrder: 20,
-  },
-  {
-    name: "billingAddressLine2",
-    label: "Billing Address Line 2",
-    description: "Additional billing address details",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 200 },
-    sortOrder: 21,
-  },
-  {
-    name: "billingAddressSuburb",
-    label: "Billing Address Suburb",
-    description: "Suburb for billing address",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 100 },
-    sortOrder: 22,
-  },
-  {
-    name: "billingAddressCity",
-    label: "Billing Address City",
-    description: "City for billing address",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 100 },
-    sortOrder: 23,
-  },
-  {
-    name: "billingAddressProvince",
-    label: "Billing Address Province",
-    description: "Province/state for billing address",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 100 },
-    sortOrder: 24,
-  },
-  {
-    name: "billingAddressPostalCode",
-    label: "Billing Address Postal Code",
-    description: "Postal code for billing address",
-    fieldType: "text",
-    category: "legal",
-    config: { maxLength: 20 },
-    sortOrder: 25,
-  },
-  {
-    name: "billingAddressCountry",
-    label: "Billing Address Country",
-    description: "Country for billing address",
-    fieldType: "country",
-    category: "legal",
-    config: { defaultCountry: "ZA" },
-    sortOrder: 26,
-  },
-  {
-    name: "paymentTerms",
-    label: "Payment Terms",
-    description: "Agreed payment terms",
-    fieldType: "select",
-    category: "legal",
+    category: "personal",
     config: {
-      options: [
-        { value: "cod", label: "COD (Cash on Delivery)" },
-        { value: "7days", label: "7 Days" },
-        { value: "14days", label: "14 Days" },
-        { value: "30days", label: "30 Days" },
-        { value: "60days", label: "60 Days" },
-        { value: "90days", label: "90 Days" },
-      ],
+          "maxLength": 200
     },
-    sortOrder: 25,
-  },
-  {
-    name: "creditLimit",
-    label: "Credit Limit",
-    description: "Approved credit limit",
-    fieldType: "currency",
-    category: "legal",
-    config: { currencyCode: "ZAR", decimalPlaces: 2 },
-    sortOrder: 26,
+    sortOrder: 18,
   },
 ];
 
-const financialFields: FieldDefinitionSeed[] = [
+// =============================================================================
+// PREFERENCES FIELDS
+// =============================================================================
+
+const preferencesFields: FieldDefinitionSeed[] = [
   {
-    name: "sourceOfFunds",
-    label: "Source of Funds",
-    description: "Primary source of funds or income",
-    fieldType: "select",
-    category: "financial",
+    name: "dietaryRequirements",
+    label: "Dietary Requirements",
+    description: "Dietary restrictions or preferences",
+    fieldType: "multiselect",
+    category: "preferences",
     config: {
-      options: [
-        { value: "employment", label: "Employment/Salary" },
-        { value: "business", label: "Business Income" },
-        { value: "investments", label: "Investments" },
-        { value: "inheritance", label: "Inheritance" },
-        { value: "pension", label: "Pension" },
-        { value: "other", label: "Other" },
-      ],
+          "options": [
+                {
+                      "value": "none",
+                      "label": "None"
+                },
+                {
+                      "value": "vegetarian",
+                      "label": "Vegetarian"
+                },
+                {
+                      "value": "vegan",
+                      "label": "Vegan"
+                },
+                {
+                      "value": "halal",
+                      "label": "Halal"
+                },
+                {
+                      "value": "kosher",
+                      "label": "Kosher"
+                },
+                {
+                      "value": "glutenfree",
+                      "label": "Gluten-free"
+                },
+                {
+                      "value": "dairyfree",
+                      "label": "Dairy-free"
+                },
+                {
+                      "value": "nutallergy",
+                      "label": "Nut allergy"
+                },
+                {
+                      "value": "shellfishallergy",
+                      "label": "Shellfish allergy"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
     },
     sortOrder: 1,
   },
   {
-    name: "annualIncome",
-    label: "Annual Income",
-    description: "Annual income bracket",
-    fieldType: "select",
-    category: "financial",
+    name: "dietaryNotes",
+    label: "Dietary Notes",
+    description: "Additional dietary information or specific requirements",
+    fieldType: "textarea",
+    category: "preferences",
     config: {
-      options: [
-        { value: "under100k", label: "Under R100,000" },
-        { value: "100k250k", label: "R100,000 - R250,000" },
-        { value: "250k500k", label: "R250,000 - R500,000" },
-        { value: "500k1m", label: "R500,000 - R1,000,000" },
-        { value: "over1m", label: "Over R1,000,000" },
-        { value: "prefernottosay", label: "Prefer not to say" },
-      ],
+          "maxLength": 500
     },
     sortOrder: 2,
   },
   {
-    name: "employmentStatus",
-    label: "Employment Status",
-    description: "Current employment status",
-    fieldType: "select",
-    category: "financial",
+    name: "accessibilityNeeds",
+    label: "Accessibility Needs",
+    description: "Accessibility requirements or accommodations needed",
+    fieldType: "multiselect",
+    category: "preferences",
     config: {
-      options: [
-        { value: "employed", label: "Employed" },
-        { value: "selfemployed", label: "Self-Employed" },
-        { value: "unemployed", label: "Unemployed" },
-        { value: "retired", label: "Retired" },
-        { value: "student", label: "Student" },
-        { value: "homemaker", label: "Homemaker" },
-      ],
+          "options": [
+                {
+                      "value": "none",
+                      "label": "None"
+                },
+                {
+                      "value": "wheelchair",
+                      "label": "Wheelchair access"
+                },
+                {
+                      "value": "hearing",
+                      "label": "Hearing assistance"
+                },
+                {
+                      "value": "visual",
+                      "label": "Visual assistance"
+                },
+                {
+                      "value": "mobility",
+                      "label": "Mobility assistance"
+                },
+                {
+                      "value": "signlanguage",
+                      "label": "Sign language interpreter"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
     },
     sortOrder: 3,
   },
   {
-    name: "sourceOfWealth",
-    label: "Source of Wealth",
-    description: "Description of source of wealth",
+    name: "accessibilityNotes",
+    label: "Accessibility Notes",
+    description: "Additional accessibility information or specific needs",
     fieldType: "textarea",
-    category: "financial",
-    config: { maxLength: 1000 },
+    category: "preferences",
+    config: {
+          "maxLength": 500
+    },
     sortOrder: 4,
   },
   {
-    name: "pep",
-    label: "Politically Exposed Person",
-    description: "Whether the person is a politically exposed person (PEP)",
-    fieldType: "checkbox",
-    category: "financial",
+    name: "specialRequirements",
+    label: "Special Requirements",
+    description: "Any other special requirements or accommodations",
+    fieldType: "textarea",
+    category: "preferences",
+    config: {
+          "maxLength": 1000
+    },
     sortOrder: 5,
   },
   {
-    name: "pepDetails",
-    label: "PEP Details",
-    description: "Details if person is politically exposed",
-    fieldType: "textarea",
-    category: "financial",
-    config: { maxLength: 1000 },
+    name: "communicationPreference",
+    label: "Communication Preference",
+    description: "Preferred channels for receiving communications",
+    fieldType: "multiselect",
+    category: "preferences",
+    config: {
+          "options": [
+                {
+                      "value": "email",
+                      "label": "Email"
+                },
+                {
+                      "value": "sms",
+                      "label": "SMS"
+                },
+                {
+                      "value": "phone",
+                      "label": "Phone"
+                },
+                {
+                      "value": "whatsapp",
+                      "label": "WhatsApp"
+                },
+                {
+                      "value": "post",
+                      "label": "Post"
+                }
+          ]
+    },
+    sortOrder: 6,
+  },
+];
+
+// =============================================================================
+// RESPONSIBLE FIELDS
+// =============================================================================
+
+const responsibleFields: FieldDefinitionSeed[] = [
+  {
+    name: "responsiblePartyName",
+    label: "Responsible Party Name",
+    description: "Full name of person responsible for account/payment (if different from subject)",
+    fieldType: "text",
+    category: "responsible",
+    config: {
+          "maxLength": 200
+    },
+    sortOrder: 1,
+  },
+  {
+    name: "responsiblePartyRelationship",
+    label: "Responsible Party Relationship",
+    description: "Relationship of responsible party to the subject",
+    fieldType: "select",
+    category: "responsible",
+    config: {
+          "options": [
+                {
+                      "value": "self",
+                      "label": "Self"
+                },
+                {
+                      "value": "parent",
+                      "label": "Parent"
+                },
+                {
+                      "value": "guardian",
+                      "label": "Legal Guardian"
+                },
+                {
+                      "value": "spouse",
+                      "label": "Spouse"
+                },
+                {
+                      "value": "employer",
+                      "label": "Employer"
+                },
+                {
+                      "value": "other",
+                      "label": "Other"
+                }
+          ]
+    },
+    sortOrder: 2,
+  },
+  {
+    name: "responsiblePartyIdNumber",
+    label: "Responsible Party ID",
+    description: "ID number of responsible party",
+    fieldType: "text",
+    category: "responsible",
+    config: {
+          "maxLength": 20
+    },
+    sortOrder: 3,
+  },
+  {
+    name: "responsiblePartyPhone",
+    label: "Responsible Party Phone",
+    description: "Phone number of responsible party",
+    fieldType: "phone",
+    category: "responsible",
+    sortOrder: 4,
+  },
+  {
+    name: "responsiblePartyEmail",
+    label: "Responsible Party Email",
+    description: "Email address of responsible party",
+    fieldType: "email",
+    category: "responsible",
+    sortOrder: 5,
+  },
+  {
+    name: "responsiblePartyWorkPhone",
+    label: "Responsible Party Work Phone",
+    description: "Work phone of responsible party",
+    fieldType: "phone",
+    category: "responsible",
+    sortOrder: 5,
+  },
+  {
+    name: "responsiblePartyStreetAddress",
+    label: "Responsible Party Address",
+    description: "Street address of responsible party with autocomplete",
+    fieldType: "address",
+    category: "responsible",
+    config: {
+          "linkedFields": {
+                "complexName": "responsiblePartyComplexName",
+                "unitNumber": "responsiblePartyUnitNumber",
+                "suburb": "responsiblePartyAddressSuburb",
+                "city": "responsiblePartyAddressCity",
+                "province": "responsiblePartyAddressProvince",
+                "postalCode": "responsiblePartyAddressPostalCode",
+                "country": "responsiblePartyAddressCountry"
+          }
+    },
     sortOrder: 6,
   },
   {
-    name: "ultimateBeneficialOwner",
-    label: "Ultimate Beneficial Owner",
-    description: "Name of ultimate beneficial owner (for corporate clients)",
+    name: "responsiblePartyMobilePhone",
+    label: "Responsible Party Mobile Phone",
+    description: "Mobile phone number of responsible party",
+    fieldType: "phone",
+    category: "responsible",
+    sortOrder: 6,
+  },
+  {
+    name: "responsiblePartyComplexName",
+    label: "Responsible Party Building/Complex",
+    description: "Building, complex, or estate name of responsible party",
     fieldType: "text",
-    category: "financial",
-    config: { maxLength: 200 },
+    category: "responsible",
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 7,
   },
   {
-    name: "uboIdNumber",
-    label: "UBO ID Number",
-    description: "ID number of ultimate beneficial owner",
+    name: "responsiblePartyUnitNumber",
+    label: "Responsible Party Unit/Suite",
+    description: "Unit, suite, or apartment of responsible party",
     fieldType: "text",
-    category: "financial",
-    config: { maxLength: 20 },
+    category: "responsible",
+    config: {
+          "maxLength": 50
+    },
     sortOrder: 8,
   },
   {
-    name: "uboOwnershipPercent",
-    label: "UBO Ownership Percentage",
-    description: "Percentage ownership of ultimate beneficial owner",
-    fieldType: "number",
-    category: "financial",
-    config: { min: 0, max: 100, decimalPlaces: 2 },
+    name: "responsiblePartyAddressLine1",
+    label: "Responsible Party Address Line 1",
+    description: "Street address of responsible party (manual entry)",
+    fieldType: "text",
+    category: "responsible",
+    config: {
+          "maxLength": 200
+    },
     sortOrder: 9,
   },
   {
-    name: "riskRating",
-    label: "Risk Rating",
-    description: "Customer risk rating for AML purposes",
-    fieldType: "select",
-    category: "financial",
+    name: "responsiblePartyPostalAddress",
+    label: "Responsible Party Postal Address",
+    description: "Postal address of the responsible party",
+    fieldType: "address",
+    category: "responsible",
     config: {
-      options: [
-        { value: "low", label: "Low" },
-        { value: "medium", label: "Medium" },
-        { value: "high", label: "High" },
-      ],
+          "linkedFields": {
+                "complexName": "responsiblePartyPostalAddressComplexName",
+                "unitNumber": "responsiblePartyPostalAddressUnitNumber",
+                "suburb": "responsiblePartyPostalAddressSuburb",
+                "city": "responsiblePartyPostalAddressCity",
+                "province": "responsiblePartyPostalAddressProvince",
+                "postalCode": "responsiblePartyPostalAddressPostalCode",
+                "country": "responsiblePartyPostalAddressCountry"
+          }
+    },
+    sortOrder: 9,
+  },
+  {
+    name: "responsiblePartyPostalAddressComplexName",
+    label: "Responsible Party Postal Building/Complex",
+    description: "Building, complex, or estate name for Responsible Party Postal Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 10,
+  },
+  {
+    name: "responsiblePartyAddressLine2",
+    label: "Responsible Party Address Line 2",
+    description: "Additional address details of responsible party",
+    fieldType: "text",
+    category: "responsible",
+    config: {
+          "maxLength": 200
     },
     sortOrder: 10,
   },
   {
-    name: "sanctionsCheck",
-    label: "Sanctions Check",
-    description: "Whether sanctions screening has been completed",
-    fieldType: "checkbox",
-    category: "financial",
+    name: "responsiblePartyAddressSuburb",
+    label: "Responsible Party Suburb",
+    description: "Suburb of responsible party",
+    fieldType: "text",
+    category: "responsible",
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 11,
   },
   {
-    name: "proofOfAddress",
-    label: "Proof of Address",
-    description: "Upload proof of address document",
-    fieldType: "file",
-    category: "financial",
-    config: { allowedTypes: ["image/*", "application/pdf"], maxSizeMB: 10 },
+    name: "responsiblePartyPostalAddressUnitNumber",
+    label: "Responsible Party Postal Unit/Suite",
+    description: "Unit, suite, or floor number for Responsible Party Postal Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 11,
+  },
+  {
+    name: "responsiblePartyAddressCity",
+    label: "Responsible Party City",
+    description: "City of responsible party",
+    fieldType: "text",
+    category: "responsible",
+    config: {
+          "maxLength": 100
+    },
     sortOrder: 12,
   },
   {
-    name: "proofOfIdentity",
-    label: "Proof of Identity",
-    description: "Upload proof of identity document",
-    fieldType: "file",
-    category: "financial",
-    config: { allowedTypes: ["image/*", "application/pdf"], maxSizeMB: 10 },
+    name: "responsiblePartyPostalAddressSuburb",
+    label: "Responsible Party Postal Suburb",
+    description: "Suburb or neighborhood for Responsible Party Postal Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 12,
+  },
+  {
+    name: "responsiblePartyPostalAddressCity",
+    label: "Responsible Party Postal City",
+    description: "City or town for Responsible Party Postal Address",
+    fieldType: "text",
+    category: "responsible",
     sortOrder: 13,
   },
   {
-    name: "proofOfIncome",
-    label: "Proof of Income",
-    description: "Upload proof of income document",
-    fieldType: "file",
-    category: "financial",
-    config: { allowedTypes: ["image/*", "application/pdf"], maxSizeMB: 10 },
+    name: "responsiblePartyAddressProvince",
+    label: "Responsible Party Province",
+    description: "Province/state of responsible party",
+    fieldType: "text",
+    category: "responsible",
+    config: {
+          "maxLength": 100
+    },
+    sortOrder: 13,
+  },
+  {
+    name: "responsiblePartyAddressPostalCode",
+    label: "Responsible Party Postal Code",
+    description: "Postal code of responsible party",
+    fieldType: "text",
+    category: "responsible",
+    config: {
+          "maxLength": 20
+    },
     sortOrder: 14,
   },
   {
-    name: "facaStatus",
-    label: "FATCA Status",
-    description: "Foreign Account Tax Compliance Act status",
-    fieldType: "select",
-    category: "financial",
+    name: "responsiblePartyPostalAddressProvince",
+    label: "Responsible Party Postal Province",
+    description: "State, province, or region for Responsible Party Postal Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 14,
+  },
+  {
+    name: "responsiblePartyPostalAddressPostalCode",
+    label: "Responsible Party Postal Postal Code",
+    description: "Postal or ZIP code for Responsible Party Postal Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 15,
+  },
+  {
+    name: "responsiblePartyAddressCountry",
+    label: "Responsible Party Country",
+    description: "Country of responsible party",
+    fieldType: "country",
+    category: "responsible",
     config: {
-      options: [
-        { value: "notus", label: "Not a US Person" },
-        { value: "uscitizen", label: "US Citizen" },
-        { value: "usresident", label: "US Resident" },
-        { value: "uncertain", label: "Uncertain" },
-      ],
+          "defaultCountry": "ZA"
     },
     sortOrder: 15,
   },
-];
-
-const consentFields: FieldDefinitionSeed[] = [
   {
-    name: "termsAccepted",
-    label: "Terms and Conditions",
-    description: "Acceptance of terms and conditions",
-    fieldType: "checkbox",
-    category: "consent",
-    sortOrder: 1,
+    name: "responsiblePartyPostalAddressCountry",
+    label: "Responsible Party Postal Country",
+    description: "Country selection for Responsible Party Postal Address",
+    fieldType: "country",
+    category: "responsible",
+    sortOrder: 16,
   },
   {
-    name: "privacyPolicyAccepted",
-    label: "Privacy Policy",
-    description: "Acceptance of privacy policy",
-    fieldType: "checkbox",
-    category: "consent",
-    sortOrder: 2,
+    name: "responsiblePartyWorkAddress",
+    label: "Responsible Party Work Address",
+    description: "Employer address of the responsible party",
+    fieldType: "address",
+    category: "responsible",
+    config: {
+          "linkedFields": {
+                "complexName": "responsiblePartyWorkAddressComplexName",
+                "unitNumber": "responsiblePartyWorkAddressUnitNumber",
+                "suburb": "responsiblePartyWorkAddressSuburb",
+                "city": "responsiblePartyWorkAddressCity",
+                "province": "responsiblePartyWorkAddressProvince",
+                "postalCode": "responsiblePartyWorkAddressPostalCode",
+                "country": "responsiblePartyWorkAddressCountry"
+          }
+    },
+    sortOrder: 17,
   },
   {
-    name: "dataProcessingConsent",
-    label: "Data Processing Consent",
-    description: "Consent to process personal data for stated purposes",
-    fieldType: "checkbox",
-    category: "consent",
-    sortOrder: 3,
-  },
-  {
-    name: "thirdPartyShareConsent",
-    label: "Third Party Sharing",
-    description: "Consent to share data with third parties",
-    fieldType: "checkbox",
-    category: "consent",
-    sortOrder: 4,
-  },
-  {
-    name: "electronicSignature",
-    label: "Electronic Signature",
-    description: "Digital signature to confirm acceptance",
-    fieldType: "signature",
-    category: "consent",
-    sortOrder: 5,
-  },
-  {
-    name: "signatureDate",
-    label: "Signature Date",
-    description: "Date of signature",
-    fieldType: "date",
-    category: "consent",
-    sortOrder: 6,
-  },
-  {
-    name: "witnessName",
-    label: "Witness Name",
-    description: "Name of witness (if required)",
+    name: "responsiblePartyWorkAddressComplexName",
+    label: "Responsible Party Work Building/Complex",
+    description: "Building, complex, or estate name for Responsible Party Work Address",
     fieldType: "text",
-    category: "consent",
-    config: { maxLength: 200 },
-    sortOrder: 7,
+    category: "responsible",
+    sortOrder: 18,
   },
   {
-    name: "witnessSignature",
-    label: "Witness Signature",
-    description: "Signature of witness",
-    fieldType: "signature",
-    category: "consent",
-    sortOrder: 8,
-  },
-  {
-    name: "photoMediaConsent",
-    label: "Photo/Media Consent",
-    description: "Consent for photos and media to be used",
-    fieldType: "checkbox",
-    category: "consent",
-    sortOrder: 9,
-  },
-  {
-    name: "liabilityWaiver",
-    label: "Liability Waiver",
-    description: "Acceptance of liability waiver",
-    fieldType: "checkbox",
-    category: "consent",
-    sortOrder: 10,
-  },
-  {
-    name: "consentExpiryDate",
-    label: "Consent Expiry Date",
-    description: "Date when consent expires",
-    fieldType: "date",
-    category: "consent",
-    sortOrder: 11,
-  },
-  {
-    name: "parentalConsent",
-    label: "Parental Consent",
-    description: "Parent/guardian consent (for minors)",
-    fieldType: "checkbox",
-    category: "consent",
-    sortOrder: 12,
-  },
-  {
-    name: "parentalConsentName",
-    label: "Parent/Guardian Name",
-    description: "Name of consenting parent/guardian",
+    name: "responsiblePartyWorkAddressUnitNumber",
+    label: "Responsible Party Work Unit/Suite",
+    description: "Unit, suite, or floor number for Responsible Party Work Address",
     fieldType: "text",
-    category: "consent",
-    config: { maxLength: 200 },
-    sortOrder: 13,
+    category: "responsible",
+    sortOrder: 19,
   },
   {
-    name: "parentalConsentSignature",
-    label: "Parent/Guardian Signature",
-    description: "Signature of parent/guardian",
-    fieldType: "signature",
-    category: "consent",
-    sortOrder: 14,
+    name: "responsiblePartyWorkAddressSuburb",
+    label: "Responsible Party Work Suburb",
+    description: "Suburb or neighborhood for Responsible Party Work Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 20,
+  },
+  {
+    name: "responsiblePartyWorkAddressCity",
+    label: "Responsible Party Work City",
+    description: "City or town for Responsible Party Work Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 21,
+  },
+  {
+    name: "responsiblePartyWorkAddressProvince",
+    label: "Responsible Party Work Province",
+    description: "State, province, or region for Responsible Party Work Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 22,
+  },
+  {
+    name: "responsiblePartyWorkAddressPostalCode",
+    label: "Responsible Party Work Postal Code",
+    description: "Postal or ZIP code for Responsible Party Work Address",
+    fieldType: "text",
+    category: "responsible",
+    sortOrder: 23,
+  },
+  {
+    name: "responsiblePartyWorkAddressCountry",
+    label: "Responsible Party Work Country",
+    description: "Country selection for Responsible Party Work Address",
+    fieldType: "country",
+    category: "responsible",
+    sortOrder: 24,
   },
 ];
 
@@ -3039,32 +4517,30 @@ const consentFields: FieldDefinitionSeed[] = [
 async function seedFields(externalPrisma?: PrismaClient) {
   console.log("Seeding field library...");
 
-  // Use provided prisma client or create our own
   const db = externalPrisma || getPrismaClient();
 
   const allFields: FieldDefinitionSeed[] = [
-    ...personalFields,
-    ...identityFields,
-    ...contactFields,
     ...addressFields,
-    ...emergencyFields,
-    ...responsibleFields,
-    ...preferencesFields,
-    ...medicalFields,
-    ...insuranceFields,
+    ...consentFields,
+    ...contactFields,
     ...educationFields,
+    ...emergencyFields,
     ...employmentFields,
     ...eventsFields,
-    ...membershipFields,
-    ...legalFields,
     ...financialFields,
-    ...consentFields,
+    ...identityFields,
+    ...insuranceFields,
+    ...legalFields,
+    ...medicalFields,
+    ...membershipFields,
+    ...personalFields,
+    ...preferencesFields,
+    ...responsibleFields,
   ];
 
   console.log(`Total fields to seed: ${allFields.length}`);
 
   let created = 0;
-  let updated = 0;
   let errors = 0;
 
   for (const field of allFields) {
@@ -3095,39 +4571,18 @@ async function seedFields(externalPrisma?: PrismaClient) {
           requiresExplicitConsent: field.requiresExplicitConsent || false,
         },
       });
-
-      // Check if it was created or updated
-      const existing = await db.fieldDefinition.findUnique({
-        where: { name: field.name },
-      });
-      if (existing?.createdAt.getTime() === existing?.updatedAt.getTime()) {
-        created++;
-      } else {
-        updated++;
-      }
+      created++;
     } catch (error) {
       console.error(`Error seeding field ${field.name}:`, error);
       errors++;
     }
   }
 
-  console.log(`Field library seeded successfully!`);
-  console.log(`  Created: ${created}`);
-  console.log(`  Updated: ${updated}`);
-  console.log(`  Errors: ${errors}`);
-
-  // Print category summary
-  const categories = [...new Set(allFields.map(f => f.category))];
-  console.log("\nFields by category:");
-  for (const cat of categories) {
-    const count = allFields.filter(f => f.category === cat).length;
-    console.log(`  ${cat}: ${count}`);
-  }
+  console.log(`Field library seeded: ${created} processed, ${errors} errors`);
 }
 
 export { seedFields };
 
-// Allow running directly
 if (require.main === module) {
   seedFields()
     .catch((e) => {
