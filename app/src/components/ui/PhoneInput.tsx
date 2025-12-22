@@ -97,6 +97,14 @@ export interface PhoneInputProps {
   placeholder?: string;
   disabled?: boolean;
   hasError?: boolean;
+  className?: string; // Additional classes for the container
+  /**
+   * Size variant for different contexts:
+   * - "default": Standard size (px-3 py-2 text-sm rounded-lg) - for provider dashboards
+   * - "large": Mobile-friendly size (px-4 py-3 text-base rounded-lg) - for patient forms
+   * - "compact": Compact size (px-3 py-2 rounded-md shadow-sm) - for registration forms
+   */
+  size?: "default" | "large" | "compact";
 }
 
 export function PhoneInput({
@@ -106,6 +114,7 @@ export function PhoneInput({
   placeholder,
   disabled = false,
   hasError = false,
+  size = "default",
 }: PhoneInputProps) {
   // Track internal state that diverges from props during user input
   const [internalState, setInternalState] = useState(() => {
@@ -282,11 +291,35 @@ export function PhoneInput({
     return "border-gray-300";
   };
 
+  // Size variant classes
+  const sizeClasses = {
+    default: {
+      container: "rounded-lg",
+      button: "px-3 py-2 text-sm",
+      input: "px-3 py-2 text-sm",
+      flag: "text-base",
+    },
+    large: {
+      container: "rounded-lg",
+      button: "px-4 py-3 text-base",
+      input: "px-4 py-3 text-base",
+      flag: "text-lg",
+    },
+    compact: {
+      container: "rounded-md shadow-sm",
+      button: "px-3 py-2",
+      input: "px-3 py-2",
+      flag: "text-base",
+    },
+  };
+
+  const classes = sizeClasses[size];
+
   return (
     <div className="relative" ref={dropdownRef}>
       <div
-        className={`flex rounded-lg border ${getBorderClass()} overflow-hidden focus-within:ring-2 focus-within:ring-teal-500 ${
-          disabled ? "bg-gray-100 opacity-60" : "bg-white"
+        className={`flex border ${classes.container} ${getBorderClass()} overflow-hidden focus-within:ring-1 focus-within:ring-teal-500 focus-within:border-teal-500 ${
+          disabled ? "bg-gray-100 opacity-60" : ""
         }`}
       >
         {/* Country Selector */}
@@ -294,10 +327,10 @@ export function PhoneInput({
           type="button"
           onClick={() => !disabled && setShowDropdown(!showDropdown)}
           disabled={disabled}
-          className="flex items-center gap-1 px-3 py-3 border-r border-gray-200 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-w-[100px]"
+          className={`flex items-center gap-1 ${classes.button} border-r border-gray-200 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-w-[100px]`}
         >
-          <span className="text-lg">{selectedCountry.flag}</span>
-          <span className="text-sm text-gray-600">{selectedCountry.dialCode}</span>
+          <span className={classes.flag}>{selectedCountry.flag}</span>
+          <span className="text-gray-900">{selectedCountry.dialCode}</span>
           <svg
             className={`w-4 h-4 text-gray-400 transition-transform ${showDropdown ? "rotate-180" : ""}`}
             fill="none"
@@ -316,7 +349,7 @@ export function PhoneInput({
           onChange={(e) => handleNumberChange(e.target.value)}
           placeholder={getPlaceholder()}
           disabled={disabled}
-          className="flex-1 px-4 py-3 text-base focus:outline-none bg-transparent"
+          className={`flex-1 ${classes.input} focus:outline-none text-gray-900 placeholder-gray-400`}
         />
 
         {/* Validation indicator */}

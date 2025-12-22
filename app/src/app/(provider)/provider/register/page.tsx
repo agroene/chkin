@@ -46,6 +46,27 @@ export default function ProviderRegisterPage() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
+  // Test data autofill (development only)
+  function handleAutofill() {
+    setFormData({
+      practiceName: "Winelands Knee Clinic",
+      practiceNumber: "0716170",
+      email: "info@winelandskneeclinic.co.za",
+      phone: "+27792502890",
+      industryType: "specialist",
+      complexName: "Medical Centre",
+      unitNumber: "Room 12",
+      address: "62 Berlyn",
+      suburb: "Lemoenkloof",
+      city: "Paarl",
+      province: "Western Cape",
+      postalCode: "7646",
+      website: "https://winelandskneeclinic.co.za/",
+      password: "femur-MANURE7switches",
+      confirmPassword: "femur-MANURE7switches",
+    });
+  }
+
   async function handleResendVerification() {
     setResendLoading(true);
     setResendSuccess(false);
@@ -118,21 +139,20 @@ export default function ProviderRegisterPage() {
 
       // Step 2: Save pending registration data to database (exclude password fields)
       // Note: We include email so the API can look up the just-created user (no session yet)
-      try {
-        const { password, confirmPassword, ...registrationData } = formData;
-        const saveResponse = await fetch("/api/provider/save-registration", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(registrationData),
-        });
+      // This is CRITICAL - without this data, the organization cannot be created after email verification
+      const { password, confirmPassword, ...registrationData } = formData;
+      const saveResponse = await fetch("/api/provider/save-registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(registrationData),
+      });
 
-        if (!saveResponse.ok) {
-          console.error("Failed to save registration data:", await saveResponse.text());
-          // Continue anyway - data can be re-entered on pending page if needed
-        }
-      } catch (err) {
-        console.error("Error saving registration data:", err);
-        // Continue - not critical
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json().catch(() => ({}));
+        console.error("Failed to save registration data:", errorData);
+        setError(errorData.error || "Failed to save registration data. Please try again.");
+        setLoading(false);
+        return;
       }
 
       // Show check email screen
@@ -223,6 +243,17 @@ export default function ProviderRegisterPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Development autofill button */}
+          {process.env.NODE_ENV === "development" && (
+            <button
+              type="button"
+              onClick={handleAutofill}
+              className="w-full py-2 px-4 border border-dashed border-orange-300 rounded-md text-sm text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
+            >
+              [DEV] Autofill Test Data
+            </button>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -339,6 +370,7 @@ export default function ProviderRegisterPage() {
                       value={formData.phone}
                       onChange={(value) => setFormData((prev) => ({ ...prev, phone: value }))}
                       defaultCountry="ZA"
+                      size="compact"
                     />
                   </div>
                 </div>

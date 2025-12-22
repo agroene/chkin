@@ -1,12 +1,40 @@
 "use client";
 
 import { useSession } from "@/lib/auth-client";
+import { useEffect, useState } from "react";
 import StatCard from "@/components/admin/StatCard";
 import Card from "@/components/ui/Card";
 import Link from "next/link";
 
+interface Stats {
+  totalUsers: number;
+  activeProviders: number;
+  pendingApprovals: number;
+  totalSubmissions: number;
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const response = await fetch("/api/admin/stats");
+        const data = await response.json();
+        if (data.success) {
+          setStats(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, []);
 
   return (
     <div>
@@ -22,7 +50,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Total Users"
-          value="--"
+          value={loading ? "..." : stats?.totalUsers.toString() || "0"}
           icon={
             <svg
               className="w-6 h-6"
@@ -41,7 +69,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Active Providers"
-          value="--"
+          value={loading ? "..." : stats?.activeProviders.toString() || "0"}
           icon={
             <svg
               className="w-6 h-6"
@@ -60,7 +88,8 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Pending Approvals"
-          value="--"
+          value={loading ? "..." : stats?.pendingApprovals.toString() || "0"}
+          highlight={stats?.pendingApprovals ? stats.pendingApprovals > 0 : false}
           icon={
             <svg
               className="w-6 h-6"
@@ -79,7 +108,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Form Submissions"
-          value="--"
+          value={loading ? "..." : stats?.totalSubmissions.toString() || "0"}
           icon={
             <svg
               className="w-6 h-6"
@@ -122,9 +151,16 @@ export default function AdminDashboard() {
                     />
                   </svg>
                 </div>
-                <span className="text-sm font-medium text-gray-900">
-                  Review Pending Providers
-                </span>
+                <div>
+                  <span className="text-sm font-medium text-gray-900">
+                    Review Pending Providers
+                  </span>
+                  {stats?.pendingApprovals ? (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      {stats.pendingApprovals}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <svg
                 className="w-5 h-5 text-gray-400"

@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
           select: { members: true },
         },
         members: {
-          where: { role: "admin" },
+          where: { role: { in: ["owner", "admin"] } },
           include: {
             user: {
               select: {
@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
               },
             },
           },
+          orderBy: { createdAt: "asc" },
           take: 1,
         },
       },

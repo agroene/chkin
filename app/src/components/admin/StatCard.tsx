@@ -14,6 +14,7 @@ interface StatCardProps {
     value: number;
     isPositive: boolean;
   };
+  highlight?: boolean;
   className?: string;
 }
 
@@ -22,11 +23,12 @@ export default function StatCard({
   value,
   icon,
   trend,
+  highlight = false,
   className = "",
 }: StatCardProps) {
   return (
     <div
-      className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}
+      className={`bg-white rounded-lg border p-6 ${highlight ? "border-yellow-400 ring-1 ring-yellow-400" : "border-gray-200"} ${className}`}
     >
       <div className="flex items-center justify-between">
         <div>

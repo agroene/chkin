@@ -62,6 +62,42 @@ export default function LoginPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Development autofill buttons */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("admin@chkin.co.za");
+                  setPassword("Admin@Chkin123!");
+                }}
+                className="flex-1 py-2 px-3 border border-dashed border-orange-300 rounded-md text-xs text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
+              >
+                [DEV] Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("info@winelandskneeclinic.co.za");
+                  setPassword("femur-MANURE7switches");
+                }}
+                className="flex-1 py-2 px-3 border border-dashed border-orange-300 rounded-md text-xs text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
+              >
+                [DEV] Provider
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("anton@groenewald.name");
+                  setPassword("examined6cosmos@STUDYING");
+                }}
+                className="flex-1 py-2 px-3 border border-dashed border-orange-300 rounded-md text-xs text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
+              >
+                [DEV] User
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               <p>{error}</p>

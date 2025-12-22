@@ -12,12 +12,16 @@ import { headers } from "next/headers";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  console.log("[auth/redirect] GET called");
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
+    console.log("[auth/redirect] Session:", session?.user?.id, session?.user?.email);
+
     if (!session?.user) {
+      console.log("[auth/redirect] No session -> /login");
       return NextResponse.json({ redirect: "/login" });
     }
 
@@ -39,14 +43,18 @@ export async function GET() {
       },
     });
 
+    console.log("[auth/redirect] User:", { isSystemAdmin: user?.isSystemAdmin, hasMembership: !!membership });
+
     // System admins go directly to admin portal
     if (user?.isSystemAdmin) {
+      console.log("[auth/redirect] System admin -> /admin");
       return NextResponse.json({ redirect: "/admin", isAdmin: true });
     }
 
     // Provider redirect logic
     if (membership) {
       const orgStatus = membership.organization.status;
+      console.log("[auth/redirect] Has membership, org status:", orgStatus);
 
       if (orgStatus === "pending") {
         return NextResponse.json({ redirect: "/provider/pending" });
@@ -61,17 +69,8 @@ export async function GET() {
       }
     }
 
-    // Check for pending provider registration (needs to complete org setup)
-    const pendingRegistration = await prisma.pendingProviderRegistration.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    if (pendingRegistration) {
-      // User has pending provider registration - send to pending page to complete setup
-      return NextResponse.json({ redirect: "/provider/pending" });
-    }
-
     // Default: regular user goes to patient portal
+    console.log("[auth/redirect] Default -> /patient");
     return NextResponse.json({ redirect: "/patient" });
   } catch (error) {
     console.error("Auth redirect error:", error);

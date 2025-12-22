@@ -5,7 +5,10 @@
  * Fetches details for a single user.
  *
  * PATCH /api/admin/users/[id]
- * Updates user details (name, isSystemAdmin).
+ * Updates user details (name, isSystemAdmin, emailVerified).
+ *
+ * DELETE /api/admin/users/[id]
+ * Deletes a user and all associated data.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -154,6 +157,7 @@ export async function PATCH(
     const updateData: {
       name?: string;
       isSystemAdmin?: boolean;
+      emailVerified?: boolean;
     } = {};
 
     if (typeof body.name === "string" && body.name.trim()) {
@@ -162,6 +166,10 @@ export async function PATCH(
 
     if (typeof body.isSystemAdmin === "boolean") {
       updateData.isSystemAdmin = body.isSystemAdmin;
+    }
+
+    if (typeof body.emailVerified === "boolean") {
+      updateData.emailVerified = body.emailVerified;
     }
 
     // Update user
@@ -191,6 +199,7 @@ export async function PATCH(
           previousValues: {
             name: existingUser.name,
             isSystemAdmin: existingUser.isSystemAdmin,
+            emailVerified: existingUser.emailVerified,
           },
         }),
       },
@@ -204,6 +213,109 @@ export async function PATCH(
     console.error("Update user error:", error);
     return NextResponse.json(
       { error: "Failed to update user" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // Verify admin access
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.authorized) {
+    return adminCheck.response;
+  }
+
+  try {
+    const { id } = await params;
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        members: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Prevent admin from deleting themselves
+    if (id === adminCheck.user!.id) {
+      return NextResponse.json(
+        { error: "You cannot delete your own account" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent deleting other system admins (safety measure)
+    if (existingUser.isSystemAdmin) {
+      return NextResponse.json(
+        { error: "Cannot delete system administrator accounts. Remove admin privileges first." },
+        { status: 400 }
+      );
+    }
+
+    // Check if user is the sole owner of any organizations
+    const ownedOrgs = existingUser.members.filter(m => m.role === "owner");
+    for (const membership of ownedOrgs) {
+      const otherOwners = await prisma.member.count({
+        where: {
+          organizationId: membership.organizationId,
+          role: "owner",
+          userId: { not: id },
+        },
+      });
+      if (otherOwners === 0) {
+        return NextResponse.json(
+          {
+            error: `Cannot delete user: They are the sole owner of "${membership.organization.name}". Delete the organization from Admin > Providers first, or transfer ownership to another user.`,
+            organizationId: membership.organizationId,
+            organizationName: membership.organization.name,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Delete user (cascades to sessions, accounts, members, pending registrations due to schema relations)
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    // Create audit log entry
+    await prisma.auditLog.create({
+      data: {
+        userId: adminCheck.user!.id,
+        action: "DELETE_USER",
+        resourceType: "User",
+        resourceId: id,
+        metadata: JSON.stringify({
+          deletedUserEmail: existingUser.email,
+          deletedUserName: existingUser.name,
+          hadOrganizations: existingUser.members.length,
+        }),
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `User "${existingUser.name}" (${existingUser.email}) has been deleted`,
+    });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete user" },
       { status: 500 }
     );
   }

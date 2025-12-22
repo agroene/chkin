@@ -60,6 +60,8 @@ export default function ProviderDetailPage({
   const [actionLoading, setActionLoading] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteUsers, setDeleteUsers] = useState(false);
 
   useEffect(() => {
     async function fetchProvider() {
@@ -148,6 +150,29 @@ export default function ProviderDetailPage({
       alert(err instanceof Error ? err.message : "Failed to reject provider");
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    setActionLoading(true);
+    try {
+      const response = await fetch(
+        `/api/admin/providers/${id}?deleteUsers=${deleteUsers}`,
+        { method: "DELETE" }
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete provider");
+      }
+
+      // Redirect to providers list
+      router.push("/admin/providers");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete provider");
+    } finally {
+      setActionLoading(false);
+      setShowDeleteModal(false);
     }
   }
 
@@ -367,6 +392,21 @@ export default function ProviderDetailPage({
               </Link>
             </div>
           </Card>
+
+          {/* Danger Zone */}
+          <Card title="Danger Zone">
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                Permanently delete this provider organization and all associated data.
+              </p>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="w-full px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+              >
+                Delete Organization
+              </button>
+            </div>
+          </Card>
         </div>
       </div>
 
@@ -405,6 +445,90 @@ export default function ProviderDetailPage({
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 {actionLoading ? "Rejecting..." : "Reject Provider"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Delete Organization
+              </h3>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete <strong>{provider?.name}</strong>? This
+              will permanently remove:
+            </p>
+
+            <ul className="text-sm text-gray-600 mb-4 list-disc list-inside space-y-1">
+              <li>The organization and all its settings</li>
+              <li>All forms created by this organization</li>
+              <li>All patient submissions</li>
+              <li>All team member associations</li>
+            </ul>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={deleteUsers}
+                  onChange={(e) => setDeleteUsers(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">
+                    Also delete associated users
+                  </span>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    This will permanently delete {provider?.memberCount || 0} user
+                    account(s) associated with this organization.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <p className="text-sm text-red-600 font-medium mb-4">
+              This action cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteUsers(false);
+                }}
+                disabled={actionLoading}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={actionLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {actionLoading ? "Deleting..." : "Delete Organization"}
               </button>
             </div>
           </div>

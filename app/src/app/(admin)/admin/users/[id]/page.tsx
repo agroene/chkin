@@ -73,6 +73,12 @@ export default function UserDetailPage({
   // Revoke sessions state
   const [showRevokeModal, setShowRevokeModal] = useState(false);
 
+  // Delete user state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Verify email state
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -161,6 +167,60 @@ export default function UserDetailPage({
       alert(`Successfully revoked ${data.data.sessionsRevoked} session(s)`);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to revoke sessions");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete user");
+      }
+
+      alert(data.message || "User deleted successfully");
+      router.push("/admin/users");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete user");
+    } finally {
+      setActionLoading(false);
+      setShowDeleteModal(false);
+    }
+  }
+
+  async function handleVerifyEmail() {
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emailVerified: true }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to verify email");
+      }
+
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              emailVerified: true,
+              updatedAt: data.data.updatedAt,
+            }
+          : null
+      );
+      setShowVerifyModal(false);
+      alert("Email verified successfully");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to verify email");
     } finally {
       setActionLoading(false);
     }
@@ -271,7 +331,7 @@ export default function UserDetailPage({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 sm:gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <Button
               variant="secondary"
               onClick={() => {
@@ -282,13 +342,31 @@ export default function UserDetailPage({
             >
               Edit User
             </Button>
+            {!user.emailVerified && (
+              <Button
+                variant="secondary"
+                onClick={() => setShowVerifyModal(true)}
+                className="text-green-600 hover:bg-green-50"
+              >
+                Verify Email
+              </Button>
+            )}
             {user.sessionCount > 0 && (
               <Button
                 variant="secondary"
                 onClick={() => setShowRevokeModal(true)}
-                className="text-red-600 hover:bg-red-50"
+                className="text-amber-600 hover:bg-amber-50"
               >
                 Revoke Sessions
+              </Button>
+            )}
+            {!user.isSystemAdmin && (
+              <Button
+                variant="secondary"
+                onClick={() => setShowDeleteModal(true)}
+                className="text-red-600 hover:bg-red-50"
+              >
+                Delete User
               </Button>
             )}
           </div>
@@ -559,6 +637,84 @@ export default function UserDetailPage({
               className="bg-red-600 hover:bg-red-700"
             >
               {actionLoading ? "Revoking..." : "Revoke All Sessions"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Verify Email Modal */}
+      <Modal
+        isOpen={showVerifyModal}
+        onClose={() => setShowVerifyModal(false)}
+        title="Verify Email Address"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            This will manually verify the email address for{" "}
+            <strong>{user.name}</strong> ({user.email}).
+          </p>
+          <p className="text-sm text-gray-600">
+            Use this if the user is unable to receive verification emails or if
+            you have verified their identity through other means.
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setShowVerifyModal(false)}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleVerifyEmail}
+              disabled={actionLoading}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {actionLoading ? "Verifying..." : "Verify Email"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete User Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete User"
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg bg-red-50 p-4">
+            <p className="text-sm font-medium text-red-800">
+              Warning: This action cannot be undone!
+            </p>
+          </div>
+          <p className="text-sm text-gray-600">
+            You are about to permanently delete the user{" "}
+            <strong>{user.name}</strong> ({user.email}).
+          </p>
+          <p className="text-sm text-gray-600">
+            This will remove:
+          </p>
+          <ul className="list-disc pl-5 text-sm text-gray-600">
+            <li>Their account and login credentials</li>
+            <li>All active sessions</li>
+            <li>Membership in any organizations</li>
+            <li>Any pending registrations</li>
+          </ul>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteUser}
+              disabled={actionLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {actionLoading ? "Deleting..." : "Delete User"}
             </Button>
           </div>
         </div>

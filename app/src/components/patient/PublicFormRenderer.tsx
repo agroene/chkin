@@ -516,6 +516,7 @@ export default function PublicFormRenderer({
             defaultCountry={config.defaultCountry || "ZA"}
             placeholder={config.placeholder}
             hasError={hasError}
+            size="large"
           />
         );
 
