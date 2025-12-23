@@ -16,8 +16,8 @@ import { logAuditEvent } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 
-// Max file size: 2MB
-const MAX_FILE_SIZE = 2 * 1024 * 1024;
+// Max file size: 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 // Allowed image types
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Maximum size is 2MB." },
+        { error: "File too large. Maximum size is 5MB." },
         { status: 400 }
       );
     }

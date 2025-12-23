@@ -58,9 +58,9 @@ export default function ProfileHeader({
       return;
     }
 
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      setUploadError("Image must be less than 2MB.");
+      setUploadError("Image must be less than 5MB.");
       return;
     }
 
@@ -113,8 +113,24 @@ export default function ProfileHeader({
               className="h-16 w-16 rounded-full object-cover ring-2 ring-white shadow-md transition-opacity group-hover:opacity-80"
             />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-teal-600 text-xl font-bold text-white shadow-md ring-2 ring-white transition-opacity group-hover:opacity-80">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-teal-600 text-xl font-bold text-white shadow-md ring-2 ring-white transition-opacity group-hover:opacity-80">
               {initials}
+              {/* Plus icon indicator for empty avatar - hides on hover */}
+              <div className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200 transition-opacity group-hover:opacity-0">
+                <svg
+                  className="h-3 w-3 text-teal-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={3}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </div>
             </div>
           )}
 
@@ -148,8 +164,10 @@ export default function ProfileHeader({
             </div>
           )}
 
-          {/* Online indicator */}
-          <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white bg-green-500" />
+          {/* Online indicator - only show when image exists (plus icon shows otherwise) */}
+          {image && (
+            <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white bg-green-500" />
+          )}
         </button>
 
         {/* Hidden file input */}
