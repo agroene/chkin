@@ -92,7 +92,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setEmail("anton@groenewald.name");
+                  setEmail("john.smith@example.com");
                   setPassword("examined6cosmos@STUDYING");
                 }}
                 className="flex-1 py-2 px-3 border border-dashed border-orange-300 rounded-md text-xs text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
