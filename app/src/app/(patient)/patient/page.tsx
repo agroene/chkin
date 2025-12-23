@@ -78,6 +78,38 @@ export default function PatientDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  // Link any anonymous submissions on first load
+  const linkAnonymousSubmissions = async () => {
+    if (typeof window === "undefined") return false;
+
+    const anonymousToken = localStorage.getItem("chkin_anonymous_token");
+    if (!anonymousToken) return false;
+
+    try {
+      const response = await fetch("/api/patient/link-submission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ anonymousToken }),
+      });
+
+      // Clear token regardless of result (one-time use)
+      localStorage.removeItem("chkin_anonymous_token");
+      // Also clear registration prefill data
+      localStorage.removeItem("chkin_registration_prefill");
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Linked anonymous submissions:", result);
+        return true; // Data was synced, will be reflected in profile fetch
+      }
+    } catch (err) {
+      console.error("Failed to link anonymous submission:", err);
+      // Clear token anyway to prevent repeated attempts
+      localStorage.removeItem("chkin_anonymous_token");
+    }
+    return false;
+  };
+
   // Fetch all data on mount
   useEffect(() => {
     if (!isPending && !session?.user) {
@@ -86,7 +118,10 @@ export default function PatientDashboard() {
     }
 
     if (session?.user) {
-      fetchData();
+      // First link any anonymous submissions, then fetch data
+      linkAnonymousSubmissions().then(() => {
+        fetchData();
+      });
     }
   }, [session, isPending, router]);
 
