@@ -31,6 +31,27 @@ export default function QRScanner({
 
     const initScanner = async () => {
       try {
+        // Check if we're in a secure context (HTTPS or localhost)
+        const isSecureContext = window.isSecureContext;
+
+        // Check if mediaDevices API is available
+        // On iOS Safari, this requires HTTPS and may not be available in all contexts
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          let errorMessage = "Camera access is not available.";
+
+          if (!isSecureContext) {
+            errorMessage = "Camera requires a secure connection (HTTPS). Please access this page via HTTPS.";
+          } else {
+            // iOS Safari specific messaging
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            if (isIOS) {
+              errorMessage = "Camera access is not available. On iOS, please ensure you're using Safari and the site is served over HTTPS.";
+            }
+          }
+
+          throw new Error(errorMessage);
+        }
+
         // Check for camera permission
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         stream.getTracks().forEach((track) => track.stop());
@@ -90,6 +111,10 @@ export default function QRScanner({
             setError("Camera access denied. Please enable camera permissions.");
           } else if (err.name === "NotFoundError") {
             setError("No camera found on this device.");
+          } else if (err.name === "NotReadableError") {
+            setError("Camera is in use by another application.");
+          } else if (err.name === "OverconstrainedError") {
+            setError("No suitable camera found.");
           } else {
             setError(err.message || "Failed to start camera.");
           }
