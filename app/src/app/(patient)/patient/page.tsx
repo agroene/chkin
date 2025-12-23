@@ -75,6 +75,9 @@ export default function PatientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Avatar state - local override for session image after upload
+  const [avatarImage, setAvatarImage] = useState<string | null>(null);
+
   // Sheet state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -276,7 +279,8 @@ export default function PatientDashboard() {
             <ProfileHeader
               name={session.user.name || "User"}
               email={session.user.email || ""}
-              image={session.user.image}
+              image={avatarImage || session.user.image}
+              onAvatarChange={setAvatarImage}
             />
           </div>
         )}
