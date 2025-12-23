@@ -10,6 +10,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
+import Logo from "@/components/Logo";
 import ProfileHeader from "@/components/patient/ProfileHeader";
 import ProfileProgress from "@/components/patient/ProfileProgress";
 import VaultCardStack from "@/components/patient/VaultCardStack";
@@ -254,9 +255,9 @@ export default function PatientDashboard() {
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-lg px-4 py-4">
+        <div className="mx-auto max-w-lg px-4 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-bold text-teal-600">chkin</h1>
+            <Logo size="sm" linkToHome />
             <button
               onClick={handleLogout}
               className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
