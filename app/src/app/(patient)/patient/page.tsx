@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import Logo from "@/components/Logo";
@@ -81,6 +81,27 @@ export default function PatientDashboard() {
   // Sheet state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Menu state
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
 
   // Link any anonymous submissions on first load
   const linkAnonymousSubmissions = async () => {
@@ -261,27 +282,126 @@ export default function PatientDashboard() {
         <div className="mx-auto max-w-lg px-4 py-3">
           <div className="flex items-center justify-between">
             <Logo size="sm" linkToHome />
-            <button
-              onClick={handleLogout}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
-            >
-              Sign Out
-            </button>
+            {/* Menu dropdown */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Menu"
+                aria-expanded={menuOpen}
+              >
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z"
+                  />
+                </svg>
+              </button>
+              {/* Dropdown menu */}
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5">
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push("/patient/settings");
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    Settings
+                  </button>
+                  <hr className="my-1 border-gray-100" />
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
+                      />
+                    </svg>
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main content */}
       <div className="mx-auto max-w-lg px-4 pb-8">
-        {/* Profile header */}
+        {/* Profile header with QR scan button */}
         {session?.user && (
           <div className="py-4">
-            <ProfileHeader
-              name={session.user.name || "User"}
-              email={session.user.email || ""}
-              image={avatarImage || session.user.image}
-              onAvatarChange={setAvatarImage}
-            />
+            <div className="flex items-start justify-between">
+              <ProfileHeader
+                name={session.user.name || "User"}
+                email={session.user.email || ""}
+                image={avatarImage || session.user.image}
+                onAvatarChange={setAvatarImage}
+              />
+              {/* QR Scan button - prominent position */}
+              <button
+                onClick={() => router.push("/patient/scan")}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg transition-all hover:bg-teal-700 hover:shadow-xl active:scale-95"
+                aria-label="Scan QR Code"
+              >
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M3 17v2a2 2 0 002 2h2M17 21h2a2 2 0 002-2v-2"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M7 7h3v3H7zM14 7h3v3h-3zM7 14h3v3H7z"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         )}
 
@@ -295,21 +415,8 @@ export default function PatientDashboard() {
           </div>
         )}
 
-        {/* Vault cards */}
-        <div className="py-4">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            My Data Vault
-          </h2>
-          <VaultCardStack
-            categories={categories}
-            completions={stats?.categories || []}
-            profileData={profileData}
-            onCardClick={handleCardClick}
-          />
-        </div>
-
-        {/* Quick actions */}
-        <div className="mt-6 flex gap-3">
+        {/* Quick actions - moved above vault */}
+        <div className="mb-6 flex gap-3">
           <button
             onClick={() => router.push("/patient/submissions")}
             className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -348,6 +455,19 @@ export default function PatientDashboard() {
             </svg>
             My Consents
           </button>
+        </div>
+
+        {/* Vault cards */}
+        <div className="py-4">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            My Data Vault
+          </h2>
+          <VaultCardStack
+            categories={categories}
+            completions={stats?.categories || []}
+            profileData={profileData}
+            onCardClick={handleCardClick}
+          />
         </div>
       </div>
 
