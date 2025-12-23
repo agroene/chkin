@@ -487,3 +487,28 @@ model PatientProfile {
 
   @@map("patient_profile")
 }
+
+// =============================================================================
+// CATEGORY METADATA MODEL
+// =============================================================================
+
+// Category metadata for organizing field definitions in the patient vault
+// Categories are displayed as cards in the wallet-style UI
+model CategoryMeta {
+  id            String   @id @default(cuid())
+  name          String   @unique  // Internal name: "personal", "medical", etc.
+  label         String             // Display label: "Personal Details"
+  description   String?            // Category description: "Your basic information"
+  icon          String             // Heroicons name: "user", "heart", "shield"
+  sortOrder     Int      @default(0)  // Display order in vault UI
+  color         String?            // Tailwind color class: "teal", "red", "blue"
+  isProtected   Boolean  @default(false)  // Requires re-auth to view sensitive data
+  isActive      Boolean  @default(true)   // Whether category is shown in vault
+  previewFields String[]           // Field names for card summary preview
+
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("category_meta")
+}
