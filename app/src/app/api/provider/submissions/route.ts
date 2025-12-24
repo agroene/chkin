@@ -11,6 +11,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { logAuditEvent } from "@/lib/audit-log";
+import { calculateConsentStatus, getConsentStatusBadge } from "@/lib/consent-status";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
     // Parse query parameters
     const formId = searchParams.get("formId");
     const status = searchParams.get("status"); // "pending", "completed", "reviewed", or null for all
+    const consentStatus = searchParams.get("consentStatus"); // "active", "expiring", "expired", "withdrawn", or null for all
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const search = searchParams.get("search") || "";
@@ -86,6 +88,7 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               title: true,
+              gracePeriodDays: true,
             },
           },
         },
@@ -117,7 +120,7 @@ export async function GET(request: NextRequest) {
 
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    // Format submissions for response
+    // Format submissions for response with consent status
     const formattedSubmissions = submissions.map((submission) => {
       const user = submission.userId ? userMap.get(submission.userId) : null;
       const data = JSON.parse(submission.data);
@@ -129,18 +132,70 @@ export async function GET(request: NextRequest) {
           ? `${data.firstName} ${data.lastName}`
           : data.firstName || data.fullName || null;
 
+      // Calculate consent status
+      const consentStatusResult = calculateConsentStatus({
+        consentGiven: submission.consentGiven,
+        consentAt: submission.consentAt,
+        consentExpiresAt: submission.consentExpiresAt,
+        consentWithdrawnAt: submission.consentWithdrawnAt,
+        gracePeriodDays: submission.formTemplate.gracePeriodDays,
+      });
+      const statusBadge = getConsentStatusBadge(consentStatusResult.status);
+
       return {
         id: submission.id,
-        formTemplate: submission.formTemplate,
+        formTemplate: {
+          id: submission.formTemplate.id,
+          title: submission.formTemplate.title,
+        },
         patientName,
         patientEmail: user?.email || data.email || null,
         isAnonymous: !submission.userId,
         status: submission.status,
         consentGiven: submission.consentGiven,
+        // Time-bound consent info
+        consent: {
+          given: submission.consentGiven,
+          givenAt: submission.consentAt,
+          expiresAt: submission.consentExpiresAt,
+          withdrawnAt: submission.consentWithdrawnAt,
+          status: consentStatusResult.status,
+          statusLabel: statusBadge.label,
+          statusColor: statusBadge.color,
+          isAccessible: consentStatusResult.isAccessible,
+          daysRemaining: consentStatusResult.daysRemaining,
+          renewalUrgency: consentStatusResult.renewalUrgency,
+          message: consentStatusResult.message,
+        },
         source: submission.source,
         createdAt: submission.createdAt,
       };
     });
+
+    // Filter by consent status if requested (post-query filtering since it's computed)
+    let filteredSubmissions = formattedSubmissions;
+    if (consentStatus) {
+      const statusMap: Record<string, string[]> = {
+        active: ["ACTIVE"],
+        expiring: ["EXPIRING"],
+        expired: ["GRACE", "EXPIRED"],
+        withdrawn: ["WITHDRAWN"],
+      };
+      const targetStatuses = statusMap[consentStatus] || [];
+      filteredSubmissions = formattedSubmissions.filter((s) =>
+        targetStatuses.includes(s.consent.status)
+      );
+    }
+
+    // Calculate consent status summary
+    const consentSummary = {
+      active: formattedSubmissions.filter((s) => s.consent.status === "ACTIVE").length,
+      expiring: formattedSubmissions.filter((s) => s.consent.status === "EXPIRING").length,
+      grace: formattedSubmissions.filter((s) => s.consent.status === "GRACE").length,
+      expired: formattedSubmissions.filter((s) => s.consent.status === "EXPIRED").length,
+      withdrawn: formattedSubmissions.filter((s) => s.consent.status === "WITHDRAWN").length,
+      neverGiven: formattedSubmissions.filter((s) => s.consent.status === "NEVER_GIVEN").length,
+    };
 
     // Log audit event
     await logAuditEvent({
@@ -150,20 +205,21 @@ export async function GET(request: NextRequest) {
       action: "LIST_SUBMISSIONS",
       resourceType: "Submission",
       metadata: {
-        filters: { formId, status, dateFrom, dateTo, search },
-        resultCount: submissions.length,
+        filters: { formId, status, consentStatus, dateFrom, dateTo, search },
+        resultCount: filteredSubmissions.length,
         totalCount: total,
       },
     });
 
     return NextResponse.json({
-      submissions: formattedSubmissions,
+      submissions: filteredSubmissions,
       forms,
+      consentSummary,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: consentStatus ? filteredSubmissions.length : total,
+        totalPages: Math.ceil((consentStatus ? filteredSubmissions.length : total) / limit),
       },
     });
   } catch (error) {

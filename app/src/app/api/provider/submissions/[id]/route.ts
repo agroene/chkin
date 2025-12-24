@@ -12,6 +12,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { logAuditEvent } from "@/lib/audit-log";
+import { calculateConsentStatus, getConsentStatusBadge } from "@/lib/consent-status";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ async function verifySubmissionAccess(userId: string, submissionId: string) {
         },
       },
     },
+    // Also include time-bound consent fields
   });
 
   if (!submission) {
@@ -132,12 +134,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
 
+    // Calculate consent status
+    const consentStatusResult = calculateConsentStatus({
+      consentGiven: submission.consentGiven,
+      consentAt: submission.consentAt,
+      consentExpiresAt: submission.consentExpiresAt,
+      consentWithdrawnAt: submission.consentWithdrawnAt,
+      gracePeriodDays: submission.formTemplate.gracePeriodDays,
+    });
+    const statusBadge = getConsentStatusBadge(consentStatusResult.status);
+
     return NextResponse.json({
       submission: {
         id: submission.id,
         formTemplate: {
           id: submission.formTemplate.id,
           title: submission.formTemplate.title,
+          defaultConsentDuration: submission.formTemplate.defaultConsentDuration,
+          gracePeriodDays: submission.formTemplate.gracePeriodDays,
         },
         user: user
           ? {
@@ -148,8 +162,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           : null,
         isAnonymous: !submission.userId,
         status: submission.status,
+        // Legacy consent fields for backwards compatibility
         consentGiven: submission.consentGiven,
         consentAt: submission.consentAt,
+        // Time-bound consent info
+        consent: {
+          given: submission.consentGiven,
+          givenAt: submission.consentAt,
+          expiresAt: submission.consentExpiresAt,
+          withdrawnAt: submission.consentWithdrawnAt,
+          durationMonths: submission.consentDurationMonths,
+          autoRenew: submission.autoRenew,
+          renewedAt: submission.renewedAt,
+          renewalCount: submission.renewalCount,
+          // Computed status
+          status: consentStatusResult.status,
+          statusLabel: statusBadge.label,
+          statusColor: statusBadge.color,
+          isAccessible: consentStatusResult.isAccessible,
+          daysRemaining: consentStatusResult.daysRemaining,
+          gracePeriodEndsAt: consentStatusResult.gracePeriodEndsAt,
+          renewalUrgency: consentStatusResult.renewalUrgency,
+          message: consentStatusResult.message,
+        },
         source: submission.source,
         ipAddress: submission.ipAddress,
         userAgent: submission.userAgent,
