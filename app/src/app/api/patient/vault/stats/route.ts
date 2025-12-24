@@ -66,24 +66,36 @@ export async function GET() {
     let totalFieldsCount = 0;
     let totalFilledCount = 0;
 
+    // Helper to check if a field is filled (has value OR is marked N/A)
+    const isFieldFilled = (fieldName: string): boolean => {
+      // Check if field is marked as N/A
+      const naKey = `_na_${fieldName}`;
+      if (profileData[naKey] === true) {
+        return true;
+      }
+
+      // Check if field has a value
+      const value = profileData[fieldName];
+      if (value === undefined || value === null || value === "") {
+        return false;
+      }
+      if (typeof value === "string" && value.trim() === "") {
+        return false;
+      }
+      if (Array.isArray(value) && value.length === 0) {
+        return false;
+      }
+      return true;
+    };
+
     for (const category of categories) {
       const categoryFields = fieldsByCategory[category.name] || [];
       const totalFields = categoryFields.length;
 
-      // Count filled fields (non-empty values)
-      const filledFields = categoryFields.filter((field) => {
-        const value = profileData[field.name];
-        if (value === undefined || value === null || value === "") {
-          return false;
-        }
-        if (typeof value === "string" && value.trim() === "") {
-          return false;
-        }
-        if (Array.isArray(value) && value.length === 0) {
-          return false;
-        }
-        return true;
-      }).length;
+      // Count filled fields (has value OR marked as N/A)
+      const filledFields = categoryFields.filter((field) =>
+        isFieldFilled(field.name)
+      ).length;
 
       const percentage = totalFields > 0
         ? Math.round((filledFields / totalFields) * 100)
