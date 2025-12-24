@@ -147,6 +147,21 @@ export default function CategoryFieldRenderer({
           <p className="whitespace-pre-wrap text-gray-900">{stringValue}</p>
         );
 
+      case "country": {
+        // Map country codes to display names
+        const countryNames: Record<string, string> = {
+          ZA: "South Africa",
+          BW: "Botswana",
+          LS: "Lesotho",
+          MZ: "Mozambique",
+          NA: "Namibia",
+          SZ: "Eswatini",
+          ZW: "Zimbabwe",
+          OTHER: "Other",
+        };
+        return <p className="text-gray-900">{countryNames[stringValue] || stringValue}</p>;
+      }
+
       default:
         return <p className="text-gray-900">{String(value)}</p>;
     }
@@ -327,10 +342,11 @@ export default function CategoryFieldRenderer({
         return (
           <select
             id={field.id}
-            value={stringValue || "ZA"}
+            value={stringValue}
             onChange={(e) => onChange(e.target.value)}
             className={baseInputClass}
           >
+            <option value="">Select country...</option>
             <option value="ZA">South Africa</option>
             <option value="BW">Botswana</option>
             <option value="LS">Lesotho</option>
