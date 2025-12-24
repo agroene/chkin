@@ -2,7 +2,7 @@
  * Vault Card Component
  *
  * Individual category card in the wallet-style UI.
- * Shows icon, label, status indicator, and preview text.
+ * Shows icon, label, progress indicator, and preview text.
  * Includes stacked shadow effect for depth.
  */
 
@@ -18,14 +18,25 @@ interface VaultCardProps {
   status: CardStatus;
   preview?: string;
   isProtected?: boolean;
+  filledFields?: number;
+  totalFields?: number;
   onClick: () => void;
 }
 
-// Status indicator component - moved outside to avoid recreating on each render
-function StatusIndicator({ status }: { status: CardStatus }) {
-  switch (status) {
-    case "complete":
-      return (
+// Progress indicator component - gamified approach
+function ProgressIndicator({
+  status,
+  filledFields = 0,
+  totalFields = 0,
+}: {
+  status: CardStatus;
+  filledFields?: number;
+  totalFields?: number;
+}) {
+  // Complete - show checkmark
+  if (status === "complete") {
+    return (
+      <div className="flex items-center gap-1.5">
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100">
           <svg
             className="h-4 w-4 text-green-600"
@@ -39,25 +50,14 @@ function StatusIndicator({ status }: { status: CardStatus }) {
             />
           </svg>
         </div>
-      );
-    case "incomplete":
-      return (
-        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100">
-          <svg
-            className="h-4 w-4 text-amber-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-      );
-    case "protected":
-      return (
+      </div>
+    );
+  }
+
+  // Protected - show lock
+  if (status === "protected") {
+    return (
+      <div className="flex items-center gap-1.5">
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100">
           <svg
             className="h-4 w-4 text-gray-600"
@@ -71,9 +71,15 @@ function StatusIndicator({ status }: { status: CardStatus }) {
             />
           </svg>
         </div>
-      );
-    default:
-      return (
+      </div>
+    );
+  }
+
+  // Empty - show plus icon to encourage adding
+  if (status === "empty" || totalFields === 0) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-medium text-gray-400">Get started</span>
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100">
           <svg
             className="h-4 w-4 text-gray-400"
@@ -87,8 +93,45 @@ function StatusIndicator({ status }: { status: CardStatus }) {
             />
           </svg>
         </div>
-      );
+      </div>
+    );
   }
+
+  // In progress - show mini progress bar and count
+  const percentage = totalFields > 0 ? (filledFields / totalFields) * 100 : 0;
+  const remaining = totalFields - filledFields;
+
+  // Color based on progress
+  let progressColor = "bg-gray-300";
+  let textColor = "text-gray-500";
+
+  if (percentage >= 75) {
+    progressColor = "bg-teal-500";
+    textColor = "text-teal-600";
+  } else if (percentage >= 50) {
+    progressColor = "bg-amber-400";
+    textColor = "text-amber-600";
+  } else if (percentage > 0) {
+    progressColor = "bg-orange-400";
+    textColor = "text-orange-600";
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {/* Progress count */}
+      <span className={`text-xs font-medium ${textColor}`}>
+        {remaining === 1 ? "1 left" : `${remaining} left`}
+      </span>
+
+      {/* Mini progress bar */}
+      <div className="relative h-2 w-12 overflow-hidden rounded-full bg-gray-200">
+        <div
+          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${progressColor}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
 }
 
 // Color classes for icon background - static, doesn't change
@@ -118,6 +161,8 @@ export default function VaultCard({
   status,
   preview,
   isProtected,
+  filledFields = 0,
+  totalFields = 0,
   onClick,
 }: VaultCardProps) {
   const iconColorClass = colorClasses[color || "teal"] || colorClasses.teal;
@@ -159,9 +204,13 @@ export default function VaultCard({
           </div>
         </div>
 
-        {/* Status and chevron */}
+        {/* Progress indicator and chevron */}
         <div className="flex items-center gap-2">
-          <StatusIndicator status={status} />
+          <ProgressIndicator
+            status={status}
+            filledFields={filledFields}
+            totalFields={totalFields}
+          />
           <svg
             className="h-5 w-5 text-gray-400 transition-transform group-hover:translate-x-0.5"
             fill="none"

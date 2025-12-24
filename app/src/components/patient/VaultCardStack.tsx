@@ -115,19 +115,24 @@ export default function VaultCardStack({
   return (
     <div className="space-y-3">
       {/* Category cards */}
-      {visibleCategories.map((category) => (
-        <VaultCard
-          key={category.name}
-          name={category.name}
-          label={category.label}
-          icon={category.icon}
-          color={category.color}
-          status={getCardStatus(category)}
-          preview={generatePreview(category)}
-          isProtected={category.isProtected}
-          onClick={() => onCardClick(category)}
-        />
-      ))}
+      {visibleCategories.map((category) => {
+        const completion = completions.find((c) => c.name === category.name);
+        return (
+          <VaultCard
+            key={category.name}
+            name={category.name}
+            label={category.label}
+            icon={category.icon}
+            color={category.color}
+            status={getCardStatus(category)}
+            preview={generatePreview(category)}
+            isProtected={category.isProtected}
+            filledFields={completion?.filledFields || 0}
+            totalFields={completion?.totalFields || 0}
+            onClick={() => onCardClick(category)}
+          />
+        );
+      })}
 
       {/* Show more / Show less button */}
       {hiddenCount > 0 && (

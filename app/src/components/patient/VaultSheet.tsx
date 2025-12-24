@@ -162,121 +162,124 @@ export default function VaultSheet({
         aria-hidden="true"
       />
 
-      {/* Sheet */}
-      <div
-        className={`absolute inset-x-0 bottom-0 max-h-[90vh] transform overflow-hidden rounded-t-2xl bg-white shadow-xl transition-transform duration-300 ease-out ${
-          isOpen ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
-        {/* Header */}
-        <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`rounded-lg p-2 ${iconColorClass}`}>
-                <CategoryIcon name={category.icon} className="h-6 w-6" />
+      {/* Sheet container - centers on desktop */}
+      <div className="absolute inset-x-0 bottom-0 flex justify-center">
+        {/* Sheet - constrained to max-w-lg on desktop to match main content */}
+        <div
+          className={`w-full max-w-lg max-h-[90vh] transform overflow-hidden rounded-t-2xl bg-white shadow-xl transition-transform duration-300 ease-out ${
+            isOpen ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          {/* Header */}
+          <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`rounded-lg p-2 ${iconColorClass}`}>
+                  <CategoryIcon name={category.icon} className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {category.label}
+                  </h2>
+                  {category.description && (
+                    <p className="text-sm text-gray-500">{category.description}</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {category.label}
-                </h2>
-                {category.description && (
-                  <p className="text-sm text-gray-500">{category.description}</p>
+
+              <div className="flex items-center gap-2">
+                {/* Edit/Save button */}
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={handleCancel}
+                      disabled={saving}
+                      className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+                    >
+                      {saving ? "Saving..." : "Save"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-teal-600 hover:bg-teal-50"
+                  >
+                    Edit
+                  </button>
                 )}
+
+                {/* Close button */}
+                <button
+                  onClick={onClose}
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  aria-label="Close"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Edit/Save button */}
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleCancel}
-                    disabled={saving}
-                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
-                  >
-                    {saving ? "Saving..." : "Save"}
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-teal-600 hover:bg-teal-50"
-                >
-                  Edit
-                </button>
-              )}
-
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+            {/* Protected category warning */}
+            {category.isProtected && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
+                    fillRule="evenodd"
+                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                    clipRule="evenodd"
                   />
                 </svg>
-              </button>
-            </div>
+                This category contains sensitive information
+              </div>
+            )}
+
+            {/* Error message */}
+            {error && (
+              <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </div>
+            )}
           </div>
 
-          {/* Protected category warning */}
-          {category.isProtected && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              This category contains sensitive information
-            </div>
-          )}
-
-          {/* Error message */}
-          {error && (
-            <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-        </div>
-
-        {/* Content - scrollable */}
-        <div className="overflow-y-auto px-4 py-4" style={{ maxHeight: "calc(90vh - 120px)" }}>
-          {category.fields.length === 0 ? (
-            <div className="py-8 text-center text-gray-500">
-              <p>No fields in this category yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {category.fields.map((field) => (
-                <CategoryFieldRenderer
-                  key={field.id}
-                  field={field}
-                  value={getFieldValue(field.name)}
-                  isEditing={isEditing}
-                  onChange={(value) => handleFieldChange(field.name, value)}
-                />
-              ))}
-            </div>
-          )}
+          {/* Content - scrollable */}
+          <div className="overflow-y-auto px-4 py-4" style={{ maxHeight: "calc(90vh - 120px)" }}>
+            {category.fields.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">
+                <p>No fields in this category yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {category.fields.map((field) => (
+                  <CategoryFieldRenderer
+                    key={field.id}
+                    field={field}
+                    value={getFieldValue(field.name)}
+                    isEditing={isEditing}
+                    onChange={(value) => handleFieldChange(field.name, value)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
