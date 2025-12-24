@@ -46,6 +46,7 @@ interface VaultCardStackProps {
   completions: CategoryCompletion[];
   profileData: Record<string, unknown>;
   onCardClick: (category: Category) => void;
+  onProgressClick?: (category: Category) => void; // Click on progress to edit incomplete fields only
   initialVisibleCount?: number;
 }
 
@@ -54,6 +55,7 @@ export default function VaultCardStack({
   completions,
   profileData,
   onCardClick,
+  onProgressClick,
   initialVisibleCount = 6,
 }: VaultCardStackProps) {
   const [expanded, setExpanded] = useState(false);
@@ -117,6 +119,9 @@ export default function VaultCardStack({
       {/* Category cards */}
       {visibleCategories.map((category) => {
         const completion = completions.find((c) => c.name === category.name);
+        const status = getCardStatus(category);
+        // Only show progress click for incomplete categories
+        const showProgressClick = onProgressClick && status === "incomplete";
         return (
           <VaultCard
             key={category.name}
@@ -124,12 +129,13 @@ export default function VaultCardStack({
             label={category.label}
             icon={category.icon}
             color={category.color}
-            status={getCardStatus(category)}
+            status={status}
             preview={generatePreview(category)}
             isProtected={category.isProtected}
             filledFields={completion?.filledFields || 0}
             totalFields={completion?.totalFields || 0}
             onClick={() => onCardClick(category)}
+            onProgressClick={showProgressClick ? () => onProgressClick(category) : undefined}
           />
         );
       })}

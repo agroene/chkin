@@ -25,6 +25,8 @@ interface CategoryFieldRendererProps {
   value: unknown;
   isEditing: boolean;
   onChange: (value: unknown) => void;
+  isNa?: boolean; // Field is marked as N/A (Not Applicable)
+  onNaToggle?: (isNa: boolean) => void; // Callback when N/A is toggled
 }
 
 export default function CategoryFieldRenderer({
@@ -32,6 +34,8 @@ export default function CategoryFieldRenderer({
   value,
   isEditing,
   onChange,
+  isNa = false,
+  onNaToggle,
 }: CategoryFieldRendererProps) {
   const stringValue = typeof value === "string" ? value : "";
   const boolValue = typeof value === "boolean" ? value : false;
@@ -44,30 +48,54 @@ export default function CategoryFieldRenderer({
           {field.label}
         </label>
         <div className="mt-1">
-          {renderViewValue()}
+          {isNa ? (
+            <p className="text-gray-400 italic">N/A</p>
+          ) : (
+            renderViewValue()
+          )}
         </div>
       </div>
     );
   }
 
-  // Edit mode - render appropriate input
+  // Edit mode - render appropriate input with N/A option
   return (
     <div className="border-b border-gray-100 pb-4 last:border-0">
-      <label
-        htmlFor={field.id}
-        className="text-xs font-medium uppercase tracking-wide text-gray-500"
-      >
-        {field.label}
-        {field.specialPersonalInfo && (
-          <span className="ml-1 text-amber-500" title="Sensitive information">
-            *
-          </span>
+      <div className="flex items-center justify-between">
+        <label
+          htmlFor={field.id}
+          className="text-xs font-medium uppercase tracking-wide text-gray-500"
+        >
+          {field.label}
+          {field.specialPersonalInfo && (
+            <span className="ml-1 text-amber-500" title="Sensitive information">
+              *
+            </span>
+          )}
+        </label>
+        {/* N/A toggle - available for all optional fields */}
+        {onNaToggle && (
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isNa}
+              onChange={(e) => onNaToggle(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-gray-300 text-gray-500 focus:ring-gray-400"
+            />
+            <span className="text-xs text-gray-400">N/A</span>
+          </label>
         )}
-      </label>
-      <div className="mt-1">
-        {renderEditInput()}
       </div>
-      {field.description && (
+      <div className="mt-1">
+        {isNa ? (
+          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 italic">
+            Marked as not applicable
+          </div>
+        ) : (
+          renderEditInput()
+        )}
+      </div>
+      {field.description && !isNa && (
         <p className="mt-1 text-xs text-gray-400">{field.description}</p>
       )}
     </div>

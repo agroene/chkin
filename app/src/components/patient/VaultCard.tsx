@@ -21,6 +21,7 @@ interface VaultCardProps {
   filledFields?: number;
   totalFields?: number;
   onClick: () => void;
+  onProgressClick?: () => void; // Click on progress to edit incomplete fields only
 }
 
 // Progress indicator component - gamified approach
@@ -28,10 +29,12 @@ function ProgressIndicator({
   status,
   filledFields = 0,
   totalFields = 0,
+  onClick,
 }: {
   status: CardStatus;
   filledFields?: number;
   totalFields?: number;
+  onClick?: () => void;
 }) {
   // Complete - show checkmark
   if (status === "complete") {
@@ -104,6 +107,7 @@ function ProgressIndicator({
   // Color based on progress
   let progressColor = "bg-gray-300";
   let textColor = "text-gray-500";
+  let hoverClass = onClick ? "cursor-pointer hover:bg-gray-100 active:bg-gray-200" : "";
 
   if (percentage >= 75) {
     progressColor = "bg-teal-500";
@@ -116,11 +120,24 @@ function ProgressIndicator({
     textColor = "text-orange-600";
   }
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      e.stopPropagation(); // Prevent card click
+      onClick();
+    }
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      {/* Progress count */}
+    <div
+      className={`flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors ${hoverClass}`}
+      onClick={handleClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
+    >
+      {/* Progress count - shows X/Y left format */}
       <span className={`text-xs font-medium ${textColor}`}>
-        {remaining === 1 ? "1 left" : `${remaining} left`}
+        {remaining}/{totalFields} left
       </span>
 
       {/* Mini progress bar */}
@@ -164,6 +181,7 @@ export default function VaultCard({
   filledFields = 0,
   totalFields = 0,
   onClick,
+  onProgressClick,
 }: VaultCardProps) {
   const iconColorClass = colorClasses[color || "teal"] || colorClasses.teal;
 
@@ -210,6 +228,7 @@ export default function VaultCard({
             status={status}
             filledFields={filledFields}
             totalFields={totalFields}
+            onClick={onProgressClick}
           />
           <svg
             className="h-5 w-5 text-gray-400 transition-transform group-hover:translate-x-0.5"

@@ -40,7 +40,20 @@ interface VaultSheetProps {
   onClose: () => void;
   profileData: Record<string, unknown>;
   onSave: (updates: Record<string, unknown>) => Promise<void>;
+  incompleteOnly?: boolean; // Only show incomplete fields and start in edit mode
 }
+
+// Check if a field value is considered "filled"
+// A field is filled if it has a value, OR if it's marked as N/A
+const isFieldFilled = (value: unknown, naFields: Record<string, boolean>, fieldName: string): boolean => {
+  // If marked as N/A, it's considered filled
+  if (naFields[fieldName]) return true;
+
+  // Check if value exists and is not empty
+  if (value === null || value === undefined || value === "") return false;
+  if (Array.isArray(value) && value.length === 0) return false;
+  return true;
+};
 
 export default function VaultSheet({
   category,
@@ -48,20 +61,35 @@ export default function VaultSheet({
   onClose,
   profileData,
   onSave,
+  incompleteOnly = false,
 }: VaultSheetProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset state when category changes
+  // Track N/A fields - stored as _na_fieldName in profile data
+  const [naFields, setNaFields] = useState<Record<string, boolean>>({});
+
+  // Reset state when category changes or sheet opens
   useEffect(() => {
-    if (category) {
-      setIsEditing(false);
+    if (category && isOpen) {
+      // If incompleteOnly mode, start in editing mode
+      setIsEditing(incompleteOnly);
       setEditData({});
       setError(null);
+
+      // Load existing N/A markers from profile data
+      const existingNa: Record<string, boolean> = {};
+      category.fields.forEach(field => {
+        const naKey = `_na_${field.name}`;
+        if (profileData[naKey] === true) {
+          existingNa[field.name] = true;
+        }
+      });
+      setNaFields(existingNa);
     }
-  }, [category]);
+  }, [category, isOpen, incompleteOnly, profileData]);
 
   // Close on escape key
   useEffect(() => {
@@ -92,6 +120,19 @@ export default function VaultSheet({
     setEditData((prev) => ({ ...prev, [fieldName]: value }));
   }, []);
 
+  // Handle N/A toggle for a field
+  const handleNaToggle = useCallback((fieldName: string, isNa: boolean) => {
+    setNaFields(prev => ({ ...prev, [fieldName]: isNa }));
+    // If marking as N/A, clear any value being edited
+    if (isNa) {
+      setEditData(prev => {
+        const updated = { ...prev };
+        delete updated[fieldName];
+        return updated;
+      });
+    }
+  }, []);
+
   // Handle save
   const handleSave = async () => {
     if (!category) return;
@@ -100,7 +141,26 @@ export default function VaultSheet({
     setError(null);
 
     try {
-      await onSave(editData);
+      // Merge edit data with N/A markers
+      const updates: Record<string, unknown> = { ...editData };
+
+      // Add N/A markers for fields
+      category.fields.forEach(field => {
+        const naKey = `_na_${field.name}`;
+        const wasNa = profileData[naKey] === true;
+        const isNa = naFields[field.name] || false;
+
+        // Only update if changed
+        if (wasNa !== isNa) {
+          updates[naKey] = isNa;
+          // If marking as N/A, clear the actual field value
+          if (isNa && profileData[field.name]) {
+            updates[field.name] = null;
+          }
+        }
+      });
+
+      await onSave(updates);
       setIsEditing(false);
       setEditData({});
     } catch (err) {
@@ -262,23 +322,59 @@ export default function VaultSheet({
 
           {/* Content - scrollable */}
           <div className="overflow-y-auto px-4 py-4" style={{ maxHeight: "calc(90vh - 120px)" }}>
-            {category.fields.length === 0 ? (
-              <div className="py-8 text-center text-gray-500">
-                <p>No fields in this category yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {category.fields.map((field) => (
-                  <CategoryFieldRenderer
-                    key={field.id}
-                    field={field}
-                    value={getFieldValue(field.name)}
-                    isEditing={isEditing}
-                    onChange={(value) => handleFieldChange(field.name, value)}
-                  />
-                ))}
-              </div>
-            )}
+            {(() => {
+              // Filter fields if incompleteOnly mode
+              const fieldsToShow = incompleteOnly
+                ? category.fields.filter(field => !isFieldFilled(profileData[field.name], naFields, field.name))
+                : category.fields;
+
+              if (category.fields.length === 0) {
+                return (
+                  <div className="py-8 text-center text-gray-500">
+                    <p>No fields in this category yet.</p>
+                  </div>
+                );
+              }
+
+              if (incompleteOnly && fieldsToShow.length === 0) {
+                return (
+                  <div className="py-8 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                      <svg className="h-8 w-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500">All fields complete!</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {/* Show header for incomplete-only mode */}
+                  {incompleteOnly && (
+                    <div className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                      Complete these {fieldsToShow.length} remaining field{fieldsToShow.length !== 1 ? "s" : ""}
+                    </div>
+                  )}
+                  {fieldsToShow.map((field) => (
+                    <CategoryFieldRenderer
+                      key={field.id}
+                      field={field}
+                      value={getFieldValue(field.name)}
+                      isEditing={isEditing}
+                      onChange={(value) => handleFieldChange(field.name, value)}
+                      isNa={naFields[field.name] || false}
+                      onNaToggle={(isNa) => handleNaToggle(field.name, isNa)}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

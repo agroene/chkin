@@ -81,6 +81,7 @@ export default function PatientDashboard() {
   // Sheet state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [incompleteOnly, setIncompleteOnly] = useState(false); // Show only incomplete fields
 
   // Menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -183,17 +184,41 @@ export default function PatientDashboard() {
     }
   };
 
-  // Handle card click - open sheet
+  // Handle card click - open sheet with all fields
   const handleCardClick = useCallback((category: Category) => {
     setSelectedCategory(category);
+    setIncompleteOnly(false);
     setSheetOpen(true);
   }, []);
+
+  // Handle progress click - open sheet with only incomplete fields
+  const handleProgressClick = useCallback((category: Category) => {
+    setSelectedCategory(category);
+    setIncompleteOnly(true);
+    setSheetOpen(true);
+  }, []);
+
+  // Handle action click from ProfileProgress - find the next action category
+  const handleActionClick = useCallback(() => {
+    if (!stats?.nextAction?.category) return;
+
+    // Find the category referenced in the next action
+    const targetCategory = categories.find(c => c.name === stats.nextAction?.category);
+    if (targetCategory) {
+      setSelectedCategory(targetCategory);
+      setIncompleteOnly(true);
+      setSheetOpen(true);
+    }
+  }, [categories, stats?.nextAction?.category]);
 
   // Handle sheet close
   const handleSheetClose = useCallback(() => {
     setSheetOpen(false);
-    // Delay clearing category to allow animation to complete
-    setTimeout(() => setSelectedCategory(null), 300);
+    // Delay clearing category and mode to allow animation to complete
+    setTimeout(() => {
+      setSelectedCategory(null);
+      setIncompleteOnly(false);
+    }, 300);
   }, []);
 
   // Handle save from sheet
@@ -411,6 +436,7 @@ export default function PatientDashboard() {
             <ProfileProgress
               percentage={stats.overall.percentage}
               nextAction={stats.nextAction?.message}
+              onActionClick={handleActionClick}
             />
           </div>
         )}
@@ -467,6 +493,7 @@ export default function PatientDashboard() {
             completions={stats?.categories || []}
             profileData={profileData}
             onCardClick={handleCardClick}
+            onProgressClick={handleProgressClick}
           />
         </div>
       </div>
@@ -478,6 +505,7 @@ export default function PatientDashboard() {
         onClose={handleSheetClose}
         profileData={profileData}
         onSave={handleSave}
+        incompleteOnly={incompleteOnly}
       />
     </div>
   );

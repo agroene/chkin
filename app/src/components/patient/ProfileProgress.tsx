@@ -8,11 +8,13 @@
 interface ProfileProgressProps {
   percentage: number;
   nextAction?: string | null;
+  onActionClick?: () => void; // Callback when action prompt is clicked
 }
 
 export default function ProfileProgress({
   percentage,
   nextAction,
+  onActionClick,
 }: ProfileProgressProps) {
   // Calculate stroke color based on percentage
   const getColor = (pct: number) => {
@@ -64,11 +66,19 @@ export default function ProfileProgress({
         </div>
       </div>
 
-      {/* Next action prompt */}
+      {/* Next action prompt - clickable to take action */}
       {nextAction && percentage < 100 && (
-        <div className="mt-4 rounded-full bg-amber-50 px-4 py-2 text-center">
-          <p className="text-sm text-amber-700">{nextAction}</p>
-        </div>
+        <button
+          onClick={onActionClick}
+          className="mt-4 rounded-full bg-amber-50 px-4 py-2 text-center transition-colors hover:bg-amber-100 active:bg-amber-200"
+        >
+          <p className="flex items-center gap-2 text-sm text-amber-700">
+            {nextAction}
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </p>
+        </button>
       )}
 
       {/* Completion celebration */}
