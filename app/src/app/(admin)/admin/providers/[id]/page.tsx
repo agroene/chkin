@@ -25,6 +25,29 @@ interface ProviderMember {
   };
 }
 
+interface ConsentConfig {
+  defaultDuration: number;
+  minDuration: number;
+  maxDuration: number;
+  allowAutoRenewal: boolean;
+  gracePeriodDays: number;
+}
+
+interface FormTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  consentConfig: ConsentConfig;
+  _count: {
+    submissions: number;
+    fields: number;
+    qrCodes: number;
+  };
+}
+
 interface Provider {
   id: string;
   name: string;
@@ -44,6 +67,7 @@ interface Provider {
   updatedAt: string;
   memberCount: number;
   members: ProviderMember[];
+  formTemplates: FormTemplate[];
 }
 
 export default function ProviderDetailPage({
@@ -322,6 +346,107 @@ export default function ProviderDetailPage({
                       {member.user.emailVerified && (
                         <span className="w-2 h-2 bg-green-500 rounded-full" title="Email verified"></span>
                       )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* Form Templates */}
+          <Card
+            title="Form Templates"
+            description={`${provider.formTemplates?.length || 0} form(s)`}
+          >
+            {!provider.formTemplates || provider.formTemplates.length === 0 ? (
+              <p className="text-sm text-gray-500">No forms created yet</p>
+            ) : (
+              <div className="space-y-4">
+                {provider.formTemplates.map((form) => (
+                  <div
+                    key={form.id}
+                    className="border border-gray-200 rounded-lg p-4"
+                  >
+                    {/* Form Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900">
+                          {form.title}
+                        </h4>
+                        {form.description && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {form.description}
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          form.isActive
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {form.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+
+                    {/* Form Stats */}
+                    <div className="flex gap-4 text-xs text-gray-500 mb-3">
+                      <span>{form._count.fields} fields</span>
+                      <span>{form._count.submissions} submissions</span>
+                      <span>{form._count.qrCodes} QR codes</span>
+                    </div>
+
+                    {/* Consent Configuration */}
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h5 className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Consent Configuration
+                      </h5>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-gray-500">Default:</span>{" "}
+                          <span className="text-gray-900 font-medium">
+                            {form.consentConfig.defaultDuration} months
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Range:</span>{" "}
+                          <span className="text-gray-900 font-medium">
+                            {form.consentConfig.minDuration}-{form.consentConfig.maxDuration} months
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Grace period:</span>{" "}
+                          <span className="text-gray-900 font-medium">
+                            {form.consentConfig.gracePeriodDays} days
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Auto-renewal:</span>{" "}
+                          <span
+                            className={`font-medium ${
+                              form.consentConfig.allowAutoRenewal
+                                ? "text-green-600"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {form.consentConfig.allowAutoRenewal ? "Enabled" : "Disabled"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

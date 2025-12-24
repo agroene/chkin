@@ -46,6 +46,30 @@ export async function GET(
             },
           },
         },
+        formTemplates: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+            // Consent configuration
+            defaultConsentDuration: true,
+            minConsentDuration: true,
+            maxConsentDuration: true,
+            allowAutoRenewal: true,
+            gracePeriodDays: true,
+            _count: {
+              select: {
+                submissions: true,
+                fields: true,
+                qrCodes: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -80,6 +104,23 @@ export async function GET(
         role: m.role,
         createdAt: m.createdAt,
         user: m.user,
+      })),
+      formTemplates: provider.formTemplates.map((f) => ({
+        id: f.id,
+        title: f.title,
+        description: f.description,
+        isActive: f.isActive,
+        createdAt: f.createdAt,
+        updatedAt: f.updatedAt,
+        // Consent configuration
+        consentConfig: {
+          defaultDuration: f.defaultConsentDuration,
+          minDuration: f.minConsentDuration,
+          maxDuration: f.maxConsentDuration,
+          allowAutoRenewal: f.allowAutoRenewal,
+          gracePeriodDays: f.gracePeriodDays,
+        },
+        _count: f._count,
       })),
     };
 
