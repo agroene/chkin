@@ -133,11 +133,41 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, consentClause, fields } = body;
+    const {
+      title,
+      description,
+      consentClause,
+      fields,
+      // Time-bound consent configuration
+      defaultConsentDuration,
+      minConsentDuration,
+      maxConsentDuration,
+      allowAutoRenewal,
+      gracePeriodDays,
+    } = body;
 
     if (!title || typeof title !== "string" || title.trim().length === 0) {
       return NextResponse.json(
         { error: "Title is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate consent duration settings if provided
+    const consentDurationDefault = defaultConsentDuration ?? 12;
+    const consentDurationMin = minConsentDuration ?? 1;
+    const consentDurationMax = maxConsentDuration ?? 60;
+
+    if (consentDurationMin > consentDurationMax) {
+      return NextResponse.json(
+        { error: "Minimum consent duration cannot exceed maximum duration" },
+        { status: 400 }
+      );
+    }
+
+    if (consentDurationDefault < consentDurationMin || consentDurationDefault > consentDurationMax) {
+      return NextResponse.json(
+        { error: "Default consent duration must be within min/max range" },
         { status: 400 }
       );
     }
@@ -152,6 +182,12 @@ export async function POST(request: NextRequest) {
           description: description?.trim() || null,
           consentClause: consentClause?.trim() || null,
           createdBy: session.user.id,
+          // Time-bound consent configuration
+          defaultConsentDuration: consentDurationDefault,
+          minConsentDuration: consentDurationMin,
+          maxConsentDuration: consentDurationMax,
+          allowAutoRenewal: allowAutoRenewal ?? true,
+          gracePeriodDays: gracePeriodDays ?? 30,
         },
       });
 
