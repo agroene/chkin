@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
+import { calculateConsentStatus, getConsentStatusBadge } from "@/lib/consent-status";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,11 @@ export async function GET() {
         consentToken: true,
         consentWithdrawnAt: true,
         withdrawalReason: true,
+        consentExpiresAt: true,
+        consentDurationMonths: true,
+        autoRenew: true,
+        renewedAt: true,
+        renewalCount: true,
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -49,6 +55,9 @@ export async function GET() {
             title: true,
             description: true,
             consentClause: true,
+            defaultConsentDuration: true,
+            gracePeriodDays: true,
+            allowAutoRenewal: true,
             organization: {
               select: {
                 id: true,
@@ -75,19 +84,47 @@ export async function GET() {
         }
       }
 
+      // Calculate consent status
+      const consentStatusResult = calculateConsentStatus({
+        consentGiven: submission.consentGiven,
+        consentAt: submission.consentAt,
+        consentExpiresAt: submission.consentExpiresAt,
+        consentWithdrawnAt: submission.consentWithdrawnAt,
+        gracePeriodDays: submission.formTemplate.gracePeriodDays,
+      });
+
+      const statusBadge = getConsentStatusBadge(consentStatusResult.status);
+
       return {
         id: submission.id,
         createdAt: submission.createdAt,
         updatedAt: submission.updatedAt,
         status: submission.status,
-        // Consent info
+        // Consent info - enhanced with time-bound status
         consent: {
           given: submission.consentGiven,
           givenAt: submission.consentAt,
           token: submission.consentToken,
           withdrawnAt: submission.consentWithdrawnAt,
           withdrawalReason: submission.withdrawalReason,
-          isActive: submission.consentGiven && !submission.consentWithdrawnAt,
+          // Time-bound consent fields
+          expiresAt: submission.consentExpiresAt,
+          durationMonths: submission.consentDurationMonths,
+          autoRenew: submission.autoRenew,
+          renewedAt: submission.renewedAt,
+          renewalCount: submission.renewalCount,
+          // Computed status
+          status: consentStatusResult.status,
+          statusLabel: statusBadge.label,
+          statusColor: statusBadge.color,
+          isAccessible: consentStatusResult.isAccessible,
+          daysRemaining: consentStatusResult.daysRemaining,
+          gracePeriodEndsAt: consentStatusResult.gracePeriodEndsAt,
+          canRenew: consentStatusResult.canRenew,
+          renewalUrgency: consentStatusResult.renewalUrgency,
+          message: consentStatusResult.message,
+          // Legacy isActive for backwards compatibility
+          isActive: consentStatusResult.isAccessible && consentStatusResult.status !== "WITHDRAWN",
         },
         // Form info
         form: {
@@ -95,6 +132,9 @@ export async function GET() {
           title: submission.formTemplate.title,
           description: submission.formTemplate.description,
           consentClause: submission.formTemplate.consentClause,
+          defaultConsentDuration: submission.formTemplate.defaultConsentDuration,
+          gracePeriodDays: submission.formTemplate.gracePeriodDays,
+          allowAutoRenewal: submission.formTemplate.allowAutoRenewal,
         },
         // Organization info
         organization: submission.formTemplate.organization,

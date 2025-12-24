@@ -13,6 +13,8 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 
+type ConsentStatus = "ACTIVE" | "EXPIRING" | "GRACE" | "EXPIRED" | "WITHDRAWN" | "NEVER_GIVEN";
+
 interface Field {
   name: string;
   label: string;
@@ -35,11 +37,29 @@ interface SubmissionDetail {
     withdrawnAt: string | null;
     withdrawalReason: string | null;
     isActive: boolean;
+    // Time-bound consent fields
+    expiresAt: string | null;
+    durationMonths: number | null;
+    autoRenew: boolean;
+    renewedAt: string | null;
+    renewalCount: number;
+    status: ConsentStatus;
+    statusLabel: string;
+    statusColor: string;
+    isAccessible: boolean;
+    daysRemaining: number | null;
+    gracePeriodEndsAt: string | null;
+    canRenew: boolean;
+    renewalUrgency: string;
+    message: string;
   };
   form: {
     id: string;
     title: string;
     description: string | null;
+    defaultConsentDuration: number;
+    gracePeriodDays: number;
+    allowAutoRenewal: boolean;
   };
   organization: {
     id: string;
@@ -83,6 +103,10 @@ export default function SubmissionDetailPage({
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
+
+  // Renewal modal state
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [renewing, setRenewing] = useState(false);
 
   useEffect(() => {
     fetchSubmission();
@@ -138,6 +162,33 @@ export default function SubmissionDetailPage({
       setError(err instanceof Error ? err.message : "Failed to withdraw consent");
     } finally {
       setWithdrawing(false);
+    }
+  };
+
+  const handleRenewConsent = async () => {
+    setRenewing(true);
+    try {
+      const response = await fetch(`/api/patient/submissions/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "renew_consent",
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to renew consent");
+      }
+
+      // Refresh the submission data
+      await fetchSubmission();
+      setShowRenewModal(false);
+    } catch (err) {
+      console.error("Renew error:", err);
+      setError(err instanceof Error ? err.message : "Failed to renew consent");
+    } finally {
+      setRenewing(false);
     }
   };
 
@@ -318,7 +369,8 @@ export default function SubmissionDetailPage({
             Consent Status
           </h3>
 
-          {submission.consent.isActive ? (
+          {/* Status display based on consent state */}
+          {submission.consent.status === "ACTIVE" && (
             <div className="rounded-lg border border-green-200 bg-green-50 p-3">
               <div className="flex items-center gap-2 text-green-700">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -329,13 +381,70 @@ export default function SubmissionDetailPage({
               <p className="mt-1 text-sm text-green-600">
                 Given on {formatDate(submission.consent.givenAt || submission.createdAt)}
               </p>
-              {submission.consent.token && (
+              {submission.consent.expiresAt && (
                 <p className="mt-1 text-xs text-green-500">
-                  Token: {submission.consent.token.slice(0, 8)}...
+                  Expires on {formatDate(submission.consent.expiresAt)}
+                  {submission.consent.daysRemaining !== null && ` (${submission.consent.daysRemaining} days)`}
                 </p>
               )}
+              {submission.consent.autoRenew && (
+                <p className="mt-1 text-xs text-green-500">Auto-renewal enabled</p>
+              )}
             </div>
-          ) : (
+          )}
+
+          {submission.consent.status === "EXPIRING" && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+              <div className="flex items-center gap-2 text-yellow-700">
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">Expiring Soon</span>
+              </div>
+              <p className="mt-1 text-sm text-yellow-600">
+                Expires in {submission.consent.daysRemaining} days ({submission.consent.expiresAt && formatDate(submission.consent.expiresAt)})
+              </p>
+              <p className="mt-1 text-xs text-yellow-500">
+                Renew now to maintain continuous access
+              </p>
+            </div>
+          )}
+
+          {submission.consent.status === "GRACE" && (
+            <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+              <div className="flex items-center gap-2 text-orange-700">
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">Grace Period</span>
+              </div>
+              <p className="mt-1 text-sm text-orange-600">
+                Consent expired. Grace period ends {submission.consent.gracePeriodEndsAt && formatDate(submission.consent.gracePeriodEndsAt)}
+              </p>
+              <p className="mt-1 text-xs text-orange-500">
+                {submission.organization.name} still has access during grace period
+              </p>
+            </div>
+          )}
+
+          {submission.consent.status === "EXPIRED" && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+              <div className="flex items-center gap-2 text-red-700">
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">Consent Expired</span>
+              </div>
+              <p className="mt-1 text-sm text-red-600">
+                Expired on {submission.consent.expiresAt && formatDate(submission.consent.expiresAt)}
+              </p>
+              <p className="mt-1 text-xs text-red-500">
+                {submission.organization.name} no longer has access to your data
+              </p>
+            </div>
+          )}
+
+          {submission.consent.status === "WITHDRAWN" && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
               <div className="flex items-center gap-2 text-gray-600">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -351,6 +460,14 @@ export default function SubmissionDetailPage({
                   Reason: {submission.consent.withdrawalReason}
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Renewal info for renewed consents */}
+          {submission.consent.renewalCount > 0 && (
+            <div className="mt-3 text-xs text-gray-500">
+              Renewed {submission.consent.renewalCount} time{submission.consent.renewalCount !== 1 ? "s" : ""}
+              {submission.consent.renewedAt && `, last on ${formatDate(submission.consent.renewedAt)}`}
             </div>
           )}
 
@@ -372,15 +489,28 @@ export default function SubmissionDetailPage({
             </div>
           )}
 
-          {/* Withdraw button */}
-          {submission.consent.isActive && (
-            <button
-              onClick={() => setShowWithdrawModal(true)}
-              className="mt-4 w-full rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
-            >
-              Withdraw Consent
-            </button>
-          )}
+          {/* Action buttons */}
+          <div className="mt-4 flex gap-2">
+            {/* Renew button - show for EXPIRING, GRACE, or EXPIRED */}
+            {submission.consent.canRenew && (
+              <button
+                onClick={() => setShowRenewModal(true)}
+                className="flex-1 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+              >
+                Renew Consent
+              </button>
+            )}
+
+            {/* Withdraw button - show only for accessible consents */}
+            {submission.consent.isAccessible && submission.consent.status !== "WITHDRAWN" && (
+              <button
+                onClick={() => setShowWithdrawModal(true)}
+                className="flex-1 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
+              >
+                Withdraw
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Submitted Data */}
@@ -510,6 +640,54 @@ export default function SubmissionDetailPage({
                 className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {withdrawing ? "Withdrawing..." : "Withdraw Consent"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Renew Consent Modal */}
+      {showRenewModal && submission && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
+          <div className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
+            <h3 className="text-lg font-semibold text-gray-900">Renew Consent?</h3>
+
+            <div className="mt-4 rounded-lg bg-teal-50 p-3">
+              <div className="flex gap-2">
+                <svg className="h-5 w-5 flex-shrink-0 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <div className="text-sm text-teal-700">
+                  <p className="font-medium">What this means:</p>
+                  <ul className="mt-1 list-disc pl-4 space-y-1 text-teal-600">
+                    <li>{submission.organization.name} will continue to have access to your data</li>
+                    <li>Your consent will be extended for {submission.form.defaultConsentDuration} months</li>
+                    <li>You can withdraw consent at any time</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {submission.consent.expiresAt && (
+              <p className="mt-3 text-sm text-gray-600">
+                Current expiry: {formatDate(submission.consent.expiresAt)}
+              </p>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowRenewModal(false)}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                disabled={renewing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRenewConsent}
+                disabled={renewing}
+                className="flex-1 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+              >
+                {renewing ? "Renewing..." : "Renew Consent"}
               </button>
             </div>
           </div>

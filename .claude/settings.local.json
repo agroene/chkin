@@ -58,7 +58,8 @@
       "Bash(npx prisma db pull:*)",
       "Bash(ipconfig)",
       "Bash(npx tsc:*)",
-      "Bash(npx prisma db execute:*)"
+      "Bash(npx prisma db execute:*)",
+      "Bash(echo \"Exit code: $?\")"
     ]
   },
   "outputStyle": "default"

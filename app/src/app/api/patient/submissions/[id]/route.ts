@@ -13,6 +13,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { logAuditEvent } from "@/lib/audit-log";
+import { calculateConsentStatus, getConsentStatusBadge, calculateRenewalExpiry, createRenewalEntry, type RenewalHistoryEntry } from "@/lib/consent-status";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
       },
       include: {
         formTemplate: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            consentClause: true,
+            defaultConsentDuration: true,
+            gracePeriodDays: true,
+            allowAutoRenewal: true,
             organization: {
               select: {
                 id: true,
@@ -112,12 +120,23 @@ export async function GET(request: NextRequest, context: RouteContext) {
       },
     });
 
+    // Calculate consent status
+    const consentStatusResult = calculateConsentStatus({
+      consentGiven: submission.consentGiven,
+      consentAt: submission.consentAt,
+      consentExpiresAt: submission.consentExpiresAt,
+      consentWithdrawnAt: submission.consentWithdrawnAt,
+      gracePeriodDays: submission.formTemplate.gracePeriodDays,
+    });
+
+    const statusBadge = getConsentStatusBadge(consentStatusResult.status);
+
     return NextResponse.json({
       id: submission.id,
       createdAt: submission.createdAt,
       updatedAt: submission.updatedAt,
       status: submission.status,
-      // Consent info
+      // Consent info - enhanced with time-bound status
       consent: {
         given: submission.consentGiven,
         givenAt: submission.consentAt,
@@ -125,13 +144,33 @@ export async function GET(request: NextRequest, context: RouteContext) {
         clause: submission.formTemplate.consentClause,
         withdrawnAt: submission.consentWithdrawnAt,
         withdrawalReason: submission.withdrawalReason,
-        isActive: submission.consentGiven && !submission.consentWithdrawnAt,
+        // Time-bound consent fields
+        expiresAt: submission.consentExpiresAt,
+        durationMonths: submission.consentDurationMonths,
+        autoRenew: submission.autoRenew,
+        renewedAt: submission.renewedAt,
+        renewalCount: submission.renewalCount,
+        // Computed status
+        status: consentStatusResult.status,
+        statusLabel: statusBadge.label,
+        statusColor: statusBadge.color,
+        isAccessible: consentStatusResult.isAccessible,
+        daysRemaining: consentStatusResult.daysRemaining,
+        gracePeriodEndsAt: consentStatusResult.gracePeriodEndsAt,
+        canRenew: consentStatusResult.canRenew,
+        renewalUrgency: consentStatusResult.renewalUrgency,
+        message: consentStatusResult.message,
+        // Legacy isActive for backwards compatibility
+        isActive: consentStatusResult.isAccessible && consentStatusResult.status !== "WITHDRAWN",
       },
       // Form info
       form: {
         id: submission.formTemplate.id,
         title: submission.formTemplate.title,
         description: submission.formTemplate.description,
+        defaultConsentDuration: submission.formTemplate.defaultConsentDuration,
+        gracePeriodDays: submission.formTemplate.gracePeriodDays,
+        allowAutoRenewal: submission.formTemplate.allowAutoRenewal,
       },
       // Organization info
       organization: submission.formTemplate.organization,
@@ -149,7 +188,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 }
 
-// POST - Withdraw consent
+// POST - Withdraw consent or renew consent
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const session = await auth.api.getSession({
@@ -162,11 +201,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const { id } = await context.params;
     const body = await request.json();
-    const { action, reason } = body;
+    const { action, reason, durationMonths } = body;
 
-    if (action !== "withdraw_consent") {
+    if (action !== "withdraw_consent" && action !== "renew_consent") {
       return NextResponse.json(
-        { error: "Invalid action" },
+        { error: "Invalid action. Use 'withdraw_consent' or 'renew_consent'" },
         { status: 400 }
       );
     }
@@ -179,9 +218,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
       include: {
         formTemplate: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            defaultConsentDuration: true,
+            minConsentDuration: true,
+            maxConsentDuration: true,
+            gracePeriodDays: true,
+            allowAutoRenewal: true,
             organization: {
-              select: { name: true },
+              select: { id: true, name: true },
             },
           },
         },
@@ -195,56 +241,166 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Check if consent was given
-    if (!submission.consentGiven) {
-      return NextResponse.json(
-        { error: "No consent to withdraw" },
-        { status: 400 }
-      );
+    // Handle WITHDRAW CONSENT action
+    if (action === "withdraw_consent") {
+      // Check if consent was given
+      if (!submission.consentGiven) {
+        return NextResponse.json(
+          { error: "No consent to withdraw" },
+          { status: 400 }
+        );
+      }
+
+      // Check if already withdrawn
+      if (submission.consentWithdrawnAt) {
+        return NextResponse.json(
+          { error: "Consent already withdrawn" },
+          { status: 400 }
+        );
+      }
+
+      // Withdraw consent
+      const updatedSubmission = await prisma.submission.update({
+        where: { id },
+        data: {
+          consentWithdrawnAt: new Date(),
+          withdrawalReason: reason || null,
+        },
+      });
+
+      // Log audit event
+      await logAuditEvent({
+        request,
+        userId: session.user.id,
+        organizationId: submission.organizationId,
+        action: "WITHDRAW_CONSENT",
+        resourceType: "Submission",
+        resourceId: submission.id,
+        metadata: {
+          formTitle: submission.formTemplate.title,
+          organizationName: submission.formTemplate.organization.name,
+          reason: reason || "No reason provided",
+          originalConsentAt: submission.consentAt?.toISOString(),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Consent withdrawn successfully",
+        withdrawnAt: updatedSubmission.consentWithdrawnAt,
+      });
     }
 
-    // Check if already withdrawn
-    if (submission.consentWithdrawnAt) {
-      return NextResponse.json(
-        { error: "Consent already withdrawn" },
-        { status: 400 }
+    // Handle RENEW CONSENT action
+    if (action === "renew_consent") {
+      // Check if consent was given
+      if (!submission.consentGiven) {
+        return NextResponse.json(
+          { error: "No consent to renew - consent was never given" },
+          { status: 400 }
+        );
+      }
+
+      // Cannot renew if withdrawn
+      if (submission.consentWithdrawnAt) {
+        return NextResponse.json(
+          { error: "Cannot renew withdrawn consent. Please submit a new form." },
+          { status: 400 }
+        );
+      }
+
+      // Calculate consent status to check if renewal is allowed
+      const currentStatus = calculateConsentStatus({
+        consentGiven: submission.consentGiven,
+        consentAt: submission.consentAt,
+        consentExpiresAt: submission.consentExpiresAt,
+        consentWithdrawnAt: submission.consentWithdrawnAt,
+        gracePeriodDays: submission.formTemplate.gracePeriodDays,
+      });
+
+      if (!currentStatus.canRenew) {
+        return NextResponse.json(
+          { error: "Consent cannot be renewed at this time" },
+          { status: 400 }
+        );
+      }
+
+      // Validate duration if provided
+      const renewalDuration = durationMonths || submission.consentDurationMonths || submission.formTemplate.defaultConsentDuration;
+      const minDuration = submission.formTemplate.minConsentDuration;
+      const maxDuration = submission.formTemplate.maxConsentDuration;
+
+      if (renewalDuration < minDuration || renewalDuration > maxDuration) {
+        return NextResponse.json(
+          { error: `Consent duration must be between ${minDuration} and ${maxDuration} months` },
+          { status: 400 }
+        );
+      }
+
+      // Calculate new expiry date (from current expiry, not today)
+      const currentExpiresAt = submission.consentExpiresAt || new Date();
+      const newExpiresAt = calculateRenewalExpiry(currentExpiresAt, renewalDuration);
+
+      // Build renewal history entry
+      const renewalEntry = createRenewalEntry(
+        currentExpiresAt,
+        newExpiresAt,
+        "patient",
+        renewalDuration
       );
+
+      // Get existing renewal history
+      const existingHistory: RenewalHistoryEntry[] = submission.renewalHistory
+        ? JSON.parse(submission.renewalHistory)
+        : [];
+      existingHistory.push(renewalEntry);
+
+      // Update submission with new expiry
+      const updatedSubmission = await prisma.submission.update({
+        where: { id },
+        data: {
+          consentExpiresAt: newExpiresAt,
+          consentDurationMonths: renewalDuration,
+          renewedAt: new Date(),
+          renewalCount: (submission.renewalCount || 0) + 1,
+          renewalHistory: JSON.stringify(existingHistory),
+        },
+      });
+
+      // Log audit event
+      await logAuditEvent({
+        request,
+        userId: session.user.id,
+        organizationId: submission.organizationId,
+        action: "RENEW_CONSENT",
+        resourceType: "Submission",
+        resourceId: submission.id,
+        metadata: {
+          formTitle: submission.formTemplate.title,
+          organizationName: submission.formTemplate.organization.name,
+          previousExpiresAt: currentExpiresAt.toISOString(),
+          newExpiresAt: newExpiresAt.toISOString(),
+          durationMonths: renewalDuration,
+          renewalCount: updatedSubmission.renewalCount,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Consent renewed successfully",
+        expiresAt: updatedSubmission.consentExpiresAt,
+        renewedAt: updatedSubmission.renewedAt,
+        renewalCount: updatedSubmission.renewalCount,
+        durationMonths: renewalDuration,
+      });
     }
 
-    // Withdraw consent
-    const updatedSubmission = await prisma.submission.update({
-      where: { id },
-      data: {
-        consentWithdrawnAt: new Date(),
-        withdrawalReason: reason || null,
-      },
-    });
-
-    // Log audit event
-    await logAuditEvent({
-      request,
-      userId: session.user.id,
-      organizationId: submission.organizationId,
-      action: "WITHDRAW_CONSENT",
-      resourceType: "Submission",
-      resourceId: submission.id,
-      metadata: {
-        formTitle: submission.formTemplate.title,
-        organizationName: submission.formTemplate.organization.name,
-        reason: reason || "No reason provided",
-        originalConsentAt: submission.consentAt?.toISOString(),
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Consent withdrawn successfully",
-      withdrawnAt: updatedSubmission.consentWithdrawnAt,
-    });
+    // Should never reach here due to earlier validation
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
-    console.error("Withdraw consent error:", error);
+    console.error("Consent action error:", error);
     return NextResponse.json(
-      { error: "Failed to withdraw consent" },
+      { error: "Failed to process consent action" },
       { status: 500 }
     );
   }

@@ -13,6 +13,7 @@ import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { nanoid } from "nanoid";
 import { logAuditEvent } from "@/lib/audit-log";
+import { calculateConsentExpiry } from "@/lib/consent-status";
 
 export const dynamic = "force-dynamic";
 
@@ -172,6 +173,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       null;
     const userAgent = headersList.get("user-agent") || null;
 
+    // Calculate consent expiry date if consent is given
+    const consentAt = body.consentGiven ? new Date() : null;
+    const consentExpiresAt = consentAt
+      ? calculateConsentExpiry(consentAt, form.defaultConsentDuration)
+      : null;
+
     // Create submission
     const submission = await prisma.submission.create({
       data: {
@@ -180,8 +187,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         userId,
         data: JSON.stringify(body.data),
         consentGiven: Boolean(body.consentGiven),
-        consentAt: body.consentGiven ? new Date() : null,
+        consentAt,
         consentToken: body.consentGiven ? nanoid(32) : null,
+        consentExpiresAt,
+        consentDurationMonths: body.consentGiven ? form.defaultConsentDuration : null,
+        autoRenew: form.allowAutoRenewal,
         status: "completed",
         source: "web",
         ipAddress,

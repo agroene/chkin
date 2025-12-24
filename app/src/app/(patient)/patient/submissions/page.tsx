@@ -11,6 +11,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+type ConsentStatus = "ACTIVE" | "EXPIRING" | "GRACE" | "EXPIRED" | "WITHDRAWN" | "NEVER_GIVEN";
+
 interface Submission {
   id: string;
   createdAt: string;
@@ -20,6 +22,14 @@ interface Submission {
     givenAt: string | null;
     isActive: boolean;
     withdrawnAt: string | null;
+    // Time-bound consent fields
+    expiresAt: string | null;
+    daysRemaining: number | null;
+    status: ConsentStatus;
+    statusLabel: string;
+    statusColor: "green" | "yellow" | "orange" | "red" | "gray";
+    renewalUrgency: "none" | "low" | "medium" | "high" | "critical";
+    message: string;
   };
   form: {
     id: string;
@@ -96,10 +106,18 @@ export default function SubmissionsPage() {
     return industryIcons[industryType || "Other"] || "🏢";
   };
 
-  // Group submissions by active/withdrawn consent
-  const activeSubmissions = submissions.filter((s) => s.consent.isActive);
+  // Group submissions by consent status
+  const activeSubmissions = submissions.filter((s) =>
+    s.consent.status === "ACTIVE" || s.consent.status === "EXPIRING"
+  );
+  const expiringSubmissions = submissions.filter((s) =>
+    s.consent.status === "EXPIRING"
+  );
+  const expiredSubmissions = submissions.filter((s) =>
+    s.consent.status === "GRACE" || s.consent.status === "EXPIRED"
+  );
   const withdrawnSubmissions = submissions.filter(
-    (s) => s.consent.given && !s.consent.isActive
+    (s) => s.consent.status === "WITHDRAWN"
   );
 
   if (loading) {
@@ -223,6 +241,27 @@ export default function SubmissionsPage() {
                   </p>
                 </div>
               </div>
+              {/* Status breakdown */}
+              {(expiringSubmissions.length > 0 || expiredSubmissions.length > 0) && (
+                <div className="mt-3 pt-3 border-t border-gray-100 flex gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                    <span className="text-gray-500">{activeSubmissions.length} active</span>
+                  </div>
+                  {expiringSubmissions.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                      <span className="text-yellow-600 font-medium">{expiringSubmissions.length} expiring</span>
+                    </div>
+                  )}
+                  {expiredSubmissions.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                      <span className="text-orange-600 font-medium">{expiredSubmissions.length} need renewal</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Active consents */}
@@ -244,10 +283,31 @@ export default function SubmissionsPage() {
               </div>
             )}
 
+            {/* Expired/Grace period consents - need renewal */}
+            {expiredSubmissions.length > 0 && (
+              <div>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-orange-600">
+                  <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                  Needs Renewal ({expiredSubmissions.length})
+                </h2>
+                <div className="space-y-3">
+                  {expiredSubmissions.map((submission) => (
+                    <SubmissionCard
+                      key={submission.id}
+                      submission={submission}
+                      formatDate={formatDate}
+                      getIndustryIcon={getIndustryIcon}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Withdrawn consents */}
             {withdrawnSubmissions.length > 0 && (
               <div>
-                <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500">
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-gray-500">
+                  <span className="h-2 w-2 rounded-full bg-gray-400"></span>
                   Withdrawn Consent ({withdrawnSubmissions.length})
                 </h2>
                 <div className="space-y-3">
@@ -320,29 +380,7 @@ function SubmissionCard({
 
         {/* Status and chevron */}
         <div className="flex items-center gap-2">
-          {submission.consent.isActive ? (
-            <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Active
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-500">
-              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Withdrawn
-            </span>
-          )}
+          <ConsentStatusBadge submission={submission} />
           <svg
             className="h-5 w-5 text-gray-400"
             fill="none"
@@ -359,5 +397,96 @@ function SubmissionCard({
         </div>
       </div>
     </button>
+  );
+}
+
+// Consent status badge component
+function ConsentStatusBadge({ submission }: { submission: Submission }) {
+  const { status, daysRemaining, statusLabel, renewalUrgency } = submission.consent;
+
+  // Color classes based on status
+  const colorClasses: Record<ConsentStatus, string> = {
+    ACTIVE: "bg-green-100 text-green-700",
+    EXPIRING: "bg-yellow-100 text-yellow-700",
+    GRACE: "bg-orange-100 text-orange-700",
+    EXPIRED: "bg-red-100 text-red-700",
+    WITHDRAWN: "bg-gray-100 text-gray-500",
+    NEVER_GIVEN: "bg-gray-100 text-gray-500",
+  };
+
+  // Icon based on status
+  const getIcon = () => {
+    switch (status) {
+      case "ACTIVE":
+        return (
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+        );
+      case "EXPIRING":
+        return (
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+              clipRule="evenodd"
+            />
+          </svg>
+        );
+      case "GRACE":
+      case "EXPIRED":
+        return (
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+        );
+      default:
+        return (
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        );
+    }
+  };
+
+  // Build label with days remaining
+  const getLabel = () => {
+    if (status === "ACTIVE" && daysRemaining !== null && daysRemaining <= 365) {
+      return `Active`;
+    }
+    if (status === "EXPIRING" && daysRemaining !== null) {
+      return `${daysRemaining}d left`;
+    }
+    if (status === "GRACE" && daysRemaining !== null) {
+      return "Grace";
+    }
+    if (status === "EXPIRED") {
+      return "Expired";
+    }
+    return statusLabel;
+  };
+
+  // Animate urgently if needed
+  const urgentClass = renewalUrgency === "critical" ? "animate-pulse" : "";
+
+  return (
+    <span
+      className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${colorClasses[status]} ${urgentClass}`}
+    >
+      {getIcon()}
+      {getLabel()}
+    </span>
   );
 }

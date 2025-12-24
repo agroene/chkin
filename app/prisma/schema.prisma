@@ -317,6 +317,13 @@ model FormTemplate {
   // Consent configuration
   consentClause  String?  // Consent text (can be long)
 
+  // Time-bound consent configuration (organization-level defaults)
+  defaultConsentDuration Int      @default(12)    // Default duration in months (12 = 1 year)
+  minConsentDuration     Int      @default(1)     // Minimum duration patients can choose
+  maxConsentDuration     Int      @default(60)    // Maximum duration (60 = 5 years)
+  allowAutoRenewal       Boolean  @default(true)  // Whether auto-renewal is allowed
+  gracePeriodDays        Int      @default(30)    // Days of grace period after expiry
+
   // Form status
   isActive       Boolean  @default(true)
   version        Int      @default(1)
@@ -414,6 +421,14 @@ model Submission {
   // Consent withdrawal (POPIA right to withdraw consent)
   consentWithdrawnAt DateTime?  // When consent was withdrawn
   withdrawalReason   String?    // Optional reason for withdrawal
+
+  // Time-bound consent (consent has expiry date)
+  consentExpiresAt     DateTime?  // When consent expires (calculated from consentAt + duration)
+  consentDurationMonths Int?      // Duration in months (default from FormTemplate)
+  autoRenew            Boolean    @default(true)  // Whether consent auto-renews before expiry
+  renewedAt            DateTime?  // When consent was last renewed
+  renewalCount         Int        @default(0)     // Number of times consent has been renewed
+  renewalHistory       String?    // JSON array of renewal events for audit trail
 
   // Status
   status         String   @default("pending") // pending, completed, expired

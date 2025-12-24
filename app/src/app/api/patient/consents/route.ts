@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
+import { calculateConsentStatus, type ConsentStatus } from "@/lib/consent-status";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,15 @@ interface OrganizationConsent {
   // Consent status
   hasActiveConsent: boolean;
   hasWithdrawnConsent: boolean;
+  hasExpiringConsent: boolean; // Any consent expiring soon?
+  hasExpiredConsent: boolean; // Any consent in grace/expired?
+  // Time-bound consent summary
+  consentStatuses: {
+    status: ConsentStatus;
+    count: number;
+  }[];
+  earliestExpiry: string | null; // Earliest expiring consent
+  urgentRenewals: number; // Count needing renewal attention
   // Dates
   firstConsentAt: string | null;
   lastConsentAt: string | null;
@@ -30,6 +40,8 @@ interface OrganizationConsent {
   totalSubmissions: number;
   activeSubmissions: number;
   withdrawnSubmissions: number;
+  expiringSubmissions: number;
+  expiredSubmissions: number;
   // Data categories consented to
   dataCategories: string[];
 }
@@ -51,9 +63,17 @@ export async function GET() {
         consentGiven: true, // Only include submissions where consent was given
       },
       orderBy: { createdAt: "desc" },
-      include: {
+      select: {
+        id: true,
+        consentGiven: true,
+        consentAt: true,
+        consentWithdrawnAt: true,
+        consentExpiresAt: true,
+        consentDurationMonths: true,
+        autoRenew: true,
         formTemplate: {
-          include: {
+          select: {
+            gracePeriodDays: true,
             organization: {
               select: {
                 id: true,
@@ -63,7 +83,7 @@ export async function GET() {
               },
             },
             fields: {
-              include: {
+              select: {
                 fieldDefinition: {
                   select: {
                     category: true,
@@ -97,8 +117,53 @@ export async function GET() {
     const consents: OrganizationConsent[] = [];
 
     for (const [orgId, { organization, submissions: orgSubmissions }] of orgMap) {
-      const activeSubmissions = orgSubmissions.filter(s => !s.consentWithdrawnAt);
-      const withdrawnSubmissions = orgSubmissions.filter(s => s.consentWithdrawnAt);
+      // Calculate consent status for each submission
+      const submissionStatuses = orgSubmissions.map(s => ({
+        submission: s,
+        status: calculateConsentStatus({
+          consentGiven: s.consentGiven,
+          consentAt: s.consentAt,
+          consentExpiresAt: s.consentExpiresAt,
+          consentWithdrawnAt: s.consentWithdrawnAt,
+          gracePeriodDays: s.formTemplate.gracePeriodDays,
+        }),
+      }));
+
+      // Group by status
+      const statusCounts = new Map<ConsentStatus, number>();
+      for (const { status } of submissionStatuses) {
+        const count = statusCounts.get(status.status) || 0;
+        statusCounts.set(status.status, count + 1);
+      }
+
+      const consentStatuses = Array.from(statusCounts.entries()).map(([status, count]) => ({
+        status,
+        count,
+      }));
+
+      // Count by category
+      const activeSubmissions = submissionStatuses.filter(s =>
+        s.status.status === "ACTIVE" || s.status.status === "EXPIRING"
+      );
+      const withdrawnSubmissions = submissionStatuses.filter(s => s.status.status === "WITHDRAWN");
+      const expiringSubmissions = submissionStatuses.filter(s => s.status.status === "EXPIRING");
+      const expiredSubmissions = submissionStatuses.filter(s =>
+        s.status.status === "EXPIRED" || s.status.status === "GRACE"
+      );
+
+      // Find urgent renewals (high/critical urgency)
+      const urgentRenewals = submissionStatuses.filter(s =>
+        s.status.renewalUrgency === "high" || s.status.renewalUrgency === "critical"
+      ).length;
+
+      // Find earliest expiry among accessible consents
+      const accessibleWithExpiry = submissionStatuses
+        .filter(s => s.status.isAccessible && s.status.expiresAt)
+        .map(s => s.status.expiresAt!.getTime());
+
+      const earliestExpiry = accessibleWithExpiry.length > 0
+        ? new Date(Math.min(...accessibleWithExpiry)).toISOString()
+        : null;
 
       // Get all unique data categories
       const categories = new Set<string>();
@@ -114,8 +179,9 @@ export async function GET() {
         .map(s => new Date(s.consentAt!).getTime());
 
       const withdrawnDates = withdrawnSubmissions
-        .filter(s => s.consentWithdrawnAt)
-        .map(s => new Date(s.consentWithdrawnAt!).getTime());
+        .map(s => s.submission.consentWithdrawnAt)
+        .filter((d): d is Date => d !== null)
+        .map(d => new Date(d).getTime());
 
       consents.push({
         organizationId: orgId,
@@ -124,6 +190,11 @@ export async function GET() {
         industryType: organization.industryType,
         hasActiveConsent: activeSubmissions.length > 0,
         hasWithdrawnConsent: withdrawnSubmissions.length > 0,
+        hasExpiringConsent: expiringSubmissions.length > 0,
+        hasExpiredConsent: expiredSubmissions.length > 0,
+        consentStatuses,
+        earliestExpiry,
+        urgentRenewals,
         firstConsentAt: consentDates.length > 0
           ? new Date(Math.min(...consentDates)).toISOString()
           : null,
@@ -136,6 +207,8 @@ export async function GET() {
         totalSubmissions: orgSubmissions.length,
         activeSubmissions: activeSubmissions.length,
         withdrawnSubmissions: withdrawnSubmissions.length,
+        expiringSubmissions: expiringSubmissions.length,
+        expiredSubmissions: expiredSubmissions.length,
         dataCategories: Array.from(categories),
       });
     }
@@ -150,6 +223,9 @@ export async function GET() {
     // Calculate summary stats
     const activeCount = consents.filter(c => c.hasActiveConsent).length;
     const withdrawnCount = consents.filter(c => !c.hasActiveConsent && c.hasWithdrawnConsent).length;
+    const expiringCount = consents.filter(c => c.hasExpiringConsent).length;
+    const expiredCount = consents.filter(c => c.hasExpiredConsent).length;
+    const totalUrgentRenewals = consents.reduce((sum, c) => sum + c.urgentRenewals, 0);
 
     return NextResponse.json({
       consents,
@@ -157,6 +233,9 @@ export async function GET() {
         totalOrganizations: consents.length,
         activeConsents: activeCount,
         withdrawnConsents: withdrawnCount,
+        expiringConsents: expiringCount,
+        expiredConsents: expiredCount,
+        urgentRenewals: totalUrgentRenewals,
       },
     });
   } catch (error) {
