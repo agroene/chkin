@@ -508,6 +508,29 @@ model PatientProfile {
 }
 
 // =============================================================================
+// EMAIL NOTIFICATION TRACKING MODEL
+// =============================================================================
+
+// Track email notifications sent to prevent duplicate sends
+// Used by cron jobs for consent expiry warnings and other automated emails
+model EmailNotification {
+  id               String   @id @default(cuid())
+  submissionId     String   // Which submission this relates to
+  notificationType String   // Type of notification: "expiry_30d", "expiry_14d", "expiry_7d", "expiry_1d", "renewed", "withdrawn"
+  recipientEmail   String   // Email address sent to
+  subject          String?  // Email subject line
+  messageId        String?  // External email service message ID (for tracking)
+  sentAt           DateTime // When the email was sent
+  createdAt        DateTime @default(now())
+
+  @@unique([submissionId, notificationType]) // Prevent duplicate notifications
+  @@index([submissionId])
+  @@index([notificationType])
+  @@index([sentAt])
+  @@map("email_notification")
+}
+
+// =============================================================================
 // CATEGORY METADATA MODEL
 // =============================================================================
 

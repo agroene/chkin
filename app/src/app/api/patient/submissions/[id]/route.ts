@@ -14,6 +14,7 @@ import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { logAuditEvent } from "@/lib/audit-log";
 import { calculateConsentStatus, getConsentStatusBadge, calculateRenewalExpiry, createRenewalEntry, type RenewalHistoryEntry } from "@/lib/consent-status";
+import { sendConsentRenewedEmail, sendConsentWithdrawnEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -284,6 +285,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
         },
       });
 
+      // Send confirmation email (fire and forget - don't block response)
+      sendConsentWithdrawnEmail({
+        patientName: session.user.name || "Patient",
+        patientEmail: session.user.email,
+        organizationName: submission.formTemplate.organization.name,
+        formTitle: submission.formTemplate.title,
+        withdrawnAt: updatedSubmission.consentWithdrawnAt!,
+      }).catch((err) => {
+        console.error("[Email] Failed to send withdrawal confirmation:", err);
+      });
+
       return NextResponse.json({
         success: true,
         message: "Consent withdrawn successfully",
@@ -383,6 +395,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
           durationMonths: renewalDuration,
           renewalCount: updatedSubmission.renewalCount,
         },
+      });
+
+      // Send confirmation email (fire and forget - don't block response)
+      sendConsentRenewedEmail({
+        patientName: session.user.name || "Patient",
+        patientEmail: session.user.email,
+        organizationName: submission.formTemplate.organization.name,
+        formTitle: submission.formTemplate.title,
+        newExpiresAt: newExpiresAt,
+        durationMonths: renewalDuration,
+      }).catch((err) => {
+        console.error("[Email] Failed to send renewal confirmation:", err);
       });
 
       return NextResponse.json({
