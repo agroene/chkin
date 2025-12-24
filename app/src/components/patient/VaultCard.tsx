@@ -200,30 +200,28 @@ export default function VaultCard({
         `,
       }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Category icon */}
-          <div className={`rounded-lg p-2 ${iconColorClass}`}>
-            <CategoryIcon name={icon} className="h-6 w-6" />
-          </div>
-
-          {/* Label and preview */}
-          <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-gray-900">{label}</h3>
-            {preview && (
-              <p className="truncate text-sm text-gray-500">{preview}</p>
-            )}
-            {!preview && status === "empty" && (
-              <p className="text-sm text-gray-400">Tap to add</p>
-            )}
-            {isProtected && !preview && (
-              <p className="text-sm text-gray-400">Protected information</p>
-            )}
-          </div>
+      <div className="flex items-center gap-3">
+        {/* Category icon - fixed size, doesn't shrink */}
+        <div className={`shrink-0 rounded-lg p-2 ${iconColorClass}`}>
+          <CategoryIcon name={icon} className="h-6 w-6" />
         </div>
 
-        {/* Progress indicator and chevron */}
-        <div className="flex items-center gap-2">
+        {/* Label and preview - grows to fill space, truncates on overflow */}
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-gray-900">{label}</h3>
+          {preview && (
+            <p className="truncate text-sm text-gray-500">{preview}</p>
+          )}
+          {!preview && status === "empty" && (
+            <p className="text-sm text-gray-400">Tap to add</p>
+          )}
+          {isProtected && !preview && (
+            <p className="text-sm text-gray-400">Protected information</p>
+          )}
+        </div>
+
+        {/* Progress indicator and chevron - fixed size, doesn't shrink */}
+        <div className="flex shrink-0 items-center gap-2">
           <ProgressIndicator
             status={status}
             filledFields={filledFields}
