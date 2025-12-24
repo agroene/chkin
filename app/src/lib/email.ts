@@ -233,6 +233,7 @@ interface ConsentRenewedEmailData {
   formTitle: string;
   newExpiresAt: Date;
   durationMonths: number;
+  isAutoRenewal?: boolean; // True if this was an automatic renewal
 }
 
 /**
@@ -246,13 +247,34 @@ export async function sendConsentRenewedEmail(data: ConsentRenewedEmailData): Pr
     day: "numeric",
   });
 
+  const isAuto = data.isAutoRenewal ?? false;
+  const headerTitle = isAuto ? "Consent Auto-Renewed" : "Consent Renewed Successfully";
+  const headerIcon = isAuto ? "🔄" : "✓";
+  const renewalMessage = isAuto
+    ? `Your consent for <strong>${data.formTitle}</strong> has been automatically renewed for
+       <strong>${data.durationMonths} month${data.durationMonths !== 1 ? "s" : ""}</strong>
+       because you enabled auto-renewal.`
+    : `Your consent for <strong>${data.formTitle}</strong> has been renewed for
+       <strong>${data.durationMonths} month${data.durationMonths !== 1 ? "s" : ""}</strong>.`;
+
+  const autoRenewalNote = isAuto
+    ? `
+      <div style="margin-top: 16px; padding: 12px; background-color: #fef3c7; border-radius: 8px;">
+        <p style="margin: 0; font-size: 13px; color: #92400e;">
+          <strong>Auto-renewal is enabled.</strong> Your consent will be automatically renewed before it expires.
+          You can disable this in your patient portal settings.
+        </p>
+      </div>
+    `
+    : "";
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Consent Renewed</title>
+      <title>${headerTitle}</title>
     </head>
     <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
       <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -263,10 +285,10 @@ export async function sendConsentRenewedEmail(data: ConsentRenewedEmailData): Pr
               <tr>
                 <td style="padding: 32px; background-color: #ffffff; border-radius: 16px 16px 0 0; text-align: center;">
                   <div style="display: inline-block; padding: 12px; background-color: #d1fae5; border-radius: 50%; margin-bottom: 16px;">
-                    <span style="font-size: 32px;">✓</span>
+                    <span style="font-size: 32px;">${headerIcon}</span>
                   </div>
                   <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #111827;">
-                    Consent Renewed Successfully
+                    ${headerTitle}
                   </h1>
                   <p style="margin: 0; font-size: 14px; color: #6b7280;">
                     ${data.organizationName}
@@ -281,8 +303,7 @@ export async function sendConsentRenewedEmail(data: ConsentRenewedEmailData): Pr
                     Hello ${data.patientName || "there"},
                   </p>
                   <p style="margin: 0 0 24px 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
-                    Your consent for <strong>${data.formTitle}</strong> has been renewed for
-                    <strong>${data.durationMonths} month${data.durationMonths !== 1 ? "s" : ""}</strong>.
+                    ${renewalMessage}
                   </p>
 
                   <!-- New Expiry Box -->
@@ -294,6 +315,7 @@ export async function sendConsentRenewedEmail(data: ConsentRenewedEmailData): Pr
                       ${expiryDate}
                     </p>
                   </div>
+                  ${autoRenewalNote}
                 </td>
               </tr>
 
@@ -316,9 +338,13 @@ export async function sendConsentRenewedEmail(data: ConsentRenewedEmailData): Pr
     </html>
   `;
 
+  const subject = isAuto
+    ? `Auto-Renewed: ${data.formTitle} at ${data.organizationName}`
+    : `Consent Renewed: ${data.formTitle} at ${data.organizationName}`;
+
   return sendEmail({
     to: data.patientEmail,
-    subject: `Consent Renewed: ${data.formTitle} at ${data.organizationName}`,
+    subject,
     html,
   });
 }
