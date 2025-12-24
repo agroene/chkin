@@ -175,6 +175,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         title: form.title,
         description: form.description,
         consentClause: form.consentClause,
+        // Time-bound consent configuration
+        consentConfig: {
+          defaultDuration: form.defaultConsentDuration,
+          minDuration: form.minConsentDuration,
+          maxDuration: form.maxConsentDuration,
+          allowAutoRenewal: form.allowAutoRenewal,
+          gracePeriodDays: form.gracePeriodDays,
+        },
         fields,
         sections,
         organization: {

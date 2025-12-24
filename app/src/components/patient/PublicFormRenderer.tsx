@@ -58,11 +58,20 @@ function getAddressGroupLabel(_fieldName: string, fieldLabel: string): string {
   return label ? `${label} Address` : "Address";
 }
 
+interface ConsentConfig {
+  defaultDuration: number;
+  minDuration: number;
+  maxDuration: number;
+  allowAutoRenewal: boolean;
+  gracePeriodDays: number;
+}
+
 interface FormData {
   id: string;
   title: string;
   description: string | null;
   consentClause: string | null;
+  consentConfig?: ConsentConfig;
   fields: FormField[];
   sections: string[];
   organization: {
@@ -72,11 +81,20 @@ interface FormData {
   };
 }
 
+interface ConsentOptions {
+  durationMonths: number;
+  autoRenew: boolean;
+}
+
 interface PublicFormRendererProps {
   form: FormData;
   prefillData: Record<string, unknown> | null;
   isAuthenticated: boolean;
-  onSubmit: (data: Record<string, unknown>, consentGiven: boolean) => Promise<void>;
+  onSubmit: (
+    data: Record<string, unknown>,
+    consentGiven: boolean,
+    consentOptions?: ConsentOptions
+  ) => Promise<void>;
 }
 
 type FieldValue = string | boolean | string[];
@@ -142,6 +160,12 @@ export default function PublicFormRenderer({
     return initial;
   });
   const [consentChecked, setConsentChecked] = useState(false);
+  const [consentDuration, setConsentDuration] = useState<number>(
+    form.consentConfig?.defaultDuration ?? 12
+  );
+  const [autoRenew, setAutoRenew] = useState<boolean>(
+    form.consentConfig?.allowAutoRenewal ?? true
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -332,7 +356,11 @@ export default function PublicFormRenderer({
 
     setSubmitting(true);
     try {
-      await onSubmit(fieldValues, consentChecked);
+      // Include consent options if consent is given
+      const consentOptions = consentChecked
+        ? { durationMonths: consentDuration, autoRenew }
+        : undefined;
+      await onSubmit(fieldValues, consentChecked, consentOptions);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submission failed");
     } finally {
@@ -830,6 +858,92 @@ export default function PublicFormRenderer({
                   <p className="mt-2 text-sm text-red-600">
                     {validationErrors["_consent"]}
                   </p>
+                )}
+
+                {/* Consent Duration Options - shown when consent is checked */}
+                {consentChecked && form.consentConfig && (
+                  <div className="mt-6 rounded-lg border border-teal-200 bg-teal-50 p-4">
+                    <h3 className="mb-3 font-medium text-teal-800">
+                      Consent Duration
+                    </h3>
+                    <p className="mb-4 text-sm text-teal-700">
+                      Choose how long your consent should be valid. You can renew or withdraw at any time.
+                    </p>
+
+                    {/* Duration selector */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-teal-800 mb-2">
+                        Duration
+                      </label>
+                      <select
+                        value={consentDuration}
+                        onChange={(e) => setConsentDuration(parseInt(e.target.value))}
+                        className="w-full rounded-lg border border-teal-300 bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        {/* Generate options based on min/max from config */}
+                        {(() => {
+                          const options: { value: number; label: string }[] = [];
+                          const min = form.consentConfig.minDuration;
+                          const max = form.consentConfig.maxDuration;
+
+                          // Common duration presets within the allowed range
+                          const presets = [
+                            { months: 1, label: "1 month" },
+                            { months: 3, label: "3 months" },
+                            { months: 6, label: "6 months" },
+                            { months: 12, label: "1 year" },
+                            { months: 24, label: "2 years" },
+                            { months: 36, label: "3 years" },
+                            { months: 60, label: "5 years" },
+                          ];
+
+                          for (const preset of presets) {
+                            if (preset.months >= min && preset.months <= max) {
+                              options.push({ value: preset.months, label: preset.label });
+                            }
+                          }
+
+                          return options.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                              {opt.value === form.consentConfig?.defaultDuration ? " (Recommended)" : ""}
+                            </option>
+                          ));
+                        })()}
+                      </select>
+                      <p className="mt-1 text-xs text-teal-600">
+                        Your consent will expire on{" "}
+                        {new Date(
+                          Date.now() + consentDuration * 30 * 24 * 60 * 60 * 1000
+                        ).toLocaleDateString("en-ZA", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+
+                    {/* Auto-renewal option */}
+                    {form.consentConfig.allowAutoRenewal && (
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-5 w-5 rounded border-teal-300 text-teal-600 focus:ring-teal-500"
+                          checked={autoRenew}
+                          onChange={(e) => setAutoRenew(e.target.checked)}
+                        />
+                        <div>
+                          <span className="text-teal-800 font-medium">
+                            Enable auto-renewal
+                          </span>
+                          <p className="text-xs text-teal-600 mt-0.5">
+                            Your consent will be automatically renewed before it expires.
+                            You&apos;ll receive a reminder email 30 days before renewal.
+                          </p>
+                        </div>
+                      </label>
+                    )}
+                  </div>
                 )}
               </div>
             )}

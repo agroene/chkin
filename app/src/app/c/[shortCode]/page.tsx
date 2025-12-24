@@ -37,11 +37,20 @@ interface FormField {
   columnSpan: number;
 }
 
+interface ConsentConfig {
+  defaultDuration: number;
+  minDuration: number;
+  maxDuration: number;
+  allowAutoRenewal: boolean;
+  gracePeriodDays: number;
+}
+
 interface FormData {
   id: string;
   title: string;
   description: string | null;
   consentClause: string | null;
+  consentConfig?: ConsentConfig;
   fields: FormField[];
   sections: string[];
   organization: {
@@ -49,6 +58,11 @@ interface FormData {
     name: string;
     logo: string | null;
   };
+}
+
+interface ConsentOptions {
+  durationMonths: number;
+  autoRenew: boolean;
 }
 
 interface ProfileDiff {
@@ -120,13 +134,22 @@ export default function PublicFormPage() {
   // Handle form submission
   const handleSubmit = async (
     formData: Record<string, unknown>,
-    consentGiven: boolean
+    consentGiven: boolean,
+    consentOptions?: ConsentOptions
   ) => {
     try {
       const response = await fetch(`/api/public/forms/${shortCode}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: formData, consentGiven }),
+        body: JSON.stringify({
+          data: formData,
+          consentGiven,
+          // Include consent options if provided
+          ...(consentOptions && {
+            consentDurationMonths: consentOptions.durationMonths,
+            autoRenew: consentOptions.autoRenew,
+          }),
+        }),
       });
 
       const data = await response.json();

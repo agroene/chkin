@@ -24,6 +24,8 @@ interface RouteParams {
 interface SubmissionBody {
   data: Record<string, unknown>;
   consentGiven: boolean;
+  consentDurationMonths?: number; // Optional: patient-selected duration
+  autoRenew?: boolean; // Optional: patient preference for auto-renewal
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
@@ -175,9 +177,34 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Calculate consent expiry date if consent is given
     const consentAt = body.consentGiven ? new Date() : null;
+
+    // Determine consent duration: use patient-selected, or fall back to form default
+    let consentDuration = form.defaultConsentDuration;
+    if (body.consentGiven && body.consentDurationMonths !== undefined) {
+      // Validate the duration is within allowed range
+      if (
+        body.consentDurationMonths < form.minConsentDuration ||
+        body.consentDurationMonths > form.maxConsentDuration
+      ) {
+        return NextResponse.json(
+          {
+            error: `Consent duration must be between ${form.minConsentDuration} and ${form.maxConsentDuration} months`,
+            code: "INVALID_CONSENT_DURATION",
+          },
+          { status: 400 }
+        );
+      }
+      consentDuration = body.consentDurationMonths;
+    }
+
     const consentExpiresAt = consentAt
-      ? calculateConsentExpiry(consentAt, form.defaultConsentDuration)
+      ? calculateConsentExpiry(consentAt, consentDuration)
       : null;
+
+    // Determine auto-renewal preference: use patient choice if allowed, otherwise form default
+    const autoRenew = form.allowAutoRenewal
+      ? (body.autoRenew ?? form.allowAutoRenewal)
+      : false;
 
     // Create submission
     const submission = await prisma.submission.create({
@@ -190,8 +217,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         consentAt,
         consentToken: body.consentGiven ? nanoid(32) : null,
         consentExpiresAt,
-        consentDurationMonths: body.consentGiven ? form.defaultConsentDuration : null,
-        autoRenew: form.allowAutoRenewal,
+        consentDurationMonths: body.consentGiven ? consentDuration : null,
+        autoRenew,
         status: "completed",
         source: "web",
         ipAddress,
@@ -213,6 +240,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         formTitle: form.title,
         isAuthenticated,
         consentGiven: body.consentGiven,
+        consentDurationMonths: body.consentGiven ? consentDuration : null,
+        consentExpiresAt: consentExpiresAt?.toISOString() || null,
+        autoRenew: body.consentGiven ? autoRenew : null,
       },
     });
 
