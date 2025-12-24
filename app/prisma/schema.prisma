@@ -411,6 +411,10 @@ model Submission {
   consentGiven   Boolean  @default(false)
   consentAt      DateTime?
 
+  // Consent withdrawal (POPIA right to withdraw consent)
+  consentWithdrawnAt DateTime?  // When consent was withdrawn
+  withdrawalReason   String?    // Optional reason for withdrawal
+
   // Status
   status         String   @default("pending") // pending, completed, expired
 
