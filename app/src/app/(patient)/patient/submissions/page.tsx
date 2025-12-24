@@ -116,33 +116,35 @@ export default function SubmissionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-4 py-3">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="rounded-full p-2 hover:bg-gray-100"
-            aria-label="Go back"
-          >
-            <svg
-              className="h-5 w-5 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      <div className="sticky top-0 z-10 border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-lg px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="rounded-full p-2 hover:bg-gray-100"
+              aria-label="Go back"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <h1 className="text-lg font-semibold text-gray-900">My Check-ins</h1>
+              <svg
+                className="h-5 w-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <h1 className="text-lg font-semibold text-gray-900">My Check-ins</h1>
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-4 py-6">
+      <div className="mx-auto max-w-lg px-4 py-6">
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
