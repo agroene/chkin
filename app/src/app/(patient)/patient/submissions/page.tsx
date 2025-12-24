@@ -67,13 +67,15 @@ export default function SubmissionsPage() {
           router.push("/login");
           return;
         }
-        throw new Error("Failed to load submissions");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("API error:", response.status, errorData);
+        throw new Error(errorData.error || "Failed to load submissions");
       }
       const data = await response.json();
-      setSubmissions(data.submissions);
+      setSubmissions(data.submissions || []);
     } catch (err) {
       console.error("Fetch error:", err);
-      setError("Failed to load your check-ins. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to load your check-ins. Please try again.");
     } finally {
       setLoading(false);
     }

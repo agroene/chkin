@@ -111,8 +111,9 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Get patient submissions error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to get submissions" },
+      { error: "Failed to get submissions", details: errorMessage },
       { status: 500 }
     );
   }
