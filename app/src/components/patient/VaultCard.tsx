@@ -107,7 +107,7 @@ function ProgressIndicator({
   // Color based on progress
   let progressColor = "bg-gray-300";
   let textColor = "text-gray-500";
-  let hoverClass = onClick ? "cursor-pointer hover:bg-gray-100 active:bg-gray-200" : "";
+  const hoverClass = onClick ? "cursor-pointer hover:bg-gray-100 active:bg-gray-200" : "";
 
   if (percentage >= 75) {
     progressColor = "bg-teal-500";
