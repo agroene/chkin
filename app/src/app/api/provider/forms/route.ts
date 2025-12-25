@@ -144,6 +144,10 @@ export async function POST(request: NextRequest) {
       maxConsentDuration,
       allowAutoRenewal,
       gracePeriodDays,
+      // PDF Document settings
+      pdfEnabled,
+      docusealTemplateId,
+      pdfFieldMappings,
     } = body;
 
     if (!title || typeof title !== "string" || title.trim().length === 0) {
@@ -188,6 +192,10 @@ export async function POST(request: NextRequest) {
           maxConsentDuration: consentDurationMax,
           allowAutoRenewal: allowAutoRenewal ?? true,
           gracePeriodDays: gracePeriodDays ?? 30,
+          // PDF Document settings
+          pdfEnabled: pdfEnabled ?? false,
+          docusealTemplateId: docusealTemplateId ?? null,
+          pdfFieldMappings: pdfFieldMappings ?? null,
         },
       });
 

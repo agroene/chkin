@@ -8,12 +8,13 @@
  * Includes "Quick Start Template" button to load a pre-configured form.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout";
 import FieldPicker from "@/components/provider/form-builder/FieldPicker";
 import FormPreview from "@/components/provider/form-builder/FormPreview";
 import SectionOrganizer from "@/components/provider/form-builder/SectionOrganizer";
+import PdfDocumentTab from "@/components/provider/form-builder/PdfDocumentTab";
 
 interface FormField {
   id: string;
@@ -54,7 +55,7 @@ export default function NewFormPage() {
   const [sections, setSections] = useState<string[]>(["General"]);
   const [activeSection, setActiveSection] = useState<string>("General");
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"fields" | "consent" | "settings">("fields");
+  const [activeTab, setActiveTab] = useState<"fields" | "consent" | "settings" | "pdf">("fields");
   const [previewMode, setPreviewMode] = useState(false);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
 
@@ -63,6 +64,20 @@ export default function NewFormPage() {
 
   // Mobile preview toggle
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+
+  // PDF Document settings
+  const [pdfEnabled, setPdfEnabled] = useState(false);
+  const [docusealTemplateId, setDocusealTemplateId] = useState<number | null>(null);
+  const [pdfFieldMappings, setPdfFieldMappings] = useState<Record<string, string>>({});
+
+  // Memoize chkin fields for PDF mapping
+  const chkinFields = useMemo(() =>
+    fields.map(f => ({
+      name: f.fieldDefinition.name,
+      label: f.labelOverride || f.fieldDefinition.label,
+    })),
+    [fields]
+  );
 
   // Load Quick Start Template
   const handleLoadTemplate = useCallback(async () => {
@@ -248,6 +263,12 @@ export default function NewFormPage() {
           maxConsentDuration: consentConfig.maxDuration,
           allowAutoRenewal: consentConfig.allowAutoRenewal,
           gracePeriodDays: consentConfig.gracePeriodDays,
+          // PDF Document settings
+          pdfEnabled,
+          docusealTemplateId,
+          pdfFieldMappings: Object.keys(pdfFieldMappings).length > 0
+            ? JSON.stringify(pdfFieldMappings)
+            : null,
           fields: fields.map((f) => ({
             fieldDefinitionId: f.fieldDefinitionId,
             labelOverride: f.labelOverride,
@@ -459,6 +480,21 @@ export default function NewFormPage() {
                 }`}
               >
                 Settings
+              </button>
+              <button
+                onClick={() => setActiveTab("pdf")}
+                className={`border-b-2 pb-3 text-sm font-medium transition-colors ${
+                  activeTab === "pdf"
+                    ? "border-teal-600 text-teal-600"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                }`}
+              >
+                PDF Document
+                {pdfEnabled && (
+                  <span className="ml-1.5 inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700">
+                    On
+                  </span>
+                )}
               </button>
             </nav>
           </div>
@@ -680,6 +716,18 @@ export default function NewFormPage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === "pdf" && (
+            <PdfDocumentTab
+              pdfEnabled={pdfEnabled}
+              onPdfEnabledChange={setPdfEnabled}
+              docusealTemplateId={docusealTemplateId}
+              onDocusealTemplateIdChange={setDocusealTemplateId}
+              fieldMappings={pdfFieldMappings}
+              onFieldMappingsChange={setPdfFieldMappings}
+              chkinFields={chkinFields}
+            />
           )}
         </div>
 
