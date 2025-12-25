@@ -449,6 +449,7 @@ model Submission {
 
   // DocuSeal PDF Signature tracking
   docusealSubmissionId Int?        // DocuSeal submission ID
+  docusealSigningUrl   String?     // DocuSeal signing URL (contains unique slug)
   signedDocumentUrl    String?     // URL to signed PDF in DocuSeal
   signedAt             DateTime?   // When document was signed
 

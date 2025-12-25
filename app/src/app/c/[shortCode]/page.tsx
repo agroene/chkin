@@ -236,6 +236,22 @@ export default function PublicFormPage() {
         localStorage.setItem("chkin_anonymous_token", data.anonymousToken);
       }
 
+      // Store registration prefill data for anonymous users
+      // This needs to be stored now because the page will reload after PDF signing
+      if (data.promptRegistration) {
+        const firstName = formData.firstName as string || "";
+        const lastName = formData.lastName as string || "";
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+        const email = (formData.emailPersonal as string) ||
+                      (formData.email as string) || "";
+        if (fullName || email) {
+          localStorage.setItem("chkin_registration_prefill", JSON.stringify({
+            name: fullName,
+            email: email,
+          }));
+        }
+      }
+
       // Store profile diff if provided
       if (data.profileDiff) {
         setProfileDiff(data.profileDiff);
@@ -419,12 +435,12 @@ export default function PublicFormPage() {
                 Go to My Dashboard
               </Link>
             ) : (
-              <button
-                onClick={() => setPageState("registration-prompt")}
+              <Link
+                href="/register"
                 className="inline-flex items-center rounded-lg bg-teal-600 px-6 py-3 text-white hover:bg-teal-700"
               >
                 Create an Account
-              </button>
+              </Link>
             )}
           </div>
         </div>

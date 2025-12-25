@@ -56,7 +56,11 @@ export default function SignatureStep({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to initialize signing");
+        // Include details if available (dev environment)
+        const errorMsg = data.details
+          ? `${data.error}: ${data.details}`
+          : data.error || "Failed to initialize signing";
+        throw new Error(errorMsg);
       }
 
       setSigningUrl(data.signingUrl);

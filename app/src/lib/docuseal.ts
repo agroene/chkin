@@ -187,6 +187,8 @@ export async function getDocuSealSubmission(submissionId: number): Promise<{
     throw new Error("DOCUSEAL_API_KEY is not configured");
   }
 
+  console.log(`[DocuSeal API] Fetching submission ${submissionId} from ${DOCUSEAL_URL}/api/submissions/${submissionId}`);
+
   const response = await fetch(
     `${DOCUSEAL_URL}/api/submissions/${submissionId}`,
     {
@@ -196,14 +198,20 @@ export async function getDocuSealSubmission(submissionId: number): Promise<{
     }
   );
 
+  console.log(`[DocuSeal API] Response status: ${response.status} ${response.statusText}`);
+
   if (!response.ok) {
     if (response.status === 404) {
+      console.log(`[DocuSeal API] Submission ${submissionId} not found`);
       return null;
     }
+    const errorText = await response.text();
+    console.error(`[DocuSeal API] Error response:`, errorText);
     throw new Error(`Failed to fetch DocuSeal submission: ${response.statusText}`);
   }
 
   const data = await response.json();
+  console.log(`[DocuSeal API] Raw response:`, JSON.stringify(data, null, 2));
 
   return {
     id: data.id,

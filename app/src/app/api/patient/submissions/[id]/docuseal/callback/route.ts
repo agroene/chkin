@@ -24,6 +24,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
+    console.log("[DocuSeal Callback] Received callback for submission:", id);
+
     // Get the base URL for redirects (uses network IP in development)
     const baseUrl = getAppBaseUrl();
 
@@ -44,23 +46,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!submission) {
+      console.log("[DocuSeal Callback] Submission not found:", id);
       // Redirect to error page
       return NextResponse.redirect(
         new URL(`/patient/submissions?error=not_found`, baseUrl)
       );
     }
 
+    console.log("[DocuSeal Callback] Found submission:", {
+      id: submission.id,
+      docusealSubmissionId: submission.docusealSubmissionId,
+      signedAt: submission.signedAt,
+    });
+
     // If we have a DocuSeal submission ID, check its status
     if (submission.docusealSubmissionId && !submission.signedAt) {
       try {
+        console.log("[DocuSeal Callback] Fetching DocuSeal submission status for:", submission.docusealSubmissionId);
         const docusealSubmission = await getDocuSealSubmission(
           submission.docusealSubmissionId
         );
+
+        console.log("[DocuSeal Callback] DocuSeal API response:", JSON.stringify(docusealSubmission, null, 2));
 
         if (docusealSubmission?.completedAt) {
           // Update the submission with signed status
           const signedUrl = docusealSubmission.documents[0]?.url || null;
 
+          console.log("[DocuSeal Callback] Updating submission with signedAt:", docusealSubmission.completedAt);
           await prisma.submission.update({
             where: { id },
             data: {
@@ -68,11 +81,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               signedDocumentUrl: signedUrl,
             },
           });
+          console.log("[DocuSeal Callback] Successfully updated submission signedAt");
+        } else {
+          console.log("[DocuSeal Callback] DocuSeal submission not yet completed, status:", docusealSubmission?.status);
         }
       } catch (error) {
-        console.error("Failed to check DocuSeal submission status:", error);
+        console.error("[DocuSeal Callback] Failed to check DocuSeal submission status:", error);
         // Continue anyway - the webhook will update the status later
       }
+    } else {
+      console.log("[DocuSeal Callback] Skipping DocuSeal check - already signed or no docusealSubmissionId");
     }
 
     // For authenticated users, redirect to the patient portal with success message

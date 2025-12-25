@@ -98,15 +98,34 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         );
 
         if (existingSubmission) {
-          // Submission exists - return the signing URL
-          const docusealUrl = getDocuSealUrl();
-          const signingUrl = `${docusealUrl}/s/${submission.docusealSubmissionId}`;
-
-          return NextResponse.json({
-            success: true,
-            submissionId: submission.docusealSubmissionId,
-            signingUrl,
+          // Submission exists - get stored signing URL or fetch from existing submission
+          const storedSigningUrl = await prisma.submission.findUnique({
+            where: { id },
+            select: { docusealSigningUrl: true },
           });
+
+          if (storedSigningUrl?.docusealSigningUrl) {
+            // Replace any localhost/127.0.0.1 in the stored URL with the network-accessible DocuSeal URL
+            const docusealUrl = getDocuSealUrl();
+            let signingUrl = storedSigningUrl.docusealSigningUrl;
+            if (signingUrl.includes("localhost") || signingUrl.includes("127.0.0.1")) {
+              const urlParts = new URL(signingUrl);
+              const docusealUrlParts = new URL(docusealUrl);
+              urlParts.host = docusealUrlParts.host;
+              urlParts.protocol = docusealUrlParts.protocol;
+              signingUrl = urlParts.toString();
+            }
+
+            return NextResponse.json({
+              success: true,
+              submissionId: submission.docusealSubmissionId,
+              signingUrl,
+            });
+          }
+          // If no stored URL, fall through to create a new submission
+          console.log(
+            `[DocuSeal] No stored signing URL for submission ${submission.docusealSubmissionId}, creating new one`
+          );
         }
       } catch {
         // DocuSeal submission doesn't exist or API error - will create a new one
@@ -115,10 +134,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      // Clear the stale DocuSeal submission ID
+      // Clear the stale DocuSeal submission ID and URL
       await prisma.submission.update({
         where: { id },
-        data: { docusealSubmissionId: null },
+        data: { docusealSubmissionId: null, docusealSigningUrl: null },
       });
     }
 
@@ -164,11 +183,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       completedRedirectUrl: callbackUrl,
     });
 
-    // Update submission with DocuSeal ID
+    // Update submission with DocuSeal ID and signing URL
     await prisma.submission.update({
       where: { id },
       data: {
         docusealSubmissionId: docusealResult.submissionId,
+        docusealSigningUrl: docusealResult.embedUrl,
       },
     });
 
@@ -193,8 +213,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Create DocuSeal submission error:", error);
+    // Include more details in dev/test environments
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Failed to create PDF signing session" },
+      {
+        error: "Failed to create PDF signing session",
+        details: process.env.NODE_ENV !== "production" ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }
