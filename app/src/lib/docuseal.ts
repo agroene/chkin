@@ -8,6 +8,7 @@
  */
 
 import * as jose from "jose";
+import crypto from "crypto";
 
 const DOCUSEAL_URL = process.env.DOCUSEAL_URL || "http://localhost:3001";
 const DOCUSEAL_API_KEY = process.env.DOCUSEAL_API_KEY || "";
@@ -216,7 +217,6 @@ export function verifyDocuSealWebhook(
   }
 
   // DocuSeal uses HMAC-SHA256 for webhook signatures
-  const crypto = require("crypto");
   const expectedSignature = crypto
     .createHmac("sha256", webhookSecret)
     .update(payload)
