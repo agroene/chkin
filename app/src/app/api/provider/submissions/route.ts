@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
     const formId = searchParams.get("formId");
     const status = searchParams.get("status"); // "pending", "completed", "reviewed", or null for all
     const consentStatus = searchParams.get("consentStatus"); // "active", "expiring", "expired", "withdrawn", or null for all
+    const patientType = searchParams.get("patientType"); // "registered", "anonymous", or null for all
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const search = searchParams.get("search") || "";
@@ -65,6 +66,13 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       where.status = status;
+    }
+
+    // Filter by patient type (registered = has userId, anonymous = no userId)
+    if (patientType === "registered") {
+      where.userId = { not: null };
+    } else if (patientType === "anonymous") {
+      where.userId = null;
     }
 
     if (dateFrom || dateTo) {
@@ -213,7 +221,7 @@ export async function GET(request: NextRequest) {
       action: "LIST_SUBMISSIONS",
       resourceType: "Submission",
       metadata: {
-        filters: { formId, status, consentStatus, dateFrom, dateTo, search },
+        filters: { formId, status, consentStatus, patientType, dateFrom, dateTo, search },
         resultCount: filteredSubmissions.length,
         totalCount: total,
       },
