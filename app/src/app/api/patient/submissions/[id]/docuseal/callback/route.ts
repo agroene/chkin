@@ -1,9 +1,12 @@
 /**
- * DocuSeal Callback Route
+ * DocuSeal Callback Route for Authenticated Users
  *
  * GET /api/patient/submissions/[id]/docuseal/callback
  * Handles the redirect back from DocuSeal after signing.
- * Updates the submission status and redirects to the completion page.
+ * Updates the submission status and redirects to the patient portal.
+ *
+ * Note: This callback is specifically for authenticated users.
+ * Anonymous users use /api/public/submissions/[id]/docuseal/callback instead.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -34,6 +37,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         formTemplate: {
           select: {
             id: true,
+            title: true,
           },
         },
       },
@@ -71,26 +75,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Get the original form shortcode to redirect back
-    const qrCode = await prisma.qRCode.findFirst({
-      where: {
-        formTemplateId: submission.formTemplate.id,
-        isActive: true,
-      },
-      select: { shortCode: true },
-    });
-
-    // Redirect to completion page
-    // If we have the short code, redirect to the form completion
-    // Otherwise, redirect to patient submissions page
-    if (qrCode?.shortCode) {
-      return NextResponse.redirect(
-        new URL(`/c/${qrCode.shortCode}?signed=true&submission=${id}`, baseUrl)
-      );
-    }
-
+    // For authenticated users, redirect to the patient portal with success message
+    // Don't redirect to /c/[shortCode] as that's for the public form (anonymous users)
+    // and may have issues detecting the authenticated session after external redirects
     return NextResponse.redirect(
-      new URL(`/patient/submissions/${id}?signed=true`, baseUrl)
+      new URL(`/patient/submissions?signed=true&submission=${id}`, baseUrl)
     );
   } catch (error) {
     console.error("DocuSeal callback error:", error);

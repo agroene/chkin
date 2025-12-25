@@ -7,8 +7,8 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 type ConsentStatus = "ACTIVE" | "EXPIRING" | "GRACE" | "EXPIRED" | "WITHDRAWN" | "NEVER_GIVEN";
@@ -67,11 +67,60 @@ const industryIcons: Record<string, string> = {
   Other: "🏢",
 };
 
+// Wrapper component with Suspense for useSearchParams
 export default function SubmissionsPage() {
+  return (
+    <Suspense fallback={<SubmissionsPageLoading />}>
+      <SubmissionsPageContent />
+    </Suspense>
+  );
+}
+
+function SubmissionsPageLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-teal-500 border-t-transparent"></div>
+        <p className="mt-2 text-sm text-gray-500">Loading check-ins...</p>
+      </div>
+    </div>
+  );
+}
+
+function SubmissionsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Check for success/error messages from query params
+  useEffect(() => {
+    const signed = searchParams.get("signed");
+    const errorParam = searchParams.get("error");
+
+    if (signed === "true") {
+      setSuccessMessage("Document signed successfully! Your check-in is complete.");
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("signed");
+      url.searchParams.delete("submission");
+      window.history.replaceState({}, "", url.pathname);
+    }
+
+    if (errorParam) {
+      const errorMessages: Record<string, string> = {
+        not_found: "Submission not found",
+        callback_failed: "Failed to process signature. Please try again.",
+      };
+      setError(errorMessages[errorParam] || "An error occurred");
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("error");
+      window.history.replaceState({}, "", url.pathname);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchSubmissions();
@@ -174,6 +223,24 @@ export default function SubmissionsPage() {
 
       {/* Content */}
       <div className="mx-auto max-w-lg px-4 py-6">
+        {successMessage && (
+          <div className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+            <svg className="h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            {successMessage}
+            <button
+              onClick={() => setSuccessMessage(null)}
+              className="ml-auto text-green-600 hover:text-green-800"
+              aria-label="Dismiss"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
