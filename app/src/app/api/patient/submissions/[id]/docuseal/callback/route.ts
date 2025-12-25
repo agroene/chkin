@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getDocuSealSubmission } from "@/lib/docuseal";
+import { getAppBaseUrl } from "@/lib/network";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
+
+    // Get the base URL for redirects (uses network IP in development)
+    const baseUrl = getAppBaseUrl();
 
     // Get the submission
     const submission = await prisma.submission.findUnique({
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (!submission) {
       // Redirect to error page
       return NextResponse.redirect(
-        new URL(`/patient/submissions?error=not_found`, request.url)
+        new URL(`/patient/submissions?error=not_found`, baseUrl)
       );
     }
 
@@ -81,17 +85,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Otherwise, redirect to patient submissions page
     if (qrCode?.shortCode) {
       return NextResponse.redirect(
-        new URL(`/c/${qrCode.shortCode}?signed=true&submission=${id}`, request.url)
+        new URL(`/c/${qrCode.shortCode}?signed=true&submission=${id}`, baseUrl)
       );
     }
 
     return NextResponse.redirect(
-      new URL(`/patient/submissions/${id}?signed=true`, request.url)
+      new URL(`/patient/submissions/${id}?signed=true`, baseUrl)
     );
   } catch (error) {
     console.error("DocuSeal callback error:", error);
+    // Use getAppBaseUrl() here too for consistency
+    const errorBaseUrl = getAppBaseUrl();
     return NextResponse.redirect(
-      new URL(`/patient/submissions?error=callback_failed`, request.url)
+      new URL(`/patient/submissions?error=callback_failed`, errorBaseUrl)
     );
   }
 }

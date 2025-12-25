@@ -103,8 +103,19 @@ export default function PublicFormPage() {
   const [profileDiff, setProfileDiff] = useState<ProfileDiff[] | null>(null);
   const [submittedFormData, setSubmittedFormData] = useState<Record<string, unknown> | null>(null);
 
+  // Check for signed=true query param (return from DocuSeal)
+  // This must be checked before fetchForm runs to prevent race condition
+  const signedParam = searchParams.get("signed");
+  const returnedSubmissionIdParam = searchParams.get("submission");
+  const isReturningFromSignature = signedParam === "true";
+
   // Fetch form data
   const fetchForm = useCallback(async () => {
+    // Don't fetch form if returning from signature - we'll show submitted state
+    if (isReturningFromSignature) {
+      return;
+    }
+
     try {
       const response = await fetch(`/api/public/forms/${shortCode}`);
       const data = await response.json();
@@ -129,20 +140,17 @@ export default function PublicFormPage() {
       });
       setPageState("error");
     }
-  }, [shortCode]);
+  }, [shortCode, isReturningFromSignature]);
 
   useEffect(() => {
     fetchForm();
   }, [fetchForm]);
 
-  // Check for signed=true query param (return from DocuSeal)
+  // Handle return from DocuSeal signature
   useEffect(() => {
-    const signed = searchParams.get("signed");
-    const returnedSubmissionId = searchParams.get("submission");
-
-    if (signed === "true") {
-      if (returnedSubmissionId) {
-        setSubmissionId(returnedSubmissionId);
+    if (isReturningFromSignature) {
+      if (returnedSubmissionIdParam) {
+        setSubmissionId(returnedSubmissionIdParam);
       }
       setPageState("submitted");
 
@@ -152,7 +160,7 @@ export default function PublicFormPage() {
       url.searchParams.delete("submission");
       window.history.replaceState({}, "", url.pathname);
     }
-  }, [searchParams]);
+  }, [isReturningFromSignature, returnedSubmissionIdParam]);
 
   // Handle form submission
   const handleSubmit = async (
