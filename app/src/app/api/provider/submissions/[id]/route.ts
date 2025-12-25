@@ -162,6 +162,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             }
           : null,
         isAnonymous: !submission.userId,
+        // Conversion tracking - was this anonymous user converted to registered?
+        claimedAt: submission.claimedAt,
         status: submission.status,
         // Legacy consent fields for backwards compatibility
         consentGiven: submission.consentGiven,

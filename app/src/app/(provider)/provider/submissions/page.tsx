@@ -44,6 +44,7 @@ interface Submission {
   patientName: string | null;
   patientEmail: string | null;
   isAnonymous: boolean;
+  claimedAt: string | null; // When anonymous user registered and claimed this submission
   status: string;
   consentGiven: boolean;
   consent: ConsentInfo;
@@ -81,6 +82,7 @@ interface SubmissionDetail {
   };
   user: { id: string; name: string; email: string } | null;
   isAnonymous: boolean;
+  claimedAt: string | null; // When anonymous user registered and claimed this submission
   status: string;
   consentGiven: boolean;
   consentAt: string | null;
@@ -571,21 +573,10 @@ export default function ProviderSubmissionsPage() {
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      {submission.isAnonymous ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Anonymous
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700">
-                          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                          </svg>
-                          Registered
-                        </span>
-                      )}
+                      <PatientTypeBadge
+                        isAnonymous={submission.isAnonymous}
+                        claimedAt={submission.claimedAt}
+                      />
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
                       {submission.formTemplate.title}
@@ -720,21 +711,10 @@ export default function ProviderSubmissionsPage() {
                         Type
                       </p>
                       <div className="mt-1">
-                        {selectedSubmission.submission.isAnonymous ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">
-                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Anonymous
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700">
-                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                            </svg>
-                            Registered
-                          </span>
-                        )}
+                        <PatientTypeBadge
+                          isAnonymous={selectedSubmission.submission.isAnonymous}
+                          claimedAt={selectedSubmission.submission.claimedAt}
+                        />
                       </div>
                     </div>
                     <div>
@@ -1130,6 +1110,70 @@ function PdfStatusCell({ pdfSigning }: { pdfSigning: PdfSigningInfo }) {
         />
       </svg>
       Pending
+    </span>
+  );
+}
+
+// Patient type badge component showing Anonymous/Registered/Converted status
+function PatientTypeBadge({
+  isAnonymous,
+  claimedAt,
+}: {
+  isAnonymous: boolean;
+  claimedAt: string | null;
+}) {
+  // Registered user (logged in when submitting)
+  if (!isAnonymous) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700">
+        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Registered
+      </span>
+    );
+  }
+
+  // Anonymous but converted (registered after submission)
+  if (claimedAt) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700"
+        title={`User registered on ${new Date(claimedAt).toLocaleDateString()}`}
+      >
+        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Converted
+      </span>
+    );
+  }
+
+  // Anonymous (not yet converted)
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+      <svg
+        className="h-3 w-3"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      Anonymous
     </span>
   );
 }

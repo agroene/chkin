@@ -160,6 +160,8 @@ export async function GET(request: NextRequest) {
         patientName,
         patientEmail: user?.email || data.email || null,
         isAnonymous: !submission.userId,
+        // Conversion tracking - was this anonymous user converted to registered?
+        claimedAt: submission.claimedAt,
         status: submission.status,
         consentGiven: submission.consentGiven,
         // Time-bound consent info
