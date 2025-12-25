@@ -14,6 +14,7 @@ import Link from "next/link";
 import PublicFormRenderer from "@/components/patient/PublicFormRenderer";
 import RegistrationPrompt from "@/components/patient/RegistrationPrompt";
 import ProfileSyncModal from "@/components/patient/ProfileSyncModal";
+import SignatureStep from "@/components/patient/SignatureStep";
 
 interface FormField {
   id: string;
@@ -51,6 +52,7 @@ interface FormData {
   description: string | null;
   consentClause: string | null;
   consentConfig?: ConsentConfig;
+  pdfEnabled?: boolean;
   fields: FormField[];
   sections: string[];
   organization: {
@@ -76,6 +78,7 @@ type PageState =
   | "loading"
   | "form"
   | "error"
+  | "signing"
   | "submitted"
   | "registration-prompt"
   | "profile-sync";
@@ -161,18 +164,30 @@ export default function PublicFormPage() {
       setSubmissionId(data.submission.id);
       setSubmittedFormData(formData);
 
+      // Store anonymous token if provided
+      if (data.anonymousToken) {
+        setAnonymousToken(data.anonymousToken);
+        localStorage.setItem("chkin_anonymous_token", data.anonymousToken);
+      }
+
+      // Store profile diff if provided
+      if (data.profileDiff) {
+        setProfileDiff(data.profileDiff);
+      }
+
+      // Check if PDF signing is required
+      // Only authenticated users can sign (need user email for DocuSeal)
+      if (form?.pdfEnabled && isAuthenticated) {
+        setPageState("signing");
+        return;
+      }
+
       // Handle response based on authentication
       if (data.promptRegistration) {
         // Anonymous user - show registration prompt
-        setAnonymousToken(data.anonymousToken);
-        // Store token in localStorage for claiming later
-        if (data.anonymousToken) {
-          localStorage.setItem("chkin_anonymous_token", data.anonymousToken);
-        }
         setPageState("registration-prompt");
       } else if (data.promptProfileUpdate && data.profileDiff) {
         // Authenticated user with profile differences
-        setProfileDiff(data.profileDiff);
         setPageState("profile-sync");
       } else {
         // Authenticated user, no differences
@@ -181,6 +196,23 @@ export default function PublicFormPage() {
     } catch (err) {
       throw err; // Let the form renderer handle the error display
     }
+  };
+
+  // Handle signature completion
+  const handleSignatureComplete = () => {
+    // After signing, continue with the normal flow
+    if (profileDiff && profileDiff.length > 0 && isAuthenticated) {
+      setPageState("profile-sync");
+    } else if (!isAuthenticated) {
+      setPageState("registration-prompt");
+    } else {
+      setPageState("submitted");
+    }
+  };
+
+  // Handle skipping signature
+  const handleSignatureSkip = () => {
+    handleSignatureComplete();
   };
 
   // Handle profile sync completion
@@ -240,6 +272,39 @@ export default function PublicFormPage() {
             >
               Go to Homepage
             </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render signature step (for PDF-enabled forms)
+  if (pageState === "signing" && submissionId) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="mx-auto max-w-2xl">
+          {/* Back to form header */}
+          <div className="mb-6">
+            {form?.organization.logo && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={form.organization.logo}
+                alt={form.organization.name}
+                className="mx-auto mb-4 h-12 w-auto"
+              />
+            )}
+            <p className="text-center text-sm text-gray-500">
+              {form?.organization.name}
+            </p>
+          </div>
+
+          {/* Signature component */}
+          <div className="rounded-xl bg-white p-6 shadow-sm">
+            <SignatureStep
+              submissionId={submissionId}
+              onComplete={handleSignatureComplete}
+              onSkip={handleSignatureSkip}
+            />
           </div>
         </div>
       </div>

@@ -324,6 +324,11 @@ model FormTemplate {
   allowAutoRenewal       Boolean  @default(true)  // Whether auto-renewal is allowed
   gracePeriodDays        Int      @default(30)    // Days of grace period after expiry
 
+  // DocuSeal PDF Integration
+  pdfEnabled             Boolean  @default(false) // Whether PDF signing is enabled for this form
+  docusealTemplateId     Int?                     // DocuSeal template ID for PDF form
+  pdfFieldMappings       String?                  // JSON: { chkinFieldName: docusealFieldName }
+
   // Form status
   isActive       Boolean  @default(true)
   version        Int      @default(1)
@@ -441,6 +446,11 @@ model Submission {
   // Anonymous user tracking - allows claiming submissions after registration
   anonymousToken String?  @unique  // Token for anonymous users to claim submission
   claimedAt      DateTime?         // When submission was claimed by registered user
+
+  // DocuSeal PDF Signature tracking
+  docusealSubmissionId Int?        // DocuSeal submission ID
+  signedDocumentUrl    String?     // URL to signed PDF in DocuSeal
+  signedAt             DateTime?   // When document was signed
 
   // Audit fields
   createdAt      DateTime @default(now())

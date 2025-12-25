@@ -183,6 +183,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           allowAutoRenewal: form.allowAutoRenewal,
           gracePeriodDays: form.gracePeriodDays,
         },
+        // PDF signing configuration
+        pdfEnabled: form.pdfEnabled,
         fields,
         sections,
         organization: {

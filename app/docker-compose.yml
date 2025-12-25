@@ -10,11 +10,27 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-docuseal-db.sql:/docker-entrypoint-initdb.d/init-docuseal-db.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: chkin-docuseal
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/docuseal
+      SECRET_KEY_BASE: ${DOCUSEAL_SECRET_KEY:-changeme_generate_with_openssl_rand_hex_64}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - docuseal_data:/data
 
   app:
     build:
@@ -32,3 +48,4 @@ services:
 
 volumes:
   postgres_data:
+  docuseal_data:
