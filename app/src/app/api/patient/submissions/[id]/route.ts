@@ -15,6 +15,7 @@ import { headers } from "next/headers";
 import { logAuditEvent } from "@/lib/audit-log";
 import { calculateConsentStatus, getConsentStatusBadge, calculateRenewalExpiry, createRenewalEntry, type RenewalHistoryEntry } from "@/lib/consent-status";
 import { sendConsentRenewedEmail, sendConsentWithdrawnEmail } from "@/lib/email";
+import { transformDocuSealUrl } from "@/lib/network";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
             defaultConsentDuration: true,
             gracePeriodDays: true,
             allowAutoRenewal: true,
+            pdfEnabled: true,
             organization: {
               select: {
                 id: true,
@@ -175,6 +177,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
       },
       // Organization info
       organization: submission.formTemplate.organization,
+      // PDF signing info
+      pdfSigning: {
+        hasPdf: submission.formTemplate.pdfEnabled || false,
+        isSigned: !!submission.signedAt,
+        signedAt: submission.signedAt,
+        signedDocumentUrl: transformDocuSealUrl(submission.signedDocumentUrl),
+      },
       // All submitted fields with values
       fields,
       // Raw field count

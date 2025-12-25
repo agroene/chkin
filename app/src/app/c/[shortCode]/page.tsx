@@ -152,7 +152,45 @@ export default function PublicFormPage() {
       if (returnedSubmissionIdParam) {
         setSubmissionId(returnedSubmissionIdParam);
       }
-      setPageState("submitted");
+
+      // Check if user is authenticated and show appropriate page
+      const checkAuthAndComplete = async () => {
+        let authenticated = false;
+        try {
+          const response = await fetch(`/api/public/forms/${shortCode}`);
+          if (response.ok) {
+            const data = await response.json();
+            authenticated = data.isAuthenticated;
+            setIsAuthenticated(authenticated);
+            if (data.form) {
+              setForm(data.form);
+            }
+          }
+        } catch {
+          // Ignore errors, continue with flow
+        }
+
+        // Trigger a status sync to update the signed status in the database
+        // This is needed because webhooks may not work in local development
+        if (returnedSubmissionIdParam) {
+          try {
+            await fetch(`/api/public/submissions/${returnedSubmissionIdParam}/docuseal/sync`, {
+              method: "POST",
+            });
+          } catch {
+            // Ignore errors - webhook will handle it eventually
+          }
+        }
+
+        // Show registration prompt for anonymous users, submitted for authenticated
+        if (authenticated) {
+          setPageState("submitted");
+        } else {
+          setPageState("registration-prompt");
+        }
+      };
+
+      checkAuthAndComplete();
 
       // Clean up the URL
       const url = new URL(window.location.href);
@@ -160,7 +198,7 @@ export default function PublicFormPage() {
       url.searchParams.delete("submission");
       window.history.replaceState({}, "", url.pathname);
     }
-  }, [isReturningFromSignature, returnedSubmissionIdParam]);
+  }, [isReturningFromSignature, returnedSubmissionIdParam, shortCode]);
 
   // Handle form submission
   const handleSubmit = async (
@@ -204,8 +242,8 @@ export default function PublicFormPage() {
       }
 
       // Check if PDF signing is required
-      // Only authenticated users can sign (need user email for DocuSeal)
-      if (form?.pdfEnabled && isAuthenticated) {
+      // Now supports both authenticated and anonymous users
+      if (form?.pdfEnabled) {
         setPageState("signing");
         return;
       }
@@ -332,6 +370,8 @@ export default function PublicFormPage() {
               submissionId={submissionId}
               onComplete={handleSignatureComplete}
               onSkip={handleSignatureSkip}
+              isAnonymous={!isAuthenticated}
+              anonymousToken={anonymousToken}
             />
           </div>
         </div>

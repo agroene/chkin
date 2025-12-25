@@ -13,6 +13,13 @@ import Link from "next/link";
 
 type ConsentStatus = "ACTIVE" | "EXPIRING" | "GRACE" | "EXPIRED" | "WITHDRAWN" | "NEVER_GIVEN";
 
+interface PdfSigningInfo {
+  hasPdf: boolean;
+  isSigned: boolean;
+  signedAt: string | null;
+  signedDocumentUrl: string | null;
+}
+
 interface Submission {
   id: string;
   createdAt: string;
@@ -31,6 +38,7 @@ interface Submission {
     renewalUrgency: "none" | "low" | "medium" | "high" | "critical";
     message: string;
   };
+  pdfSigning: PdfSigningInfo;
   form: {
     id: string;
     title: string;
@@ -118,6 +126,9 @@ export default function SubmissionsPage() {
   );
   const withdrawnSubmissions = submissions.filter(
     (s) => s.consent.status === "WITHDRAWN"
+  );
+  const noConsentSubmissions = submissions.filter(
+    (s) => s.consent.status === "NEVER_GIVEN"
   );
 
   if (loading) {
@@ -322,6 +333,26 @@ export default function SubmissionsPage() {
                 </div>
               </div>
             )}
+
+            {/* Submissions without consent (no consent configured or not given) */}
+            {noConsentSubmissions.length > 0 && (
+              <div>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-gray-500">
+                  <span className="h-2 w-2 rounded-full bg-blue-400"></span>
+                  Other Check-ins ({noConsentSubmissions.length})
+                </h2>
+                <div className="space-y-3">
+                  {noConsentSubmissions.map((submission) => (
+                    <SubmissionCard
+                      key={submission.id}
+                      submission={submission}
+                      formatDate={formatDate}
+                      getIndustryIcon={getIndustryIcon}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -375,6 +406,10 @@ function SubmissionCard({
               </svg>
               {formatDate(submission.createdAt)}
             </span>
+            {/* PDF signing status */}
+            {submission.pdfSigning?.hasPdf && (
+              <PdfStatusBadge pdfSigning={submission.pdfSigning} />
+            )}
           </div>
         </div>
 
@@ -487,6 +522,37 @@ function ConsentStatusBadge({ submission }: { submission: Submission }) {
     >
       {getIcon()}
       {getLabel()}
+    </span>
+  );
+}
+
+// PDF status badge component
+function PdfStatusBadge({ pdfSigning }: { pdfSigning: PdfSigningInfo }) {
+  if (pdfSigning.isSigned) {
+    return (
+      <span className="flex items-center gap-1 text-green-600">
+        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+        PDF Signed
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex items-center gap-1 text-yellow-600">
+      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fillRule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+          clipRule="evenodd"
+        />
+      </svg>
+      PDF Pending
     </span>
   );
 }

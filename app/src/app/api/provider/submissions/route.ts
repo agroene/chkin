@@ -12,6 +12,7 @@ import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { logAuditEvent } from "@/lib/audit-log";
 import { calculateConsentStatus, getConsentStatusBadge } from "@/lib/consent-status";
+import { transformDocuSealUrl } from "@/lib/network";
 
 export const dynamic = "force-dynamic";
 
@@ -172,7 +173,7 @@ export async function GET(request: NextRequest) {
           hasPdf: !!submission.docusealSubmissionId,
           isSigned: !!submission.signedAt,
           signedAt: submission.signedAt,
-          signedDocumentUrl: submission.signedDocumentUrl,
+          signedDocumentUrl: transformDocuSealUrl(submission.signedDocumentUrl),
         },
         source: submission.source,
         createdAt: submission.createdAt,

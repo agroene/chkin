@@ -16,12 +16,18 @@ interface SignatureStepProps {
   submissionId: string;
   onComplete: () => void;
   onSkip?: () => void;
+  /** For anonymous users - use public API endpoint */
+  isAnonymous?: boolean;
+  /** Token for anonymous users to verify access */
+  anonymousToken?: string | null;
 }
 
 export default function SignatureStep({
   submissionId,
   onComplete,
   onSkip,
+  isAnonymous = false,
+  anonymousToken,
 }: SignatureStepProps) {
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,14 +39,19 @@ export default function SignatureStep({
       setLoading(true);
       setError(null);
 
+      // Use public endpoint for anonymous users, patient endpoint for authenticated
+      const apiUrl = isAnonymous
+        ? `/api/public/submissions/${submissionId}/docuseal`
+        : `/api/patient/submissions/${submissionId}/docuseal`;
+
       // Create or get DocuSeal submission
-      const response = await fetch(
-        `/api/patient/submissions/${submissionId}/docuseal`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(anonymousToken && { anonymousToken }),
+        }),
+      });
 
       const data = await response.json();
 
@@ -54,7 +65,7 @@ export default function SignatureStep({
     } finally {
       setLoading(false);
     }
-  }, [submissionId]);
+  }, [submissionId, isAnonymous, anonymousToken]);
 
   useEffect(() => {
     initializeSignature();

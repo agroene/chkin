@@ -1,12 +1,14 @@
 /**
- * DocuSeal Submission API for Patients
+ * Public DocuSeal Submission API
  *
- * POST /api/patient/submissions/[id]/docuseal
- * Creates a DocuSeal submission with pre-filled values from the Chkin submission.
- * Returns a signing URL for redirect-based signing (Pro embeds not available).
+ * POST /api/public/submissions/[id]/docuseal
+ * Creates a DocuSeal submission for PDF signing.
+ * Works for both authenticated users and anonymous users (with email from form data).
  *
- * GET /api/patient/submissions/[id]/docuseal
- * Gets the DocuSeal signing status for a submission.
+ * Authentication:
+ * - Authenticated users: session-based verification
+ * - Anonymous users: must include anonymousToken in request body OR
+ *   submission must have been made in the last 30 minutes
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -26,17 +28,30 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// POST: Create DocuSeal submission
+// POST: Create DocuSeal submission (public - works for anonymous users)
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
+    const body = await request.json().catch(() => ({}));
+    const { anonymousToken } = body as { anonymousToken?: string };
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    // Check if user is authenticated
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    let userName: string | null = null;
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
+
+      if (session?.user) {
+        userId = session.user.id;
+        userEmail = session.user.email;
+        userName = session.user.name || session.user.email.split("@")[0];
+      }
+    } catch {
+      // Not authenticated - will check anonymous access
     }
 
     // Get the submission with form template
@@ -46,6 +61,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         formTemplate: {
           select: {
             id: true,
+            title: true,
             pdfEnabled: true,
             docusealTemplateId: true,
             pdfFieldMappings: true,
@@ -61,9 +77,27 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Verify ownership
-    if (submission.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Verify access
+    if (userId) {
+      // Authenticated user - verify ownership
+      if (submission.userId !== userId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else {
+      // Anonymous user - verify via token or recent submission
+      const isValidToken =
+        anonymousToken && submission.anonymousToken === anonymousToken;
+      const isRecent =
+        !submission.userId &&
+        new Date().getTime() - new Date(submission.createdAt).getTime() <
+          30 * 60 * 1000; // 30 minutes
+
+      if (!isValidToken && !isRecent) {
+        return NextResponse.json(
+          { error: "Invalid token or session expired" },
+          { status: 403 }
+        );
+      }
     }
 
     // Check if PDF is enabled for this form
@@ -91,14 +125,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Check if DocuSeal submission already exists
     if (submission.docusealSubmissionId) {
-      // Verify the DocuSeal submission still exists before returning its URL
       try {
         const existingSubmission = await getDocuSealSubmission(
           submission.docusealSubmissionId
         );
 
         if (existingSubmission) {
-          // Submission exists - return the signing URL
           const docusealUrl = getDocuSealUrl();
           const signingUrl = `${docusealUrl}/s/${submission.docusealSubmissionId}`;
 
@@ -109,7 +141,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           });
         }
       } catch {
-        // DocuSeal submission doesn't exist or API error - will create a new one
         console.log(
           `[DocuSeal] Submission ${submission.docusealSubmissionId} not found, creating new one`
         );
@@ -142,22 +173,64 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Map Chkin values to DocuSeal fields
     const docusealValues = mapFieldValues(submissionData, fieldMappings);
 
-    // Get user name for DocuSeal
-    const userName = session.user.name || session.user.email.split("@")[0];
+    // Get email and name for DocuSeal
+    // Priority: authenticated user > form submission data
+    let signerEmail = userEmail;
+    let signerName = userName;
+
+    if (!signerEmail) {
+      // Try to get email from submission data
+      signerEmail =
+        (submissionData.emailPersonal as string) ||
+        (submissionData.email as string) ||
+        null;
+    }
+
+    if (!signerName) {
+      // Try to get name from submission data
+      const firstName = submissionData.firstName as string;
+      const lastName = submissionData.lastName as string;
+      if (firstName || lastName) {
+        signerName = [firstName, lastName].filter(Boolean).join(" ");
+      }
+    }
+
+    // DocuSeal requires an email - if none available, use a placeholder
+    if (!signerEmail) {
+      // Generate a unique anonymous email for DocuSeal
+      signerEmail = `anonymous-${submission.id.slice(0, 8)}@chkin.local`;
+    }
+
+    if (!signerName) {
+      signerName = "Anonymous Patient";
+    }
 
     // Create DocuSeal submission
     const appBaseUrl = getAppBaseUrl();
-    console.log("[DocuSeal] appBaseUrl:", appBaseUrl);
-    console.log("[DocuSeal] NODE_ENV:", process.env.NODE_ENV);
+    console.log("[DocuSeal Public] appBaseUrl:", appBaseUrl);
 
     const webhookUrl = `${appBaseUrl}/api/webhooks/docuseal`;
-    const callbackUrl = `${appBaseUrl}/api/patient/submissions/${id}/docuseal/callback`;
-    console.log("[DocuSeal] callbackUrl:", callbackUrl);
+
+    // For anonymous users, redirect back to the public form page
+    // We need to know the shortCode, so we'll get it from the form's QR codes
+    const qrCode = await prisma.qRCode.findFirst({
+      where: {
+        formTemplateId: submission.formTemplate.id,
+        isActive: true,
+      },
+      select: { shortCode: true },
+    });
+
+    const callbackUrl = qrCode
+      ? `${appBaseUrl}/c/${qrCode.shortCode}?signed=true&submission=${submission.id}`
+      : `${appBaseUrl}/api/public/submissions/${id}/docuseal/callback`;
+
+    console.log("[DocuSeal Public] callbackUrl:", callbackUrl);
 
     const docusealResult = await createDocuSealSubmission({
       templateId: submission.formTemplate.docusealTemplateId,
-      email: session.user.email,
-      name: userName,
+      email: signerEmail,
+      name: signerName,
       fieldValues: docusealValues,
       externalId: submission.id,
       webhookUrl,
@@ -173,7 +246,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     // Return the direct signing URL
-    // The embedUrl from DocuSeal might use localhost, so we need to replace it with the network IP
     const docusealUrl = getDocuSealUrl();
 
     // Replace any localhost/127.0.0.1 in the embed URL with the network-accessible DocuSeal URL
@@ -195,126 +267,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     console.error("Create DocuSeal submission error:", error);
     return NextResponse.json(
       { error: "Failed to create PDF signing session" },
-      { status: 500 }
-    );
-  }
-}
-
-// GET: Get DocuSeal submission status
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params;
-
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Get the submission
-    const submission = await prisma.submission.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        userId: true,
-        docusealSubmissionId: true,
-        signedDocumentUrl: true,
-        signedAt: true,
-        formTemplate: {
-          select: {
-            pdfEnabled: true,
-          },
-        },
-      },
-    });
-
-    if (!submission) {
-      return NextResponse.json(
-        { error: "Submission not found" },
-        { status: 404 }
-      );
-    }
-
-    // Verify ownership
-    if (submission.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // If not a PDF form, return not applicable
-    if (!submission.formTemplate.pdfEnabled) {
-      return NextResponse.json({
-        pdfEnabled: false,
-        status: "not_applicable",
-      });
-    }
-
-    // If no DocuSeal submission yet
-    if (!submission.docusealSubmissionId) {
-      return NextResponse.json({
-        pdfEnabled: true,
-        status: "pending",
-        signedAt: null,
-        signedDocumentUrl: null,
-      });
-    }
-
-    // If already have signed info in DB
-    if (submission.signedAt) {
-      return NextResponse.json({
-        pdfEnabled: true,
-        status: "completed",
-        signedAt: submission.signedAt,
-        signedDocumentUrl: submission.signedDocumentUrl,
-      });
-    }
-
-    // Check status from DocuSeal
-    try {
-      const docusealSubmission = await getDocuSealSubmission(
-        submission.docusealSubmissionId
-      );
-
-      if (docusealSubmission?.completedAt) {
-        // Update our DB with the completed info
-        const signedUrl = docusealSubmission.documents[0]?.url || null;
-
-        await prisma.submission.update({
-          where: { id },
-          data: {
-            signedAt: new Date(docusealSubmission.completedAt),
-            signedDocumentUrl: signedUrl,
-          },
-        });
-
-        return NextResponse.json({
-          pdfEnabled: true,
-          status: "completed",
-          signedAt: docusealSubmission.completedAt,
-          signedDocumentUrl: signedUrl,
-        });
-      }
-
-      return NextResponse.json({
-        pdfEnabled: true,
-        status: docusealSubmission?.status || "pending",
-        signedAt: null,
-        signedDocumentUrl: null,
-      });
-    } catch {
-      // If DocuSeal API fails, return what we have
-      return NextResponse.json({
-        pdfEnabled: true,
-        status: "unknown",
-        signedAt: submission.signedAt,
-        signedDocumentUrl: submission.signedDocumentUrl,
-      });
-    }
-  } catch (error) {
-    console.error("Get DocuSeal status error:", error);
-    return NextResponse.json(
-      { error: "Failed to get signing status" },
       { status: 500 }
     );
   }

@@ -142,6 +142,27 @@ export function getDocuSealUrl(): string {
 }
 
 /**
+ * Transform a DocuSeal URL to use the local network IP instead of localhost/127.0.0.1
+ * This is needed because DocuSeal stores URLs with localhost, but mobile devices
+ * need the actual network IP to access the signed documents.
+ */
+export function transformDocuSealUrl(url: string | null): string | null {
+  if (!url) return null;
+
+  // In non-production, replace localhost/127.0.0.1 with local network IP
+  if (process.env.NODE_ENV !== "production") {
+    const localIP = getLocalNetworkIP();
+    if (localIP && (url.includes("localhost") || url.includes("127.0.0.1"))) {
+      return url
+        .replace("localhost", localIP)
+        .replace("127.0.0.1", localIP);
+    }
+  }
+
+  return url;
+}
+
+/**
  * Get all trusted origins for authentication
  * In non-production, includes localhost and all local network IPs
  */

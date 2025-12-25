@@ -12,6 +12,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { calculateConsentStatus, getConsentStatusBadge } from "@/lib/consent-status";
+import { transformDocuSealUrl } from "@/lib/network";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,10 @@ export async function GET() {
         status: true,
         createdAt: true,
         updatedAt: true,
+        // PDF signing fields
+        docusealSubmissionId: true,
+        signedAt: true,
+        signedDocumentUrl: true,
         formTemplate: {
           select: {
             id: true,
@@ -58,6 +63,7 @@ export async function GET() {
             defaultConsentDuration: true,
             gracePeriodDays: true,
             allowAutoRenewal: true,
+            pdfEnabled: true,
             organization: {
               select: {
                 id: true,
@@ -138,6 +144,13 @@ export async function GET() {
         },
         // Organization info
         organization: submission.formTemplate.organization,
+        // PDF signing info
+        pdfSigning: {
+          hasPdf: submission.formTemplate.pdfEnabled || false,
+          isSigned: !!submission.signedAt,
+          signedAt: submission.signedAt,
+          signedDocumentUrl: transformDocuSealUrl(submission.signedDocumentUrl),
+        },
         // Data preview (not full data - that's on detail view)
         preview,
         // Field count
