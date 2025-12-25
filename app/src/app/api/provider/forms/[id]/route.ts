@@ -128,7 +128,23 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { title, description, consentClause, isActive, fields } = body;
+    const {
+      title,
+      description,
+      consentClause,
+      isActive,
+      fields,
+      // Consent duration settings
+      defaultConsentDuration,
+      minConsentDuration,
+      maxConsentDuration,
+      allowAutoRenewal,
+      gracePeriodDays,
+      // PDF settings
+      pdfEnabled,
+      docusealTemplateId,
+      pdfFieldMappings,
+    } = body;
 
     // Update form in transaction
     const form = await prisma.$transaction(async (tx) => {
@@ -149,6 +165,34 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
       if (isActive !== undefined) {
         updateData.isActive = Boolean(isActive);
+      }
+
+      // Consent duration settings
+      if (defaultConsentDuration !== undefined) {
+        updateData.defaultConsentDuration = Number(defaultConsentDuration);
+      }
+      if (minConsentDuration !== undefined) {
+        updateData.minConsentDuration = Number(minConsentDuration);
+      }
+      if (maxConsentDuration !== undefined) {
+        updateData.maxConsentDuration = Number(maxConsentDuration);
+      }
+      if (allowAutoRenewal !== undefined) {
+        updateData.allowAutoRenewal = Boolean(allowAutoRenewal);
+      }
+      if (gracePeriodDays !== undefined) {
+        updateData.gracePeriodDays = Number(gracePeriodDays);
+      }
+
+      // PDF settings
+      if (pdfEnabled !== undefined) {
+        updateData.pdfEnabled = Boolean(pdfEnabled);
+      }
+      if (docusealTemplateId !== undefined) {
+        updateData.docusealTemplateId = docusealTemplateId ? Number(docusealTemplateId) : null;
+      }
+      if (pdfFieldMappings !== undefined) {
+        updateData.pdfFieldMappings = pdfFieldMappings || null;
       }
 
       // Increment version if structural changes

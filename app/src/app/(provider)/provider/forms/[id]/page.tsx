@@ -6,13 +6,14 @@
  * View and edit an existing form template.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout";
 import FieldPicker from "@/components/provider/form-builder/FieldPicker";
 import FormPreview from "@/components/provider/form-builder/FormPreview";
 import SectionOrganizer from "@/components/provider/form-builder/SectionOrganizer";
+import PdfDocumentTab from "@/components/provider/form-builder/PdfDocumentTab";
 
 interface FormField {
   id: string;
@@ -43,6 +44,16 @@ interface FormTemplate {
   isActive: boolean;
   version: number;
   fields: FormField[];
+  // Time-bound consent configuration
+  defaultConsentDuration: number;
+  minConsentDuration: number;
+  maxConsentDuration: number;
+  allowAutoRenewal: boolean;
+  gracePeriodDays: number;
+  // PDF Document settings
+  pdfEnabled: boolean;
+  docusealTemplateId: number | null;
+  pdfFieldMappings: string | null;
   _count: {
     submissions: number;
   };
@@ -65,11 +76,25 @@ export default function FormDetailPage() {
   const [sections, setSections] = useState<string[]>(["General"]);
   const [isActive, setIsActive] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<"fields" | "consent">("fields");
+  const [activeTab, setActiveTab] = useState<"fields" | "consent" | "settings" | "pdf">("fields");
   const [previewMode, setPreviewMode] = useState(false);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("General");
+
+  // Consent configuration settings
+  const [consentConfig, setConsentConfig] = useState({
+    defaultDuration: 12,
+    minDuration: 1,
+    maxDuration: 60,
+    allowAutoRenewal: true,
+    gracePeriodDays: 30,
+  });
+
+  // PDF Document settings
+  const [pdfEnabled, setPdfEnabled] = useState(false);
+  const [docusealTemplateId, setDocusealTemplateId] = useState<number | null>(null);
+  const [pdfFieldMappings, setPdfFieldMappings] = useState<Record<string, string>>({});
 
   // Fetch form data
   useEffect(() => {
@@ -94,6 +119,26 @@ export default function FormDetailPage() {
         setDescription(formData.description || "");
         setConsentClause(formData.consentClause || "");
         setIsActive(formData.isActive);
+
+        // Populate consent configuration
+        setConsentConfig({
+          defaultDuration: formData.defaultConsentDuration ?? 12,
+          minDuration: formData.minConsentDuration ?? 1,
+          maxDuration: formData.maxConsentDuration ?? 60,
+          allowAutoRenewal: formData.allowAutoRenewal ?? true,
+          gracePeriodDays: formData.gracePeriodDays ?? 30,
+        });
+
+        // Populate PDF settings
+        setPdfEnabled(formData.pdfEnabled ?? false);
+        setDocusealTemplateId(formData.docusealTemplateId ?? null);
+        if (formData.pdfFieldMappings) {
+          try {
+            setPdfFieldMappings(JSON.parse(formData.pdfFieldMappings));
+          } catch {
+            setPdfFieldMappings({});
+          }
+        }
 
         // Process fields (add default columnSpan if not present)
         const loadedFields = formData.fields.map((f) => ({
@@ -270,6 +315,15 @@ export default function FormDetailPage() {
     );
   }, [sections]);
 
+  // Memoize chkin fields for PDF mapping
+  const chkinFields = useMemo(() =>
+    fields.map(f => ({
+      name: f.fieldDefinition.name,
+      label: f.labelOverride || f.fieldDefinition.label,
+    })),
+    [fields]
+  );
+
   // Save form
   const handleSave = async () => {
     if (!title.trim()) {
@@ -287,6 +341,18 @@ export default function FormDetailPage() {
           description: description.trim() || null,
           consentClause: consentClause.trim() || null,
           isActive,
+          // Consent duration settings
+          defaultConsentDuration: consentConfig.defaultDuration,
+          minConsentDuration: consentConfig.minDuration,
+          maxConsentDuration: consentConfig.maxDuration,
+          allowAutoRenewal: consentConfig.allowAutoRenewal,
+          gracePeriodDays: consentConfig.gracePeriodDays,
+          // PDF settings
+          pdfEnabled,
+          docusealTemplateId,
+          pdfFieldMappings: Object.keys(pdfFieldMappings).length > 0
+            ? JSON.stringify(pdfFieldMappings)
+            : null,
           fields: fields.map((f) => ({
             fieldDefinitionId: f.fieldDefinitionId,
             labelOverride: f.labelOverride,
@@ -460,6 +526,31 @@ export default function FormDetailPage() {
               >
                 Consent Clause
               </button>
+              <button
+                onClick={() => setActiveTab("settings")}
+                className={`border-b-2 pb-3 text-sm font-medium transition-colors ${
+                  activeTab === "settings"
+                    ? "border-teal-600 text-teal-600"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                }`}
+              >
+                Settings
+              </button>
+              <button
+                onClick={() => setActiveTab("pdf")}
+                className={`border-b-2 pb-3 text-sm font-medium transition-colors ${
+                  activeTab === "pdf"
+                    ? "border-teal-600 text-teal-600"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                }`}
+              >
+                PDF Document
+                {pdfEnabled && (
+                  <span className="ml-1.5 inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700">
+                    On
+                  </span>
+                )}
+              </button>
             </nav>
           </div>
 
@@ -524,6 +615,170 @@ export default function FormDetailPage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === "settings" && (
+            <div className="space-y-6">
+              {/* Consent Duration Settings */}
+              <div className="rounded-lg border border-gray-200 bg-white p-6">
+                <h3 className="text-lg font-medium text-gray-900">Consent Duration</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Configure how long patient consent is valid and renewal options.
+                </p>
+
+                <div className="mt-6 space-y-6">
+                  {/* Default Duration */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Default Duration (months)
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      The pre-selected duration when patients submit the form
+                    </p>
+                    <select
+                      value={consentConfig.defaultDuration}
+                      onChange={(e) => setConsentConfig(prev => ({
+                        ...prev,
+                        defaultDuration: parseInt(e.target.value)
+                      }))}
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    >
+                      <option value={1}>1 month</option>
+                      <option value={3}>3 months</option>
+                      <option value={6}>6 months</option>
+                      <option value={12}>12 months (1 year)</option>
+                      <option value={24}>24 months (2 years)</option>
+                      <option value={36}>36 months (3 years)</option>
+                      <option value={60}>60 months (5 years)</option>
+                    </select>
+                  </div>
+
+                  {/* Min/Max Duration */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Minimum Duration (months)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={consentConfig.maxDuration}
+                        value={consentConfig.minDuration}
+                        onChange={(e) => setConsentConfig(prev => ({
+                          ...prev,
+                          minDuration: Math.max(1, parseInt(e.target.value) || 1)
+                        }))}
+                        className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Maximum Duration (months)
+                      </label>
+                      <input
+                        type="number"
+                        min={consentConfig.minDuration}
+                        max={120}
+                        value={consentConfig.maxDuration}
+                        onChange={(e) => setConsentConfig(prev => ({
+                          ...prev,
+                          maxDuration: Math.min(120, parseInt(e.target.value) || 60)
+                        }))}
+                        className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Grace Period */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Grace Period (days)
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Days after expiry before data access is revoked (allows time for renewal)
+                    </p>
+                    <select
+                      value={consentConfig.gracePeriodDays}
+                      onChange={(e) => setConsentConfig(prev => ({
+                        ...prev,
+                        gracePeriodDays: parseInt(e.target.value)
+                      }))}
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    >
+                      <option value={7}>7 days</option>
+                      <option value={14}>14 days</option>
+                      <option value={30}>30 days</option>
+                      <option value={60}>60 days</option>
+                      <option value={90}>90 days</option>
+                    </select>
+                  </div>
+
+                  {/* Auto-Renewal Toggle */}
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="allowAutoRenewal"
+                      checked={consentConfig.allowAutoRenewal}
+                      onChange={(e) => setConsentConfig(prev => ({
+                        ...prev,
+                        allowAutoRenewal: e.target.checked
+                      }))}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <div>
+                      <label htmlFor="allowAutoRenewal" className="text-sm font-medium text-gray-700 cursor-pointer">
+                        Allow Auto-Renewal
+                      </label>
+                      <p className="text-xs text-gray-500">
+                        Let patients opt-in to automatic consent renewal before expiry
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="mt-6 rounded-lg bg-blue-50 p-4">
+                  <div className="flex">
+                    <svg
+                      className="h-5 w-5 flex-shrink-0 text-blue-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <div className="ml-3">
+                      <h4 className="text-sm font-medium text-blue-800">
+                        How Consent Duration Works
+                      </h4>
+                      <ul className="mt-2 text-sm text-blue-700 list-disc list-inside space-y-1">
+                        <li>Patients can select their preferred duration within your min/max range</li>
+                        <li>Email reminders are sent at 30, 14, 7, and 1 days before expiry</li>
+                        <li>The grace period allows time for patients to renew without losing access</li>
+                        <li>Auto-renewal (if enabled) processes 7 days before expiry</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "pdf" && (
+            <PdfDocumentTab
+              pdfEnabled={pdfEnabled}
+              onPdfEnabledChange={setPdfEnabled}
+              docusealTemplateId={docusealTemplateId}
+              onDocusealTemplateIdChange={setDocusealTemplateId}
+              fieldMappings={pdfFieldMappings}
+              onFieldMappingsChange={setPdfFieldMappings}
+              chkinFields={chkinFields}
+            />
           )}
         </div>
 

@@ -3,12 +3,14 @@
 /**
  * Signature Step Component
  *
- * Embeds the DocuSeal Form component for patients to review and sign
- * their pre-filled PDF documents.
+ * Redirects patients to DocuSeal's hosted signing page.
+ * After signing, DocuSeal redirects back to our callback which completes the flow.
+ *
+ * Note: Embedded signing requires DocuSeal Pro subscription.
+ * This uses redirect-based signing which works with the free/self-hosted version.
  */
 
 import { useEffect, useState, useCallback } from "react";
-import { DocusealForm } from "@docuseal/react";
 
 interface SignatureStepProps {
   submissionId: string;
@@ -21,11 +23,10 @@ export default function SignatureStep({
   onComplete,
   onSkip,
 }: SignatureStepProps) {
-  const [token, setToken] = useState<string | null>(null);
-  const [docusealSubmissionId, setDocusealSubmissionId] = useState<number | null>(null);
-  const [docusealUrl, setDocusealUrl] = useState<string>("");
+  const [signingUrl, setSigningUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const initializeSignature = useCallback(async () => {
     try {
@@ -47,9 +48,7 @@ export default function SignatureStep({
         throw new Error(data.error || "Failed to initialize signing");
       }
 
-      setToken(data.token);
-      setDocusealSubmissionId(data.submissionId);
-      setDocusealUrl(data.docusealUrl);
+      setSigningUrl(data.signingUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -61,8 +60,21 @@ export default function SignatureStep({
     initializeSignature();
   }, [initializeSignature]);
 
-  const handleComplete = () => {
-    onComplete();
+  // Check URL params for completion callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("signed") === "true") {
+      onComplete();
+    }
+  }, [onComplete]);
+
+  const handleSignNow = () => {
+    if (signingUrl) {
+      setRedirecting(true);
+      // Store the current page URL to return to
+      sessionStorage.setItem("chkin_signing_return", window.location.href);
+      window.location.href = signingUrl;
+    }
   };
 
   if (loading) {
@@ -116,7 +128,7 @@ export default function SignatureStep({
     );
   }
 
-  if (!token || !docusealSubmissionId) {
+  if (!signingUrl) {
     return (
       <div className="text-center py-16">
         <p className="text-gray-500">Unable to load document for signing</p>
@@ -136,9 +148,9 @@ export default function SignatureStep({
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-teal-100 mb-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-100 mb-4">
           <svg
-            className="w-6 h-6 text-teal-600"
+            className="w-8 h-8 text-teal-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -151,27 +163,50 @@ export default function SignatureStep({
             />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900">Sign Document</h2>
-        <p className="text-gray-500 mt-1">
-          Please review and sign the document below to complete your submission.
+        <h2 className="text-xl font-semibold text-gray-900">
+          Sign Your Document
+        </h2>
+        <p className="text-gray-500 mt-2 max-w-md mx-auto">
+          Your form has been submitted. Please sign the document to complete
+          your submission. You&apos;ll be redirected to our secure signing page.
         </p>
       </div>
 
-      {/* DocuSeal Form Embed */}
-      <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-        <DocusealForm
-          src={`${docusealUrl}/s/${docusealSubmissionId}`}
-          host={docusealUrl}
-          token={token}
-          withTitle={false}
-          withDownloadButton={true}
-          onComplete={handleComplete}
-          className="w-full min-h-[600px]"
-        />
+      {/* Sign Button */}
+      <div className="flex flex-col items-center gap-4">
+        <button
+          onClick={handleSignNow}
+          disabled={redirecting}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {redirecting ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Redirecting...
+            </>
+          ) : (
+            <>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+              Sign Document Now
+            </>
+          )}
+        </button>
       </div>
 
       {/* Info Box */}
-      <div className="rounded-lg bg-blue-50 p-4">
+      <div className="rounded-lg bg-blue-50 p-4 mt-6">
         <div className="flex">
           <svg
             className="h-5 w-5 flex-shrink-0 text-blue-400"
@@ -199,14 +234,38 @@ export default function SignatureStep({
         </div>
       </div>
 
+      {/* Security Note */}
+      <div className="rounded-lg bg-gray-50 p-4">
+        <div className="flex items-start">
+          <svg
+            className="h-5 w-5 flex-shrink-0 text-gray-400 mt-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+          <p className="ml-3 text-sm text-gray-600">
+            You will be securely redirected to sign your document. After
+            signing, you&apos;ll automatically return to complete your
+            submission.
+          </p>
+        </div>
+      </div>
+
       {/* Skip Option */}
       {onSkip && (
-        <div className="text-center">
+        <div className="text-center pt-4 border-t">
           <button
             onClick={onSkip}
             className="text-sm text-gray-500 hover:text-gray-700"
           >
-            Skip signing for now (you can sign later)
+            Skip signing for now (you can sign later from your submissions)
           </button>
         </div>
       )}

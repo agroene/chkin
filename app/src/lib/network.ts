@@ -92,7 +92,7 @@ export function getAllLocalNetworkIPs(): string[] {
 
 /**
  * Get the base URL for the application
- * In development without NEXT_PUBLIC_APP_URL, uses the best local network IP
+ * In non-production without NEXT_PUBLIC_APP_URL, uses the best local network IP
  */
 export function getAppBaseUrl(): string {
   // Use configured app URL if set
@@ -100,8 +100,8 @@ export function getAppBaseUrl(): string {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
 
-  // In development, try to use local network IP for mobile testing
-  if (process.env.NODE_ENV === "development") {
+  // In non-production (development or undefined NODE_ENV), try to use local network IP for mobile testing
+  if (process.env.NODE_ENV !== "production") {
     const localIP = getLocalNetworkIP();
     if (localIP) {
       return `http://${localIP}:3000`;
@@ -113,8 +113,37 @@ export function getAppBaseUrl(): string {
 }
 
 /**
+ * Get the DocuSeal URL for the application
+ * In non-production without explicit DOCUSEAL_URL with a real IP, uses the local network IP
+ */
+export function getDocuSealUrl(): string {
+  const configuredUrl = process.env.DOCUSEAL_URL;
+
+  // If URL is configured and not using localhost/127.0.0.1, use it as-is
+  if (configuredUrl &&
+      !configuredUrl.includes("localhost") &&
+      !configuredUrl.includes("127.0.0.1")) {
+    return configuredUrl;
+  }
+
+  // In non-production, replace localhost/127.0.0.1 with local network IP
+  if (process.env.NODE_ENV !== "production") {
+    const localIP = getLocalNetworkIP();
+    if (localIP && configuredUrl) {
+      // Replace localhost or 127.0.0.1 with the actual IP
+      return configuredUrl
+        .replace("localhost", localIP)
+        .replace("127.0.0.1", localIP);
+    }
+  }
+
+  // Fallback to configured URL or default
+  return configuredUrl || "http://localhost:3001";
+}
+
+/**
  * Get all trusted origins for authentication
- * In development, includes localhost and all local network IPs
+ * In non-production, includes localhost and all local network IPs
  */
 export function getTrustedOrigins(): string[] {
   const origins: string[] = [];
@@ -127,8 +156,8 @@ export function getTrustedOrigins(): string[] {
   // Always include localhost
   origins.push("http://localhost:3000");
 
-  // In development, add all local network IPs
-  if (process.env.NODE_ENV === "development") {
+  // In non-production, add all local network IPs
+  if (process.env.NODE_ENV !== "production") {
     const ips = getAllLocalNetworkIPs();
     for (const ip of ips) {
       origins.push(`http://${ip}:3000`);

@@ -9,7 +9,9 @@
 
 import * as jose from "jose";
 import crypto from "crypto";
+import { getDocuSealUrl as getNetworkDocuSealUrl } from "./network";
 
+// Internal server-to-server URL (can use localhost)
 const DOCUSEAL_URL = process.env.DOCUSEAL_URL || "http://localhost:3001";
 const DOCUSEAL_API_KEY = process.env.DOCUSEAL_API_KEY || "";
 
@@ -108,6 +110,7 @@ export async function createDocuSealSubmission(params: {
   fieldValues: Record<string, string>;
   externalId?: string;
   webhookUrl?: string;
+  completedRedirectUrl?: string;
 }): Promise<{
   submissionId: number;
   embedUrl: string;
@@ -125,11 +128,19 @@ export async function createDocuSealSubmission(params: {
     body: JSON.stringify({
       template_id: params.templateId,
       send_email: false, // We handle our own notifications
+      // Global redirect URL after signing
+      ...(params.completedRedirectUrl && {
+        completed_redirect_url: params.completedRedirectUrl,
+      }),
       submitters: [
         {
           email: params.email,
           name: params.name,
           external_id: params.externalId,
+          // Submitter-specific redirect URL (takes precedence)
+          ...(params.completedRedirectUrl && {
+            completed_redirect_url: params.completedRedirectUrl,
+          }),
           fields: Object.entries(params.fieldValues).map(([name, value]) => ({
             name,
             default_value: value,
@@ -250,7 +261,8 @@ export function mapFieldValues(
 
 /**
  * Get the DocuSeal base URL for client-side components
+ * Uses the network-aware URL that works on mobile devices
  */
 export function getDocuSealBaseUrl(): string {
-  return DOCUSEAL_URL;
+  return getNetworkDocuSealUrl();
 }

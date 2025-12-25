@@ -3,7 +3,7 @@
  *
  * POST /api/patient/submissions/[id]/docuseal
  * Creates a DocuSeal submission with pre-filled values from the Chkin submission.
- * Returns a JWT token for embedding the DocuSeal Form component.
+ * Returns a signing URL for redirect-based signing (Pro embeds not available).
  *
  * GET /api/patient/submissions/[id]/docuseal
  * Gets the DocuSeal signing status for a submission.
@@ -14,11 +14,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import {
-  generateDocuSealToken,
   createDocuSealSubmission,
   getDocuSealSubmission,
   mapFieldValues,
 } from "@/lib/docuseal";
+import { getAppBaseUrl, getDocuSealUrl } from "@/lib/network";
 
 export const dynamic = "force-dynamic";
 
@@ -91,18 +91,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Check if DocuSeal submission already exists
     if (submission.docusealSubmissionId) {
-      // Generate a new token for the existing submission
-      const token = await generateDocuSealToken({
-        userEmail: session.user.email,
-        submissionId: submission.docusealSubmissionId,
-        expiresIn: "1h",
-      });
+      // Return the direct signing URL for the existing submission
+      // The redirect URL was set when the submission was created
+      const docusealUrl = getDocuSealUrl();
+      const signingUrl = `${docusealUrl}/s/${submission.docusealSubmissionId}`;
 
       return NextResponse.json({
         success: true,
         submissionId: submission.docusealSubmissionId,
-        token,
-        docusealUrl: process.env.DOCUSEAL_URL || "http://localhost:3001",
+        signingUrl,
       });
     }
 
@@ -130,7 +127,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const userName = session.user.name || session.user.email.split("@")[0];
 
     // Create DocuSeal submission
-    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/docuseal`;
+    const appBaseUrl = getAppBaseUrl();
+    console.log("[DocuSeal] appBaseUrl:", appBaseUrl);
+    console.log("[DocuSeal] NODE_ENV:", process.env.NODE_ENV);
+
+    const webhookUrl = `${appBaseUrl}/api/webhooks/docuseal`;
+    const callbackUrl = `${appBaseUrl}/api/patient/submissions/${id}/docuseal/callback`;
+    console.log("[DocuSeal] callbackUrl:", callbackUrl);
 
     const docusealResult = await createDocuSealSubmission({
       templateId: submission.formTemplate.docusealTemplateId,
@@ -139,6 +142,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       fieldValues: docusealValues,
       externalId: submission.id,
       webhookUrl,
+      completedRedirectUrl: callbackUrl,
     });
 
     // Update submission with DocuSeal ID
@@ -149,18 +153,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    // Generate token for embedding
-    const token = await generateDocuSealToken({
-      userEmail: session.user.email,
-      submissionId: docusealResult.submissionId,
-      expiresIn: "1h",
-    });
+    // Return the direct signing URL
+    // The embedUrl from DocuSeal might use localhost, so we need to replace it with the network IP
+    const docusealUrl = getDocuSealUrl();
+
+    // Replace any localhost/127.0.0.1 in the embed URL with the network-accessible DocuSeal URL
+    let signingUrl = docusealResult.embedUrl;
+    if (signingUrl.includes("localhost") || signingUrl.includes("127.0.0.1")) {
+      const urlParts = new URL(signingUrl);
+      const docusealUrlParts = new URL(docusealUrl);
+      urlParts.host = docusealUrlParts.host;
+      urlParts.protocol = docusealUrlParts.protocol;
+      signingUrl = urlParts.toString();
+    }
 
     return NextResponse.json({
       success: true,
       submissionId: docusealResult.submissionId,
-      token,
-      docusealUrl: process.env.DOCUSEAL_URL || "http://localhost:3001",
+      signingUrl,
     });
   } catch (error) {
     console.error("Create DocuSeal submission error:", error);

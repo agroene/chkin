@@ -190,6 +190,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         userAgent: submission.userAgent,
         createdAt: submission.createdAt,
         updatedAt: submission.updatedAt,
+        // PDF signing info
+        pdfSigning: {
+          hasPdf: !!submission.docusealSubmissionId,
+          docusealSubmissionId: submission.docusealSubmissionId,
+          isSigned: !!submission.signedAt,
+          signedAt: submission.signedAt,
+          signedDocumentUrl: submission.signedDocumentUrl,
+        },
       },
       fields: formFields,
       sections,

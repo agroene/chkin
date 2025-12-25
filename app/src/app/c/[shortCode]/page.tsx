@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import PublicFormRenderer from "@/components/patient/PublicFormRenderer";
 import RegistrationPrompt from "@/components/patient/RegistrationPrompt";
@@ -90,6 +90,7 @@ interface ErrorState {
 
 export default function PublicFormPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const shortCode = params.shortCode as string;
 
   const [pageState, setPageState] = useState<PageState>("loading");
@@ -133,6 +134,25 @@ export default function PublicFormPage() {
   useEffect(() => {
     fetchForm();
   }, [fetchForm]);
+
+  // Check for signed=true query param (return from DocuSeal)
+  useEffect(() => {
+    const signed = searchParams.get("signed");
+    const returnedSubmissionId = searchParams.get("submission");
+
+    if (signed === "true") {
+      if (returnedSubmissionId) {
+        setSubmissionId(returnedSubmissionId);
+      }
+      setPageState("submitted");
+
+      // Clean up the URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("signed");
+      url.searchParams.delete("submission");
+      window.history.replaceState({}, "", url.pathname);
+    }
+  }, [searchParams]);
 
   // Handle form submission
   const handleSubmit = async (

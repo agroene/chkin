@@ -167,6 +167,13 @@ export async function GET(request: NextRequest) {
           renewalUrgency: consentStatusResult.renewalUrgency,
           message: consentStatusResult.message,
         },
+        // PDF signing info
+        pdfSigning: {
+          hasPdf: !!submission.docusealSubmissionId,
+          isSigned: !!submission.signedAt,
+          signedAt: submission.signedAt,
+          signedDocumentUrl: submission.signedDocumentUrl,
+        },
         source: submission.source,
         createdAt: submission.createdAt,
       };
