@@ -188,14 +188,30 @@ export default function FormDetailPage() {
         section: f.section,
       })));
 
+    // Check if PDF settings have changed
+    const hasPdfChanges =
+      pdfEnabled !== (form.pdfEnabled ?? false) ||
+      docusealTemplateId !== (form.docusealTemplateId ?? null) ||
+      JSON.stringify(pdfFieldMappings) !== (form.pdfFieldMappings ?? "{}");
+
+    // Check if consent config has changed
+    const hasConsentConfigChanges =
+      consentConfig.defaultDuration !== (form.defaultConsentDuration ?? 12) ||
+      consentConfig.minDuration !== (form.minConsentDuration ?? 1) ||
+      consentConfig.maxDuration !== (form.maxConsentDuration ?? 60) ||
+      consentConfig.allowAutoRenewal !== (form.allowAutoRenewal ?? true) ||
+      consentConfig.gracePeriodDays !== (form.gracePeriodDays ?? 30);
+
     setHasChanges(
       title !== form.title ||
       description !== (form.description || "") ||
       consentClause !== (form.consentClause || "") ||
       isActive !== form.isActive ||
-      hasFieldChanges
+      hasFieldChanges ||
+      hasPdfChanges ||
+      hasConsentConfigChanges
     );
-  }, [form, title, description, consentClause, isActive, fields]);
+  }, [form, title, description, consentClause, isActive, fields, pdfEnabled, docusealTemplateId, pdfFieldMappings, consentConfig]);
 
   // Add field to form - adds to the active section
   const handleAddField = useCallback((fieldDefinition: FormField["fieldDefinition"]) => {
