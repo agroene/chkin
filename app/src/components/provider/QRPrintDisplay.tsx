@@ -335,13 +335,26 @@ export default function QRPrintDisplay({
 
         /* Screen styles */
         @media screen {
-          .a5-preview-container {
-            /* A5 aspect ratio: 148mm / 210mm = 0.7048 */
+          .a5-preview-wrapper {
+            /* Container that holds the scaled preview */
             width: 100%;
             max-width: 320px;
             aspect-ratio: 148 / 210;
             margin: 0 auto;
             overflow: hidden;
+            position: relative;
+          }
+
+          .a5-preview-container {
+            /* Render at actual A5 size in px (148mm x 210mm at 96dpi = 559px x 794px) */
+            width: 559px;
+            height: 794px;
+            /* Scale down to fit the wrapper - 320px / 559px = 0.572 */
+            transform: scale(0.572);
+            transform-origin: top left;
+            position: absolute;
+            top: 0;
+            left: 0;
           }
 
           /* Hide the print container on screen - use visibility not position */
@@ -433,21 +446,24 @@ export default function QRPrintDisplay({
 
           {/* Print Preview Area */}
           <div className="flex-1 overflow-auto bg-gray-100 p-4">
-            {/* A5 Preview Container - scaled for screen */}
-            <div
-              className="a5-preview-container relative rounded-lg bg-white shadow-lg"
-              style={{
-                fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-              }}
-            >
-              <A5Content
-          qrImageDataUrl={qrImageDataUrl}
-          shortCode={shortCode}
-          formTitle={formTitle}
-          organizationName={organizationName}
-          organizationLogo={organizationLogo}
-          label={label}
-        />
+            {/* A5 Preview Wrapper - maintains aspect ratio */}
+            <div className="a5-preview-wrapper rounded-lg shadow-lg">
+              {/* A5 Preview Container - rendered at actual A5 size, scaled down */}
+              <div
+                className="a5-preview-container bg-white"
+                style={{
+                  fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+                }}
+              >
+                <A5Content
+                  qrImageDataUrl={qrImageDataUrl}
+                  shortCode={shortCode}
+                  formTitle={formTitle}
+                  organizationName={organizationName}
+                  organizationLogo={organizationLogo}
+                  label={label}
+                />
+              </div>
             </div>
           </div>
 
