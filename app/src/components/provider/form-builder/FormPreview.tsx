@@ -13,6 +13,8 @@ import {
   AddressAutocomplete,
   type AddressComponents,
   PhoneInput,
+  ReferralDoctorInput,
+  type ReferralDoctorData,
 } from "@/components/ui";
 
 interface FormField {
@@ -513,6 +515,50 @@ export default function FormPreview({
             <option value="ZW">Zimbabwe</option>
             <option value="OTHER">Other</option>
           </select>
+        );
+
+      case "referral-doctor":
+        // Referral doctor composite field
+        // Extract the values for all referral doctor sub-fields from fieldValues
+        // The ReferralDoctorInput stores values with keys like "referralDoctorName", etc.
+        // We prefix them with field.id to keep them namespaced in preview
+        const referralDoctorValue: Partial<ReferralDoctorData> = {
+          referralDoctorName: (fieldValues[`${field.id}_name`] as string) || "",
+          referralDoctorPractice: (fieldValues[`${field.id}_practice`] as string) || "",
+          referralDoctorSpecialty: (fieldValues[`${field.id}_specialty`] as string) || "",
+          referralDoctorPhone: (fieldValues[`${field.id}_phone`] as string) || "",
+          referralDoctorFax: (fieldValues[`${field.id}_fax`] as string) || "",
+          referralDoctorEmail: (fieldValues[`${field.id}_email`] as string) || "",
+          referralDoctorPracticeNumber: (fieldValues[`${field.id}_practiceNumber`] as string) || "",
+          referralDoctorAddress: (fieldValues[`${field.id}_address`] as string) || "",
+          referralDoctorIsPrimary: (fieldValues[`${field.id}_isPrimary`] as boolean) || false,
+        };
+
+        return (
+          <div className="mt-1">
+            <ReferralDoctorInput
+              value={referralDoctorValue}
+              onChange={(subFieldName, value) => {
+                // Map sub-field names to namespaced keys
+                const keyMap: Record<string, string> = {
+                  referralDoctorName: `${field.id}_name`,
+                  referralDoctorPractice: `${field.id}_practice`,
+                  referralDoctorSpecialty: `${field.id}_specialty`,
+                  referralDoctorPhone: `${field.id}_phone`,
+                  referralDoctorFax: `${field.id}_fax`,
+                  referralDoctorEmail: `${field.id}_email`,
+                  referralDoctorPracticeNumber: `${field.id}_practiceNumber`,
+                  referralDoctorAddress: `${field.id}_address`,
+                  referralDoctorIsPrimary: `${field.id}_isPrimary`,
+                };
+                const key = keyMap[subFieldName] || subFieldName;
+                updateFieldValue(key, value as FieldValue);
+              }}
+              savedDoctors={[]} // No saved doctors in preview mode
+              disabled={false}
+              size="default"
+            />
+          </div>
         );
 
       default:
