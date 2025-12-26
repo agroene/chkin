@@ -134,6 +134,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       consentClause,
       isActive,
       fields,
+      sections, // Ordered array of section names
       // Consent duration settings
       defaultConsentDuration,
       minConsentDuration,
@@ -193,6 +194,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
       if (pdfFieldMappings !== undefined) {
         updateData.pdfFieldMappings = pdfFieldMappings || null;
+      }
+
+      // Section ordering
+      if (sections !== undefined) {
+        updateData.sections = Array.isArray(sections) ? sections : [];
       }
 
       // Increment version if structural changes

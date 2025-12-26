@@ -314,6 +314,9 @@ model FormTemplate {
   title          String   // Form display name
   description    String?  // Form purpose/description
 
+  // Section ordering - JSON array of section names in display order
+  sections       String[] @default([])
+
   // Consent configuration
   consentClause  String?  // Consent text (can be long)
 

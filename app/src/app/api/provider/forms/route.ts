@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
       description,
       consentClause,
       fields,
+      sections, // Ordered array of section names
       // Time-bound consent configuration
       defaultConsentDuration,
       minConsentDuration,
@@ -186,6 +187,8 @@ export async function POST(request: NextRequest) {
           description: description?.trim() || null,
           consentClause: consentClause?.trim() || null,
           createdBy: session.user.id,
+          // Section ordering
+          sections: Array.isArray(sections) ? sections : [],
           // Time-bound consent configuration
           defaultConsentDuration: consentDurationDefault,
           minConsentDuration: consentDurationMin,

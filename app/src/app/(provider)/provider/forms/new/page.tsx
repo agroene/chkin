@@ -307,6 +307,8 @@ export default function NewFormPage() {
           title: title.trim(),
           description: description.trim() || null,
           consentClause: consentClause.trim() || null,
+          // Section ordering
+          sections,
           // Time-bound consent configuration
           defaultConsentDuration: consentConfig.defaultDuration,
           minConsentDuration: consentConfig.minDuration,

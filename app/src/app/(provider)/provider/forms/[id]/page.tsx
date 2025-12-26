@@ -44,6 +44,7 @@ interface FormTemplate {
   isActive: boolean;
   version: number;
   fields: FormField[];
+  sections: string[]; // Ordered array of section names
   // Time-bound consent configuration
   defaultConsentDuration: number;
   minConsentDuration: number;
@@ -148,14 +149,19 @@ export default function FormDetailPage() {
         }));
         setFields(loadedFields);
 
-        // Extract unique sections
-        const uniqueSections = Array.from(
-          new Set(loadedFields.map((f) => f.section || "General"))
-        );
-        if (uniqueSections.length === 0) {
-          uniqueSections.push("General");
+        // Load sections from API if available, otherwise extract from fields
+        if (formData.sections && formData.sections.length > 0) {
+          setSections(formData.sections);
+        } else {
+          // Fallback: Extract unique sections from fields (legacy forms)
+          const uniqueSections = Array.from(
+            new Set(loadedFields.map((f) => f.section || "General"))
+          );
+          if (uniqueSections.length === 0) {
+            uniqueSections.push("General");
+          }
+          setSections(uniqueSections);
         }
-        setSections(uniqueSections);
       } catch {
         setError("An error occurred while loading the form");
       } finally {
@@ -407,6 +413,8 @@ export default function FormDetailPage() {
           description: description.trim() || null,
           consentClause: consentClause.trim() || null,
           isActive,
+          // Section ordering
+          sections,
           // Consent duration settings
           defaultConsentDuration: consentConfig.defaultDuration,
           minConsentDuration: consentConfig.minDuration,
@@ -437,6 +445,10 @@ export default function FormDetailPage() {
         setHasChanges(false);
         // Update fields with server response (includes real IDs)
         setFields(data.form.fields);
+        // Update sections if returned
+        if (data.form.sections && data.form.sections.length > 0) {
+          setSections(data.form.sections);
+        }
       } else {
         const error = await response.json();
         alert(error.error || "Failed to save form");
