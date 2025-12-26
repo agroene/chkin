@@ -58,6 +58,30 @@ export default function SectionOrganizer({
   const [editingField, setEditingField] = useState<string | null>(null);
   const [draggedField, setDraggedField] = useState<string | null>(null);
   const [draggedSection, setDraggedSection] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+  // Toggle section collapse state
+  const toggleSectionCollapse = (section: string) => {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
+      return next;
+    });
+  };
+
+  // Collapse all sections
+  const collapseAllSections = () => {
+    setCollapsedSections(new Set(sections));
+  };
+
+  // Expand all sections
+  const expandAllSections = () => {
+    setCollapsedSections(new Set());
+  };
 
   // Group fields by section
   const fieldsBySection = sections.reduce((acc, section) => {
@@ -179,15 +203,15 @@ export default function SectionOrganizer({
 
   return (
     <div className="space-y-4">
-      {/* Add Section */}
-      <div className="flex gap-2">
+      {/* Add Section + Collapse Controls */}
+      <div className="flex flex-wrap gap-2">
         <input
           type="text"
           placeholder="New section name..."
           value={newSectionName}
           onChange={(e) => setNewSectionName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAddSection()}
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+          className="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
         />
         <button
           onClick={handleAddSection}
@@ -196,12 +220,36 @@ export default function SectionOrganizer({
         >
           Add Section
         </button>
+        {sections.length > 1 && (
+          <div className="flex gap-1">
+            <button
+              onClick={collapseAllSections}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              title="Collapse all sections"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
+            <button
+              onClick={expandAllSections}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              title="Expand all sections"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sections */}
       {sections.map((section, sectionIndex) => {
         const isActive = activeSection === section;
         const isDragging = draggedSection === section;
+        const isCollapsed = collapsedSections.has(section);
+        const fieldCount = fieldsBySection[section]?.length || 0;
         return (
         <div
           key={section}
@@ -218,11 +266,11 @@ export default function SectionOrganizer({
             onDragEnd={handleSectionDragEnd}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDropOnSectionHeader(e, section)}
-            className={`flex w-full items-center justify-between border-b px-4 py-3 transition-colors ${
+            className={`flex w-full items-center justify-between px-4 py-3 transition-colors ${
               isActive
-                ? "border-teal-200 bg-teal-50"
-                : "border-gray-200 bg-gray-50 hover:bg-gray-100"
-            } ${draggedSection ? "cursor-grabbing" : ""}`}
+                ? "bg-teal-50"
+                : "bg-gray-50 hover:bg-gray-100"
+            } ${isCollapsed ? "" : "border-b border-gray-200"} ${draggedSection ? "cursor-grabbing" : ""}`}
           >
             {/* Drag Handle for Section */}
             <div
@@ -244,6 +292,31 @@ export default function SectionOrganizer({
               </svg>
             </div>
 
+            {/* Collapse/Expand Toggle */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSectionCollapse(section);
+              }}
+              className="mr-2 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+              title={isCollapsed ? "Expand section" : "Collapse section"}
+            >
+              <svg
+                className={`h-4 w-4 transition-transform ${isCollapsed ? "" : "rotate-90"}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+
             <button
               type="button"
               onClick={() => onSetActiveSection(section)}
@@ -257,6 +330,12 @@ export default function SectionOrganizer({
               <h3 className={`font-medium ${isActive ? "text-teal-900" : "text-gray-900"}`}>
                 {section}
               </h3>
+              {/* Field count badge */}
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                fieldCount > 0 ? "bg-gray-200 text-gray-700" : "bg-gray-100 text-gray-400"
+              }`}>
+                {fieldCount} {fieldCount === 1 ? "field" : "fields"}
+              </span>
               {sections.length > 1 && (
                 <span className="text-xs text-gray-400">
                   {sectionIndex + 1} of {sections.length}
@@ -297,7 +376,8 @@ export default function SectionOrganizer({
             </div>
           </div>
 
-          {/* Fields */}
+          {/* Fields - Collapsible */}
+          {!isCollapsed && (
           <div className="min-h-[60px] p-4">
             {fieldsBySection[section]?.length === 0 ? (
               <p className="py-4 text-center text-sm text-gray-400">
@@ -389,6 +469,7 @@ export default function SectionOrganizer({
               </div>
             )}
           </div>
+          )}
         </div>
         );
       })}
