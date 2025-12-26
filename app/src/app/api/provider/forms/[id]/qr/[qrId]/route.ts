@@ -29,7 +29,16 @@ interface RouteParams {
 async function verifyOwnership(userId: string, formId: string, qrId: string) {
   const membership = await prisma.member.findFirst({
     where: { userId },
-    select: { organizationId: true },
+    select: {
+      organizationId: true,
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          logo: true,
+        },
+      },
+    },
   });
 
   if (!membership) {
@@ -63,6 +72,7 @@ async function verifyOwnership(userId: string, formId: string, qrId: string) {
 
   return {
     organizationId: membership.organizationId,
+    organization: membership.organization,
     formTitle: form.title,
     qrCode,
   };
@@ -89,7 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { qrCode, formTitle } = ownership;
+    const { qrCode, formTitle, organization } = ownership;
     const formUrl = buildFormUrl(qrCode.shortCode);
 
     // Generate QR code images on demand
@@ -113,6 +123,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         createdBy: qrCode.createdBy,
       },
       formTitle,
+      organization: {
+        id: organization.id,
+        name: organization.name,
+        logo: organization.logo,
+      },
     });
   } catch (error) {
     console.error("Get QR code error:", error);

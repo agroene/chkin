@@ -9,6 +9,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout";
+import QRPrintDisplay from "@/components/provider/QRPrintDisplay";
+
+interface Organization {
+  id: string;
+  name: string;
+  logo: string | null;
+}
 
 interface QRCode {
   id: string;
@@ -26,6 +33,7 @@ interface QRCode {
     title: string;
     isActive: boolean;
   };
+  organization?: Organization;
 }
 
 interface FormTemplate {
@@ -44,6 +52,7 @@ export default function QRCodesPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedForm, setSelectedForm] = useState<string>("all");
   const [selectedQR, setSelectedQR] = useState<QRCode | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [showNewForm, setShowNewForm] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newFormId, setNewFormId] = useState("");
@@ -182,9 +191,17 @@ export default function QRCodesPage() {
       setSelectedQR({
         ...data.qrCode,
         formTemplate: qrCode.formTemplate,
+        organization: data.organization,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load QR code");
+    }
+  };
+
+  // Open print preview modal
+  const handlePrintPreview = () => {
+    if (selectedQR) {
+      setShowPrintModal(true);
     }
   };
 
@@ -694,7 +711,7 @@ export default function QRCodesPage() {
                 Download SVG
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={handlePrintPreview}
                 className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
               >
                 <svg
@@ -710,11 +727,26 @@ export default function QRCodesPage() {
                     d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                   />
                 </svg>
-                Print
+                Print Display
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Print Display Modal */}
+      {showPrintModal && selectedQR && selectedQR.qrImageDataUrl && (
+        <QRPrintDisplay
+          qrImageDataUrl={selectedQR.qrImageDataUrl}
+          qrImageSvg={selectedQR.qrImageSvg}
+          shortCode={selectedQR.shortCode}
+          formUrl={selectedQR.formUrl}
+          formTitle={selectedQR.formTemplate.title}
+          organizationName={selectedQR.organization?.name || "Practice"}
+          organizationLogo={selectedQR.organization?.logo}
+          label={selectedQR.label}
+          onClose={() => setShowPrintModal(false)}
+        />
       )}
     </>
   );
