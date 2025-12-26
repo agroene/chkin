@@ -71,15 +71,58 @@ export default function NewFormPage() {
   const [pdfFieldMappings, setPdfFieldMappings] = useState<Record<string, string | FieldMapping>>({});
 
   // Memoize chkin fields for PDF mapping (including category for grouping)
-  const chkinFields = useMemo(() =>
-    fields.map(f => ({
-      name: f.fieldDefinition.name,
-      label: f.labelOverride || f.fieldDefinition.label,
-      fieldType: f.fieldDefinition.fieldType,
-      category: f.fieldDefinition.category,
-    })),
-    [fields]
-  );
+  // Expands composite fields (like referral-doctor, address) into their sub-fields
+  const chkinFields = useMemo(() => {
+    const result: Array<{
+      name: string;
+      label: string;
+      fieldType: string;
+      category: string;
+    }> = [];
+
+    for (const f of fields) {
+      const fieldType = f.fieldDefinition.fieldType;
+      const category = f.fieldDefinition.category;
+
+      // Check for composite field types that should be expanded
+      if (fieldType === "referral-doctor") {
+        // Referral doctor stores data in individual sub-fields
+        result.push(
+          { name: "referralDoctorName", label: "Referral Doctor - Name", fieldType: "text", category },
+          { name: "referralDoctorPractice", label: "Referral Doctor - Practice", fieldType: "text", category },
+          { name: "referralDoctorSpecialty", label: "Referral Doctor - Specialty", fieldType: "select", category },
+          { name: "referralDoctorPhone", label: "Referral Doctor - Phone", fieldType: "phone", category },
+          { name: "referralDoctorFax", label: "Referral Doctor - Fax", fieldType: "phone", category },
+          { name: "referralDoctorEmail", label: "Referral Doctor - Email", fieldType: "email", category },
+          { name: "referralDoctorPracticeNumber", label: "Referral Doctor - Practice Number", fieldType: "text", category },
+          { name: "referralDoctorAddress", label: "Referral Doctor - Address", fieldType: "textarea", category },
+        );
+      } else if (fieldType === "address") {
+        // Address component stores data in individual sub-fields
+        const baseName = f.fieldDefinition.name;
+        const baseLabel = f.labelOverride || f.fieldDefinition.label;
+        result.push(
+          { name: `${baseName}Line1`, label: `${baseLabel} - Line 1`, fieldType: "text", category },
+          { name: `${baseName}Line2`, label: `${baseLabel} - Line 2`, fieldType: "text", category },
+          { name: `${baseName}Suburb`, label: `${baseLabel} - Suburb`, fieldType: "text", category },
+          { name: `${baseName}City`, label: `${baseLabel} - City`, fieldType: "text", category },
+          { name: `${baseName}Province`, label: `${baseLabel} - Province`, fieldType: "text", category },
+          { name: `${baseName}PostalCode`, label: `${baseLabel} - Postal Code`, fieldType: "text", category },
+          { name: `${baseName}Country`, label: `${baseLabel} - Country`, fieldType: "text", category },
+        );
+      } else {
+        // Regular field - add as-is
+        result.push({
+          name: f.fieldDefinition.name,
+          label: f.labelOverride || f.fieldDefinition.label,
+          fieldType: f.fieldDefinition.fieldType,
+          category: f.fieldDefinition.category,
+        });
+      }
+    }
+
+    return result;
+  }, [fields]);
 
   // Load Quick Start Template
   const handleLoadTemplate = useCallback(async () => {

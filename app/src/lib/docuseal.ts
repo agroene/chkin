@@ -9,6 +9,7 @@
 
 import * as jose from "jose";
 import crypto from "crypto";
+import { parsePhoneNumber } from "libphonenumber-js";
 import { getDocuSealUrl as getNetworkDocuSealUrl } from "./network";
 
 // Internal server-to-server URL (can use localhost)
@@ -302,12 +303,67 @@ export function mapFieldValues(
       const docusealField = mapping;
       const value = chkinData[chkinField];
       if (value !== undefined && value !== null) {
-        docusealValues[docusealField] = String(value);
+        let result = String(value);
+        // Format phone numbers for better PDF display
+        if (isPhoneField(chkinField)) {
+          result = formatPhoneForPdf(result);
+        }
+        docusealValues[docusealField] = result;
       }
     }
   }
 
   return docusealValues;
+}
+
+/**
+ * Format a phone number from E.164 format to display format
+ * Input: +27845050046
+ * Output: +27 (84) 505 0046
+ */
+function formatPhoneForPdf(value: string): string {
+  if (!value || typeof value !== "string") return value;
+
+  // Check if it looks like an E.164 phone number
+  if (!value.startsWith("+")) return value;
+
+  try {
+    const parsed = parsePhoneNumber(value);
+    if (parsed && parsed.isValid()) {
+      // Format with country code and national number with spaces
+      // parsePhoneNumber gives us formatInternational which produces "+27 84 505 0046"
+      // We want "+27 (84) 505 0046" - add parentheses around area code
+      const international = parsed.formatInternational();
+
+      // International format is like "+27 84 505 0046"
+      // We want to add parentheses: "+27 (84) 505 0046"
+      // Find the country code and first number group
+      const countryCode = "+" + parsed.countryCallingCode;
+      const nationalPart = international.replace(countryCode, "").trim();
+
+      // Split national part into groups
+      const groups = nationalPart.split(" ");
+      if (groups.length >= 2) {
+        // Put parentheses around first group (area code)
+        return `${countryCode} (${groups[0]}) ${groups.slice(1).join(" ")}`;
+      }
+
+      // Fallback to standard international format
+      return international;
+    }
+  } catch {
+    // If parsing fails, return original value
+  }
+
+  return value;
+}
+
+/**
+ * Check if a field name suggests it's a phone number field
+ */
+function isPhoneField(fieldName: string): boolean {
+  const phonePat = /phone|mobile|cell|tel|fax/i;
+  return phonePat.test(fieldName);
 }
 
 /**
@@ -326,7 +382,14 @@ function processMapping(
       const value = chkinData[fieldName];
       if (value === undefined || value === null) return null;
 
-      return String(value);
+      let result = String(value);
+
+      // Format phone numbers for better PDF display
+      if (isPhoneField(fieldName)) {
+        result = formatPhoneForPdf(result);
+      }
+
+      return result;
     }
 
     case "concatenate": {
@@ -336,7 +399,12 @@ function processMapping(
       for (const fieldName of mapping.sourceFields) {
         const value = chkinData[fieldName];
         if (value !== undefined && value !== null && String(value).trim()) {
-          values.push(String(value));
+          let strValue = String(value);
+          // Format phone numbers for better PDF display
+          if (isPhoneField(fieldName)) {
+            strValue = formatPhoneForPdf(strValue);
+          }
+          values.push(strValue);
         }
       }
 
