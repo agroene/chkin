@@ -331,11 +331,13 @@ export default function FormDetailPage() {
     );
   }, [sections]);
 
-  // Memoize chkin fields for PDF mapping
+  // Memoize chkin fields for PDF mapping (including category for grouping)
   const chkinFields = useMemo(() =>
     fields.map(f => ({
       name: f.fieldDefinition.name,
       label: f.labelOverride || f.fieldDefinition.label,
+      fieldType: f.fieldDefinition.fieldType,
+      category: f.fieldDefinition.category,
     })),
     [fields]
   );

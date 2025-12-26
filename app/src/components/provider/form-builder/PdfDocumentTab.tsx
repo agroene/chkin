@@ -27,6 +27,7 @@ interface ChkinField {
   name: string;
   label: string;
   fieldType?: string;
+  category?: string;
 }
 
 interface DocuSealField {
@@ -330,6 +331,68 @@ export default function PdfDocumentTab({
   // Count mapped vs unmapped fields
   const mappedCount = docusealFields.filter((f) => getMapping(f.name)).length;
   const unmappedCount = docusealFields.length - mappedCount;
+
+  // Group fields by category for the dropdown
+  const fieldsByCategory = chkinFields.reduce<Record<string, ChkinField[]>>(
+    (acc, field) => {
+      const category = field.category || "Other";
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(field);
+      return acc;
+    },
+    {}
+  );
+
+  // Category display names (convert snake_case to Title Case)
+  const formatCategoryName = (category: string): string => {
+    return category
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  // Get sorted category list (with common ones first)
+  const categoryOrder = [
+    "personal",
+    "contact",
+    "address",
+    "identity",
+    "medical",
+    "medical_aid",
+    "next_of_kin",
+    "employer",
+    "consent",
+  ];
+  const sortedCategories = Object.keys(fieldsByCategory).sort((a, b) => {
+    const aIndex = categoryOrder.indexOf(a);
+    const bIndex = categoryOrder.indexOf(b);
+    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+
+  // Render grouped options for a select element
+  const renderGroupedOptions = (excludeFields?: string[]) => {
+    return sortedCategories.map((category) => {
+      const categoryFields = fieldsByCategory[category].filter(
+        (f) => !excludeFields?.includes(f.name)
+      );
+      if (categoryFields.length === 0) return null;
+
+      return (
+        <optgroup key={category} label={formatCategoryName(category)}>
+          {categoryFields.map((field) => (
+            <option key={field.name} value={field.name}>
+              {field.label}
+            </option>
+          ))}
+        </optgroup>
+      );
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -669,11 +732,7 @@ export default function PdfDocumentTab({
                                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                 >
                                   <option value="">-- Select field --</option>
-                                  {chkinFields.map((field) => (
-                                    <option key={field.name} value={field.name}>
-                                      {field.label}
-                                    </option>
-                                  ))}
+                                  {renderGroupedOptions()}
                                 </select>
                               </div>
                             )}
@@ -747,16 +806,7 @@ export default function PdfDocumentTab({
                                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                   >
                                     <option value="">-- Add field --</option>
-                                    {chkinFields
-                                      .filter(
-                                        (f) =>
-                                          !mapping.sourceFields.includes(f.name)
-                                      )
-                                      .map((field) => (
-                                        <option key={field.name} value={field.name}>
-                                          {field.label}
-                                        </option>
-                                      ))}
+                                    {renderGroupedOptions(mapping.sourceFields)}
                                   </select>
                                 </div>
 
@@ -816,11 +866,7 @@ export default function PdfDocumentTab({
                                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                   >
                                     <option value="">-- Select field --</option>
-                                    {chkinFields.map((field) => (
-                                      <option key={field.name} value={field.name}>
-                                        {field.label}
-                                      </option>
-                                    ))}
+                                    {renderGroupedOptions()}
                                   </select>
                                 </div>
 

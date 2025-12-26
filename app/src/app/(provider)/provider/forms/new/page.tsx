@@ -70,11 +70,13 @@ export default function NewFormPage() {
   const [docusealTemplateId, setDocusealTemplateId] = useState<number | null>(null);
   const [pdfFieldMappings, setPdfFieldMappings] = useState<Record<string, string | FieldMapping>>({});
 
-  // Memoize chkin fields for PDF mapping
+  // Memoize chkin fields for PDF mapping (including category for grouping)
   const chkinFields = useMemo(() =>
     fields.map(f => ({
       name: f.fieldDefinition.name,
       label: f.labelOverride || f.fieldDefinition.label,
+      fieldType: f.fieldDefinition.fieldType,
+      category: f.fieldDefinition.category,
     })),
     [fields]
   );
