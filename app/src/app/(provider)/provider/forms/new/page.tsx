@@ -281,6 +281,11 @@ export default function NewFormPage() {
     );
   }, [sections]);
 
+  // Reorder sections
+  const handleReorderSections = useCallback((newSections: string[]) => {
+    setSections(newSections);
+  }, []);
+
   // Save form
   const handleSave = async () => {
     if (!title.trim()) {
@@ -555,6 +560,7 @@ export default function NewFormPage() {
                 onSetActiveSection={setActiveSection}
                 onAddSection={handleAddSection}
                 onRemoveSection={handleRemoveSection}
+                onReorderSections={handleReorderSections}
                 onUpdateField={handleUpdateField}
                 onRemoveField={handleRemoveField}
                 onReorderFields={handleReorderFields}

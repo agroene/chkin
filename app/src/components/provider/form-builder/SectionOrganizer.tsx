@@ -36,6 +36,7 @@ interface SectionOrganizerProps {
   onSetActiveSection: (section: string) => void;
   onAddSection: (name: string) => void;
   onRemoveSection: (name: string) => void;
+  onReorderSections: (sections: string[]) => void;
   onUpdateField: (fieldId: string, updates: Partial<FormField>) => void;
   onRemoveField: (fieldId: string) => void;
   onReorderFields: (fields: FormField[]) => void;
@@ -48,6 +49,7 @@ export default function SectionOrganizer({
   onSetActiveSection,
   onAddSection,
   onRemoveSection,
+  onReorderSections,
   onUpdateField,
   onRemoveField,
   onReorderFields,
@@ -55,6 +57,7 @@ export default function SectionOrganizer({
   const [newSectionName, setNewSectionName] = useState("");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [draggedField, setDraggedField] = useState<string | null>(null);
+  const [draggedSection, setDraggedSection] = useState<string | null>(null);
 
   // Group fields by section
   const fieldsBySection = sections.reduce((acc, section) => {
@@ -135,6 +138,45 @@ export default function SectionOrganizer({
     }
   };
 
+  // Handle section drag start
+  const handleSectionDragStart = (e: React.DragEvent, section: string) => {
+    e.stopPropagation();
+    setDraggedSection(section);
+    // Set drag data to differentiate from field drags
+    e.dataTransfer.setData("text/plain", `section:${section}`);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  // Handle section drag end
+  const handleSectionDragEnd = () => {
+    setDraggedSection(null);
+  };
+
+  // Handle drop on section (for reordering sections)
+  const handleDropOnSectionHeader = (e: React.DragEvent, targetSection: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Only handle section drops, not field drops
+    if (draggedSection && draggedSection !== targetSection) {
+      const draggedIdx = sections.indexOf(draggedSection);
+      const targetIdx = sections.indexOf(targetSection);
+
+      if (draggedIdx !== -1 && targetIdx !== -1) {
+        const newSections = [...sections];
+        // Remove dragged section
+        newSections.splice(draggedIdx, 1);
+        // Insert at target position
+        newSections.splice(targetIdx, 0, draggedSection);
+        onReorderSections(newSections);
+      }
+      setDraggedSection(null);
+    } else if (draggedField) {
+      // If a field was dropped, handle it as before
+      handleDropOnSection(targetSection);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Add Section */}
@@ -157,28 +199,56 @@ export default function SectionOrganizer({
       </div>
 
       {/* Sections */}
-      {sections.map((section) => {
+      {sections.map((section, sectionIndex) => {
         const isActive = activeSection === section;
+        const isDragging = draggedSection === section;
         return (
         <div
           key={section}
           className={`rounded-lg border-2 bg-white transition-colors ${
             isActive ? "border-teal-500 ring-1 ring-teal-500" : "border-gray-200"
-          }`}
+          } ${isDragging ? "opacity-50" : ""}`}
           onDragOver={handleDragOver}
           onDrop={() => handleDropOnSection(section)}
         >
-          {/* Section Header - Clickable to set as target */}
-          <button
-            type="button"
-            onClick={() => onSetActiveSection(section)}
-            className={`flex w-full items-center justify-between border-b px-4 py-3 text-left transition-colors ${
+          {/* Section Header - Draggable and clickable */}
+          <div
+            draggable
+            onDragStart={(e) => handleSectionDragStart(e, section)}
+            onDragEnd={handleSectionDragEnd}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDropOnSectionHeader(e, section)}
+            className={`flex w-full items-center justify-between border-b px-4 py-3 transition-colors ${
               isActive
                 ? "border-teal-200 bg-teal-50"
                 : "border-gray-200 bg-gray-50 hover:bg-gray-100"
-            }`}
+            } ${draggedSection ? "cursor-grabbing" : ""}`}
           >
-            <div className="flex items-center gap-2">
+            {/* Drag Handle for Section */}
+            <div
+              className="mr-2 cursor-grab text-gray-400 hover:text-gray-600"
+              title="Drag to reorder section"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 8h16M4 16h16"
+                />
+              </svg>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onSetActiveSection(section)}
+              className="flex flex-1 items-center gap-2 text-left"
+            >
               {isActive && (
                 <span className="flex h-2 w-2 rounded-full bg-teal-500" title="New fields will be added here">
                   <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-teal-400 opacity-75"></span>
@@ -187,12 +257,17 @@ export default function SectionOrganizer({
               <h3 className={`font-medium ${isActive ? "text-teal-900" : "text-gray-900"}`}>
                 {section}
               </h3>
+              {sections.length > 1 && (
+                <span className="text-xs text-gray-400">
+                  {sectionIndex + 1} of {sections.length}
+                </span>
+              )}
               {isActive && (
                 <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700">
                   Adding here
                 </span>
               )}
-            </div>
+            </button>
             <div className="flex items-center gap-2">
               {sections.length > 1 && (
                 <span
@@ -220,7 +295,7 @@ export default function SectionOrganizer({
                 </span>
               )}
             </div>
-          </button>
+          </div>
 
           {/* Fields */}
           <div className="min-h-[60px] p-4">

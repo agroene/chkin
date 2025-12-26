@@ -331,6 +331,11 @@ export default function FormDetailPage() {
     );
   }, [sections]);
 
+  // Reorder sections
+  const handleReorderSections = useCallback((newSections: string[]) => {
+    setSections(newSections);
+  }, []);
+
   // Memoize chkin fields for PDF mapping (including category for grouping)
   // Expands composite fields (like referral-doctor, address) into their sub-fields
   const chkinFields = useMemo(() => {
@@ -625,6 +630,7 @@ export default function FormDetailPage() {
                 onSetActiveSection={setActiveSection}
                 onAddSection={handleAddSection}
                 onRemoveSection={handleRemoveSection}
+                onReorderSections={handleReorderSections}
                 onUpdateField={handleUpdateField}
                 onRemoveField={handleRemoveField}
                 onReorderFields={handleReorderFields}
