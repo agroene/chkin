@@ -16,33 +16,25 @@
  * A5 Portrait: 148mm × 210mm (5.83" × 8.27")
  */
 
-interface QRPrintDisplayProps {
+interface A5ContentProps {
   qrImageDataUrl: string;
-  qrImageSvg?: string;
   shortCode: string;
-  formUrl: string;
   formTitle: string;
   organizationName: string;
   organizationLogo?: string | null;
   label?: string | null;
-  onClose: () => void;
 }
 
-export default function QRPrintDisplay({
+// Extracted as a separate component to avoid "component created during render" error
+function A5Content({
   qrImageDataUrl,
   shortCode,
   formTitle,
   organizationName,
   organizationLogo,
   label,
-  onClose,
-}: QRPrintDisplayProps) {
-  const handlePrint = () => {
-    window.print();
-  };
-
-  // Shared content for both preview and print
-  const A5Content = () => (
+}: A5ContentProps) {
+  return (
     <div className="flex h-full flex-col">
       {/* Teal Header Band */}
       <div
@@ -266,6 +258,32 @@ export default function QRPrintDisplay({
       </div>
     </div>
   );
+}
+
+interface QRPrintDisplayProps {
+  qrImageDataUrl: string;
+  qrImageSvg?: string;
+  shortCode: string;
+  formUrl: string;
+  formTitle: string;
+  organizationName: string;
+  organizationLogo?: string | null;
+  label?: string | null;
+  onClose: () => void;
+}
+
+export default function QRPrintDisplay({
+  qrImageDataUrl,
+  shortCode,
+  formTitle,
+  organizationName,
+  organizationLogo,
+  label,
+  onClose,
+}: QRPrintDisplayProps) {
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
     <>
@@ -349,7 +367,14 @@ export default function QRPrintDisplay({
           background: "white",
         }}
       >
-        <A5Content />
+        <A5Content
+          qrImageDataUrl={qrImageDataUrl}
+          shortCode={shortCode}
+          formTitle={formTitle}
+          organizationName={organizationName}
+          organizationLogo={organizationLogo}
+          label={label}
+        />
       </div>
 
       {/* Modal Overlay - for screen preview only */}
@@ -415,7 +440,14 @@ export default function QRPrintDisplay({
                 fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
               }}
             >
-              <A5Content />
+              <A5Content
+          qrImageDataUrl={qrImageDataUrl}
+          shortCode={shortCode}
+          formTitle={formTitle}
+          organizationName={organizationName}
+          organizationLogo={organizationLogo}
+          label={label}
+        />
             </div>
           </div>
 
