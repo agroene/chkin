@@ -248,23 +248,133 @@ export function verifyDocuSealWebhook(
 }
 
 /**
+ * Field mapping types for complex mappings
+ */
+type MappingType = "simple" | "concatenate" | "conditional";
+
+interface FieldMapping {
+  type: MappingType;
+  sourceFields: string[];
+  separator?: string;
+  conditions?: {
+    value: string;
+    result: string;
+  }[];
+}
+
+/**
+ * Check if a mapping is in the new format (object with type) vs legacy format (string)
+ */
+function isNewFormatMapping(
+  mapping: string | FieldMapping
+): mapping is FieldMapping {
+  return typeof mapping === "object" && "type" in mapping;
+}
+
+/**
  * Map Chkin form values to DocuSeal field values based on field mappings
+ *
+ * Supports three mapping formats:
+ * 1. Legacy: Record<chkinField, docusealField> (old format, still supported)
+ * 2. New simple: { type: "simple", sourceFields: [chkinField] }
+ * 3. New concatenate: { type: "concatenate", sourceFields: [...], separator: " " }
+ * 4. New conditional: { type: "conditional", sourceFields: [field], conditions: [...] }
+ *
+ * New format uses docusealField as the key, mapping TO chkin fields.
  */
 export function mapFieldValues(
   chkinData: Record<string, unknown>,
-  fieldMappings: Record<string, string>
+  fieldMappings: Record<string, string | FieldMapping>
 ): Record<string, string> {
   const docusealValues: Record<string, string> = {};
 
-  for (const [chkinField, docusealField] of Object.entries(fieldMappings)) {
-    const value = chkinData[chkinField];
-    if (value !== undefined && value !== null) {
-      // Convert to string for DocuSeal
-      docusealValues[docusealField] = String(value);
+  for (const [key, mapping] of Object.entries(fieldMappings)) {
+    if (isNewFormatMapping(mapping)) {
+      // New format: key is docusealField, mapping defines how to get value from chkin
+      const docusealField = key;
+      const value = processMapping(chkinData, mapping);
+      if (value !== null) {
+        docusealValues[docusealField] = value;
+      }
+    } else {
+      // Legacy format: key is chkinField, value is docusealField
+      const chkinField = key;
+      const docusealField = mapping;
+      const value = chkinData[chkinField];
+      if (value !== undefined && value !== null) {
+        docusealValues[docusealField] = String(value);
+      }
     }
   }
 
   return docusealValues;
+}
+
+/**
+ * Process a single field mapping and return the resulting value
+ */
+function processMapping(
+  chkinData: Record<string, unknown>,
+  mapping: FieldMapping
+): string | null {
+  switch (mapping.type) {
+    case "simple": {
+      // Simple: direct one-to-one mapping
+      const fieldName = mapping.sourceFields[0];
+      if (!fieldName) return null;
+
+      const value = chkinData[fieldName];
+      if (value === undefined || value === null) return null;
+
+      return String(value);
+    }
+
+    case "concatenate": {
+      // Concatenate: combine multiple fields with separator
+      const values: string[] = [];
+
+      for (const fieldName of mapping.sourceFields) {
+        const value = chkinData[fieldName];
+        if (value !== undefined && value !== null && String(value).trim()) {
+          values.push(String(value));
+        }
+      }
+
+      if (values.length === 0) return null;
+
+      return values.join(mapping.separator || " ");
+    }
+
+    case "conditional": {
+      // Conditional: check field value and return appropriate result
+      const fieldName = mapping.sourceFields[0];
+      if (!fieldName) return null;
+
+      const value = chkinData[fieldName];
+      const valueStr = value === undefined || value === null ? "" : String(value);
+
+      // Check each condition
+      for (const condition of mapping.conditions || []) {
+        // Handle boolean comparisons
+        if (condition.value === "true" && (value === true || valueStr === "true")) {
+          return condition.result;
+        }
+        if (condition.value === "false" && (value === false || valueStr === "false" || valueStr === "")) {
+          return condition.result;
+        }
+        // Exact string match
+        if (valueStr === condition.value) {
+          return condition.result;
+        }
+      }
+
+      // No condition matched, return null (field won't be set)
+      return null;
+    }
+
+    default:
+      return null;
+  }
 }
 
 /**

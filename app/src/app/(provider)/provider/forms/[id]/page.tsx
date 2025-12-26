@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/layout";
 import FieldPicker from "@/components/provider/form-builder/FieldPicker";
 import FormPreview from "@/components/provider/form-builder/FormPreview";
 import SectionOrganizer from "@/components/provider/form-builder/SectionOrganizer";
-import PdfDocumentTab from "@/components/provider/form-builder/PdfDocumentTab";
+import PdfDocumentTab, { FieldMapping } from "@/components/provider/form-builder/PdfDocumentTab";
 
 interface FormField {
   id: string;
@@ -94,7 +94,7 @@ export default function FormDetailPage() {
   // PDF Document settings
   const [pdfEnabled, setPdfEnabled] = useState(false);
   const [docusealTemplateId, setDocusealTemplateId] = useState<number | null>(null);
-  const [pdfFieldMappings, setPdfFieldMappings] = useState<Record<string, string>>({});
+  const [pdfFieldMappings, setPdfFieldMappings] = useState<Record<string, string | FieldMapping>>({});
 
   // Fetch form data
   useEffect(() => {
