@@ -273,6 +273,44 @@ function isNewFormatMapping(
 }
 
 /**
+ * Field definition for resolving select values to labels
+ */
+export interface FieldDefinitionForMapping {
+  name: string;
+  fieldType: string;
+  config?: {
+    options?: Array<{ value: string; label: string }>;
+  } | null;
+}
+
+/**
+ * Resolve a select field value to its display label
+ */
+function resolveSelectLabel(
+  fieldName: string,
+  value: unknown,
+  fieldDefinitions?: FieldDefinitionForMapping[]
+): string {
+  if (value === undefined || value === null) return "";
+
+  const strValue = String(value);
+
+  if (!fieldDefinitions) return strValue;
+
+  // Find the field definition
+  const fieldDef = fieldDefinitions.find(f => f.name === fieldName);
+  if (!fieldDef || fieldDef.fieldType !== "select") return strValue;
+
+  // Get options from config
+  const options = fieldDef.config?.options;
+  if (!options || !Array.isArray(options)) return strValue;
+
+  // Find the matching option and return its label
+  const option = options.find(opt => opt.value === strValue);
+  return option?.label || strValue;
+}
+
+/**
  * Map Chkin form values to DocuSeal field values based on field mappings
  *
  * Supports three mapping formats:
@@ -282,10 +320,15 @@ function isNewFormatMapping(
  * 4. New conditional: { type: "conditional", sourceFields: [field], conditions: [...] }
  *
  * New format uses docusealField as the key, mapping TO chkin fields.
+ *
+ * @param chkinData - The form submission data
+ * @param fieldMappings - Mapping configuration
+ * @param fieldDefinitions - Optional field definitions for resolving select labels
  */
 export function mapFieldValues(
   chkinData: Record<string, unknown>,
-  fieldMappings: Record<string, string | FieldMapping>
+  fieldMappings: Record<string, string | FieldMapping>,
+  fieldDefinitions?: FieldDefinitionForMapping[]
 ): Record<string, string> {
   const docusealValues: Record<string, string> = {};
 
@@ -293,7 +336,7 @@ export function mapFieldValues(
     if (isNewFormatMapping(mapping)) {
       // New format: key is docusealField, mapping defines how to get value from chkin
       const docusealField = key;
-      const value = processMapping(chkinData, mapping);
+      const value = processMapping(chkinData, mapping, fieldDefinitions);
       if (value !== null) {
         docusealValues[docusealField] = value;
       }
@@ -303,8 +346,9 @@ export function mapFieldValues(
       const docusealField = mapping;
       const value = chkinData[chkinField];
       if (value !== undefined && value !== null) {
-        let result = String(value);
-        // Format phone numbers for better PDF display
+        // First resolve select labels
+        let result = resolveSelectLabel(chkinField, value, fieldDefinitions);
+        // Then format phone numbers for better PDF display
         if (isPhoneField(chkinField)) {
           result = formatPhoneForPdf(result);
         }
@@ -371,7 +415,8 @@ function isPhoneField(fieldName: string): boolean {
  */
 function processMapping(
   chkinData: Record<string, unknown>,
-  mapping: FieldMapping
+  mapping: FieldMapping,
+  fieldDefinitions?: FieldDefinitionForMapping[]
 ): string | null {
   switch (mapping.type) {
     case "simple": {
@@ -382,7 +427,8 @@ function processMapping(
       const value = chkinData[fieldName];
       if (value === undefined || value === null) return null;
 
-      let result = String(value);
+      // First resolve select labels
+      let result = resolveSelectLabel(fieldName, value, fieldDefinitions);
 
       // Format phone numbers for better PDF display
       if (isPhoneField(fieldName)) {
@@ -399,7 +445,8 @@ function processMapping(
       for (const fieldName of mapping.sourceFields) {
         const value = chkinData[fieldName];
         if (value !== undefined && value !== null && String(value).trim()) {
-          let strValue = String(value);
+          // First resolve select labels
+          let strValue = resolveSelectLabel(fieldName, value, fieldDefinitions);
           // Format phone numbers for better PDF display
           if (isPhoneField(fieldName)) {
             strValue = formatPhoneForPdf(strValue);

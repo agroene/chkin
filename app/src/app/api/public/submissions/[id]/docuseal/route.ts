@@ -19,6 +19,7 @@ import {
   createDocuSealSubmission,
   getDocuSealSubmission,
   mapFieldValues,
+  FieldDefinitionForMapping,
 } from "@/lib/docuseal";
 import { getAppBaseUrl, getDocuSealUrl } from "@/lib/network";
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       // Not authenticated - will check anonymous access
     }
 
-    // Get the submission with form template
+    // Get the submission with form template and field definitions
     const submission = await prisma.submission.findUnique({
       where: { id },
       include: {
@@ -65,6 +66,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             pdfEnabled: true,
             docusealTemplateId: true,
             pdfFieldMappings: true,
+            fields: {
+              select: {
+                fieldDefinition: {
+                  select: {
+                    name: true,
+                    fieldType: true,
+                    config: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -190,8 +202,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Build field definitions for resolving select labels
+    const fieldDefinitions: FieldDefinitionForMapping[] = submission.formTemplate.fields.map(f => ({
+      name: f.fieldDefinition.name,
+      fieldType: f.fieldDefinition.fieldType,
+      config: f.fieldDefinition.config ? JSON.parse(f.fieldDefinition.config as string) : null,
+    }));
+
     // Map Chkin values to DocuSeal fields
-    const docusealValues = mapFieldValues(submissionData, fieldMappings);
+    const docusealValues = mapFieldValues(submissionData, fieldMappings, fieldDefinitions);
 
     // Get email and name for DocuSeal
     // Priority: authenticated user > form submission data
