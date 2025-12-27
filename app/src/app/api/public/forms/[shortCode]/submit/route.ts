@@ -14,6 +14,12 @@ import { headers } from "next/headers";
 import { nanoid } from "nanoid";
 import { logAuditEvent } from "@/lib/audit-log";
 import { calculateConsentExpiry } from "@/lib/consent-status";
+import {
+  extractDoctorFromSubmission,
+  getSavedDoctors,
+  upsertDoctor,
+  SAVED_DOCTORS_FIELD,
+} from "@/lib/referral-doctors";
 
 export const dynamic = "force-dynamic";
 
@@ -245,6 +251,46 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         autoRenew: body.consentGiven ? autoRenew : null,
       },
     });
+
+    // For authenticated users, save referral doctor to their profile if present
+    if (isAuthenticated && userId) {
+      const doctorData = extractDoctorFromSubmission(body.data);
+      if (doctorData && doctorData.referralDoctorName) {
+        try {
+          // Get or create patient profile
+          const profile = await prisma.patientProfile.findUnique({
+            where: { userId },
+          });
+
+          const existingData = profile?.data ? JSON.parse(profile.data) : {};
+          const existingDoctors = getSavedDoctors(existingData);
+          const updatedDoctors = upsertDoctor(existingDoctors, doctorData);
+
+          // Update profile with new doctors list
+          const newData = {
+            ...existingData,
+            [SAVED_DOCTORS_FIELD]: updatedDoctors,
+          };
+
+          if (profile) {
+            await prisma.patientProfile.update({
+              where: { userId },
+              data: { data: JSON.stringify(newData) },
+            });
+          } else {
+            await prisma.patientProfile.create({
+              data: {
+                userId,
+                data: JSON.stringify(newData),
+              },
+            });
+          }
+        } catch (doctorSaveError) {
+          // Log but don't fail the submission
+          console.error("Failed to save referral doctor to profile:", doctorSaveError);
+        }
+      }
+    }
 
     // Build response based on authentication status
     if (isAuthenticated) {

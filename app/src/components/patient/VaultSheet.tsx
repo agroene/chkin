@@ -120,6 +120,11 @@ export default function VaultSheet({
     setEditData((prev) => ({ ...prev, [fieldName]: value }));
   }, []);
 
+  // Handle multiple field changes at once (for composite fields)
+  const handleMultiFieldChange = useCallback((updates: Record<string, unknown>) => {
+    setEditData((prev) => ({ ...prev, ...updates }));
+  }, []);
+
   // Handle N/A toggle for a field
   const handleNaToggle = useCallback((fieldName: string, isNa: boolean) => {
     setNaFields(prev => ({ ...prev, [fieldName]: isNa }));
@@ -370,6 +375,8 @@ export default function VaultSheet({
                       onChange={(value) => handleFieldChange(field.name, value)}
                       isNa={naFields[field.name] || false}
                       onNaToggle={(isNa) => handleNaToggle(field.name, isNa)}
+                      profileData={{ ...profileData, ...editData }}
+                      onMultiFieldChange={handleMultiFieldChange}
                     />
                   ))}
                 </div>

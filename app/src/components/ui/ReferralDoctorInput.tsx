@@ -87,12 +87,28 @@ export function ReferralDoctorInput({
   fieldErrors = {},
   size = "large",
 }: ReferralDoctorInputProps) {
-  // Determine initial showAddNew state: show add form if no saved doctors,
-  // or if there's already a doctor name filled in without any saved doctors to select from
+  // Determine initial state based on saved doctors and prefilled data
   const hasPrefilledDoctor = Boolean(value.referralDoctorName);
   const noSavedDoctors = savedDoctors.length === 0;
-  const [showAddNew, setShowAddNew] = useState(noSavedDoctors || hasPrefilledDoctor);
-  const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
+
+  // Check if prefilled doctor matches any saved doctor (by name match)
+  const matchingSavedDoctor = hasPrefilledDoctor
+    ? savedDoctors.find(
+        (d) =>
+          d.referralDoctorName.toLowerCase().trim() ===
+          (value.referralDoctorName || "").toLowerCase().trim()
+      )
+    : null;
+
+  // Show add form only if:
+  // 1. No saved doctors, OR
+  // 2. Has prefilled data that doesn't match any saved doctor (entering new doctor info)
+  const shouldShowAddNew = noSavedDoctors || (hasPrefilledDoctor && !matchingSavedDoctor);
+
+  const [showAddNew, setShowAddNew] = useState(shouldShowAddNew);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(
+    matchingSavedDoctor?.id || null
+  );
   const [isEditing, setIsEditing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 

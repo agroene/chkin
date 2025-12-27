@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
+import { getAllSavedDoctors, getAutopopulateData, type SavedReferralDoctor } from "@/lib/referral-doctors";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +102,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Check if user is authenticated (optional - for pre-fill)
     let prefillData: Record<string, unknown> | null = null;
     let isAuthenticated = false;
+    let savedReferralDoctors: SavedReferralDoctor[] = [];
 
     try {
       const session = await auth.api.getSession({
@@ -127,6 +129,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           for (const fieldName of formFieldNames) {
             if (profileData[fieldName] !== undefined) {
               prefillData[fieldName] = profileData[fieldName];
+            }
+          }
+
+          // Get saved referral doctors for autopopulation
+          // This includes doctors from both _savedReferralDoctors array AND individual profile fields
+          savedReferralDoctors = getAllSavedDoctors(profileData);
+
+          // Check if form has a referral-doctor field and autopopulate from saved doctors
+          const hasReferralDoctorField = form.fields.some(
+            (f) => f.fieldDefinition.fieldType === "referral-doctor"
+          );
+          if (hasReferralDoctorField && savedReferralDoctors.length > 0) {
+            // Add primary doctor's fields to prefill if not already set
+            const doctorAutofill = getAutopopulateData(savedReferralDoctors);
+            for (const [key, value] of Object.entries(doctorAutofill)) {
+              if (prefillData[key] === undefined) {
+                prefillData[key] = value;
+              }
             }
           }
 
@@ -202,6 +222,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
       isAuthenticated,
       prefillData,
+      // Saved referral doctors for selection (only for authenticated users)
+      savedReferralDoctors: isAuthenticated ? savedReferralDoctors : [],
     });
   } catch (error) {
     console.error("Get public form error:", error);

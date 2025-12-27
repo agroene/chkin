@@ -8,6 +8,11 @@
 "use client";
 
 import { PhoneInput, AddressAutocomplete, type AddressComponents } from "@/components/ui";
+import SavedDoctorsList from "./SavedDoctorsList";
+import { type SavedDoctor } from "@/components/ui/ReferralDoctorInput";
+
+// Field name for saved referral doctors array
+const SAVED_DOCTORS_FIELD = "_savedReferralDoctors";
 
 interface Field {
   id: string;
@@ -27,6 +32,10 @@ interface CategoryFieldRendererProps {
   onChange: (value: unknown) => void;
   isNa?: boolean; // Field is marked as N/A (Not Applicable)
   onNaToggle?: (isNa: boolean) => void; // Callback when N/A is toggled
+  /** Full profile data - needed for composite fields like referral-doctor */
+  profileData?: Record<string, unknown>;
+  /** Callback to update multiple fields at once (for composite fields) */
+  onMultiFieldChange?: (updates: Record<string, unknown>) => void;
 }
 
 export default function CategoryFieldRenderer({
@@ -36,9 +45,38 @@ export default function CategoryFieldRenderer({
   onChange,
   isNa = false,
   onNaToggle,
+  profileData,
+  onMultiFieldChange,
 }: CategoryFieldRendererProps) {
   const stringValue = typeof value === "string" ? value : "";
   const boolValue = typeof value === "boolean" ? value : false;
+
+  // Special handling for referral-doctor composite field
+  if (field.fieldType === "referral-doctor") {
+    // Get saved doctors from profile data
+    const savedDoctors: SavedDoctor[] = profileData?.[SAVED_DOCTORS_FIELD] as SavedDoctor[] || [];
+
+    const handleDoctorsChange = (doctors: SavedDoctor[]) => {
+      if (onMultiFieldChange) {
+        onMultiFieldChange({ [SAVED_DOCTORS_FIELD]: doctors });
+      }
+    };
+
+    return (
+      <div className="border-b border-gray-100 pb-4 last:border-0">
+        <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+          {field.label}
+        </label>
+        <div className="mt-2">
+          <SavedDoctorsList
+            doctors={savedDoctors}
+            isEditing={isEditing}
+            onChange={handleDoctorsChange}
+          />
+        </div>
+      </div>
+    );
+  }
 
   // View mode - display value
   if (!isEditing) {

@@ -14,6 +14,7 @@ import {
   ReferralDoctorInput,
   type AddressComponents,
   type ReferralDoctorData,
+  type SavedDoctor,
 } from "@/components/ui";
 import { generateTestData, isDevelopment } from "@/lib/test-data";
 
@@ -90,6 +91,7 @@ interface PublicFormRendererProps {
   form: FormData;
   prefillData: Record<string, unknown> | null;
   isAuthenticated: boolean;
+  savedReferralDoctors?: SavedDoctor[];
   onSubmit: (
     data: Record<string, unknown>,
     consentGiven: boolean,
@@ -144,6 +146,7 @@ export default function PublicFormRenderer({
   form,
   prefillData,
   isAuthenticated,
+  savedReferralDoctors = [],
   onSubmit,
 }: PublicFormRendererProps) {
   // Initialize form values with prefill data
@@ -720,7 +723,7 @@ export default function PublicFormRenderer({
             onChange={(subFieldName, value) => {
               updateFieldValue(subFieldName, value as FieldValue);
             }}
-            savedDoctors={[]} // TODO: Load from patient profile
+            savedDoctors={savedReferralDoctors}
             fieldErrors={fieldErrors}
             size="large"
           />

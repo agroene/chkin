@@ -74,6 +74,19 @@ interface ProfileDiff {
   submittedValue: unknown;
 }
 
+interface SavedDoctor {
+  id: string;
+  referralDoctorName: string;
+  referralDoctorPractice: string;
+  referralDoctorSpecialty: string;
+  referralDoctorPhone: string;
+  referralDoctorFax: string;
+  referralDoctorEmail: string;
+  referralDoctorPracticeNumber: string;
+  referralDoctorAddress: string;
+  referralDoctorIsPrimary: boolean;
+}
+
 type PageState =
   | "loading"
   | "form"
@@ -97,6 +110,7 @@ export default function PublicFormPage() {
   const [form, setForm] = useState<FormData | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [prefillData, setPrefillData] = useState<Record<string, unknown> | null>(null);
+  const [savedReferralDoctors, setSavedReferralDoctors] = useState<SavedDoctor[]>([]);
   const [error, setError] = useState<ErrorState | null>(null);
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [anonymousToken, setAnonymousToken] = useState<string | null>(null);
@@ -132,6 +146,7 @@ export default function PublicFormPage() {
       setForm(data.form);
       setIsAuthenticated(data.isAuthenticated);
       setPrefillData(data.prefillData);
+      setSavedReferralDoctors(data.savedReferralDoctors || []);
       setPageState("form");
     } catch {
       setError({
@@ -488,6 +503,7 @@ export default function PublicFormPage() {
         form={form}
         prefillData={prefillData}
         isAuthenticated={isAuthenticated}
+        savedReferralDoctors={savedReferralDoctors}
         onSubmit={handleSubmit}
       />
     );
