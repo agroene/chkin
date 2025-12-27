@@ -208,6 +208,10 @@ export default function FormDetailPage() {
       consentConfig.allowAutoRenewal !== (form.allowAutoRenewal ?? true) ||
       consentConfig.gracePeriodDays !== (form.gracePeriodDays ?? 30);
 
+    // Check if sections have changed
+    const hasSectionChanges =
+      JSON.stringify(sections) !== JSON.stringify(form.sections || []);
+
     setHasChanges(
       title !== form.title ||
       description !== (form.description || "") ||
@@ -215,9 +219,10 @@ export default function FormDetailPage() {
       isActive !== form.isActive ||
       hasFieldChanges ||
       hasPdfChanges ||
-      hasConsentConfigChanges
+      hasConsentConfigChanges ||
+      hasSectionChanges
     );
-  }, [form, title, description, consentClause, isActive, fields, pdfEnabled, docusealTemplateId, pdfFieldMappings, consentConfig]);
+  }, [form, title, description, consentClause, isActive, fields, pdfEnabled, docusealTemplateId, pdfFieldMappings, consentConfig, sections]);
 
   // Add field to form - adds to the active section
   const handleAddField = useCallback((fieldDefinition: FormField["fieldDefinition"]) => {

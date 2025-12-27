@@ -55,6 +55,7 @@ interface FormDetails {
   description: string | null;
   consentClause: string | null;
   fields: FormField[];
+  sections: string[]; // Ordered array of section names
 }
 
 interface Pagination {
@@ -154,19 +155,24 @@ export default function ProviderFormsPage() {
     setPreviewMobile(false);
   }
 
-  // Get unique sections from fields for preview
-  function getPreviewSections(fields: FormField[]): string[] {
+  // Get sections for preview - use saved order, fallback to extracting from fields
+  function getPreviewSections(form: FormDetails): string[] {
+    // Use saved section order if available
+    if (form.sections && form.sections.length > 0) {
+      return form.sections;
+    }
+    // Fallback: extract unique sections from fields (legacy forms)
     const sections = new Set<string>();
-    fields.forEach(f => {
+    form.fields.forEach(f => {
       if (f.section) sections.add(f.section);
     });
     return sections.size > 0 ? Array.from(sections) : ["Default"];
   }
 
   // Prepare fields for preview - ensure section is set
-  function prepareFieldsForPreview(fields: FormField[]): FormField[] {
-    const sections = getPreviewSections(fields);
-    return fields.map(f => ({
+  function prepareFieldsForPreview(form: FormDetails): FormField[] {
+    const sections = getPreviewSections(form);
+    return form.fields.map(f => ({
       ...f,
       section: f.section || sections[0],
     }));
@@ -563,8 +569,8 @@ export default function ProviderFormsPage() {
                 <FormPreview
                   title={previewForm.title}
                   description={previewForm.description || ""}
-                  fields={prepareFieldsForPreview(previewForm.fields)}
-                  sections={getPreviewSections(previewForm.fields)}
+                  fields={prepareFieldsForPreview(previewForm)}
+                  sections={getPreviewSections(previewForm)}
                   consentClause={previewForm.consentClause || ""}
                   mobileView={previewMobile}
                 />

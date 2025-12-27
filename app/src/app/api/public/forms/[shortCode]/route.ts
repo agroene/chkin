@@ -163,10 +163,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       columnSpan: field.columnSpan,
     }));
 
-    // Get unique sections
-    const sections = [...new Set(fields.map((f) => f.section).filter(Boolean))];
-    if (sections.length === 0) {
-      sections.push("Default");
+    // Use saved section ordering from form template, fallback to extracting from fields
+    let sections: string[];
+    if (form.sections && form.sections.length > 0) {
+      // Use the saved section order
+      sections = form.sections;
+    } else {
+      // Fallback: extract unique sections from fields (legacy forms without saved sections)
+      sections = [...new Set(fields.map((f) => f.section).filter(Boolean))] as string[];
+      if (sections.length === 0) {
+        sections.push("Default");
+      }
     }
 
     return NextResponse.json({
