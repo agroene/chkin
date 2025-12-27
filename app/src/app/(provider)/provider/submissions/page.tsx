@@ -649,10 +649,11 @@ export default function ProviderSubmissionsPage() {
 
       {/* Detail Modal */}
       {(selectedSubmission || detailLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="relative max-h-[90vh] w-full max-w-3xl overflow-auto rounded-xl bg-white shadow-2xl">
-            {/* Modal Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4">
+          <div className="flex min-h-full items-start justify-center sm:items-center">
+            <div className="relative w-full max-w-3xl rounded-xl bg-white shadow-2xl">
+              {/* Modal Header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
                   Submission Details
@@ -683,13 +684,13 @@ export default function ProviderSubmissionsPage() {
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6">
-              {detailLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
-                </div>
-              ) : selectedSubmission ? (
+              {/* Modal Content */}
+              <div className="max-h-[60vh] overflow-y-auto p-4 sm:p-6">
+                {detailLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
+                  </div>
+                ) : selectedSubmission ? (
                 <div className="space-y-6">
                   {/* Summary Info */}
                   <div className="grid gap-4 rounded-lg bg-gray-50 p-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -931,41 +932,42 @@ export default function ProviderSubmissionsPage() {
               ) : null}
             </div>
 
-            {/* Modal Footer */}
-            {selectedSubmission &&
-              selectedSubmission.submission.status !== "reviewed" && (
-                <div className="sticky bottom-0 border-t border-gray-200 bg-gray-50 px-6 py-4">
-                  <button
-                    onClick={handleMarkReviewed}
-                    disabled={updating}
-                    className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
-                  >
-                    {updating ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        Mark as Reviewed
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
+              {/* Modal Footer */}
+              {selectedSubmission &&
+                selectedSubmission.submission.status !== "reviewed" && (
+                  <div className="sticky bottom-0 rounded-b-xl border-t border-gray-200 bg-gray-50 px-4 py-3 sm:px-6 sm:py-4">
+                    <button
+                      onClick={handleMarkReviewed}
+                      disabled={updating}
+                      className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+                    >
+                      {updating ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          Mark as Reviewed
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+            </div>
           </div>
         </div>
       )}

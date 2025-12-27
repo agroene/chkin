@@ -649,8 +649,9 @@ export default function SubmissionDetailPage({
 
       {/* Withdraw Consent Modal */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
-          <div className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50">
+          <div className="flex min-h-full items-end justify-center p-4 sm:items-center">
+            <div className="w-full max-w-md rounded-t-2xl bg-white p-4 sm:rounded-2xl sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900">Withdraw Consent?</h3>
 
             <div className="mt-4 rounded-lg bg-amber-50 p-3">
@@ -702,8 +703,9 @@ export default function SubmissionDetailPage({
                 disabled={withdrawing}
                 className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
-                {withdrawing ? "Withdrawing..." : "Withdraw Consent"}
+                  {withdrawing ? "Withdrawing..." : "Withdraw Consent"}
               </button>
+            </div>
             </div>
           </div>
         </div>
@@ -711,8 +713,9 @@ export default function SubmissionDetailPage({
 
       {/* Renew Consent Modal */}
       {showRenewModal && submission && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
-          <div className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50">
+          <div className="flex min-h-full items-end justify-center p-4 sm:items-center">
+            <div className="w-full max-w-md rounded-t-2xl bg-white p-4 sm:rounded-2xl sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900">Renew Consent?</h3>
 
             <div className="mt-4 rounded-lg bg-teal-50 p-3">
@@ -750,8 +753,9 @@ export default function SubmissionDetailPage({
                 disabled={renewing}
                 className="flex-1 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
               >
-                {renewing ? "Renewing..." : "Renew Consent"}
+                  {renewing ? "Renewing..." : "Renew Consent"}
               </button>
+            </div>
             </div>
           </div>
         </div>

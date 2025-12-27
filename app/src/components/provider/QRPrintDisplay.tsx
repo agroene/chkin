@@ -391,8 +391,9 @@ export default function QRPrintDisplay({
       </div>
 
       {/* Modal Overlay - for screen preview only */}
-      <div className="qr-modal-overlay fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-        <div className="flex max-h-[95vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl">
+      <div className="qr-modal-overlay fixed inset-0 z-[60] overflow-y-auto bg-black/60 p-4">
+        <div className="flex min-h-full items-start justify-center sm:items-center">
+          <div className="flex w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl">
           {/* Modal Header - print controls */}
           <div className="flex items-center justify-between border-b border-gray-200 p-4">
             <div>
@@ -493,6 +494,7 @@ export default function QRPrintDisplay({
                 </ul>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>

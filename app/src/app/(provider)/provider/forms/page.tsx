@@ -475,10 +475,11 @@ export default function ProviderFormsPage() {
 
       {/* Preview Modal */}
       {(previewForm || previewLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-gray-100 shadow-2xl">
-            {/* Modal Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4">
+          <div className="flex min-h-full items-start justify-center sm:items-center">
+            <div className="relative w-full max-w-4xl overflow-hidden rounded-xl bg-gray-100 shadow-2xl">
+              {/* Modal Header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
                   Form Preview
@@ -559,22 +560,23 @@ export default function ProviderFormsPage() {
               </div>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6">
-              {previewLoading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
-                </div>
-              ) : previewForm ? (
-                <FormPreview
-                  title={previewForm.title}
-                  description={previewForm.description || ""}
-                  fields={prepareFieldsForPreview(previewForm)}
-                  sections={getPreviewSections(previewForm)}
-                  consentClause={previewForm.consentClause || ""}
-                  mobileView={previewMobile}
-                />
-              ) : null}
+              {/* Modal Content */}
+              <div className="max-h-[70vh] overflow-y-auto p-4 sm:p-6">
+                {previewLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
+                  </div>
+                ) : previewForm ? (
+                  <FormPreview
+                    title={previewForm.title}
+                    description={previewForm.description || ""}
+                    fields={prepareFieldsForPreview(previewForm)}
+                    sections={getPreviewSections(previewForm)}
+                    consentClause={previewForm.consentClause || ""}
+                    mobileView={previewMobile}
+                  />
+                ) : null}
+              </div>
             </div>
           </div>
         </div>

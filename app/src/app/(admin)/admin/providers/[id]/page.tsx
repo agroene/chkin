@@ -537,8 +537,9 @@ export default function ProviderDetailPage({
 
       {/* Rejection Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50">
+          <div className="flex min-h-full items-start justify-center p-4 sm:items-center">
+            <div className="w-full max-w-md rounded-lg bg-white p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Reject Provider Registration
             </h3>
@@ -569,8 +570,9 @@ export default function ProviderDetailPage({
                 disabled={actionLoading || !rejectionReason.trim()}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                {actionLoading ? "Rejecting..." : "Reject Provider"}
+                  {actionLoading ? "Rejecting..." : "Reject Provider"}
               </button>
+            </div>
             </div>
           </div>
         </div>
@@ -578,8 +580,9 @@ export default function ProviderDetailPage({
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50">
+          <div className="flex min-h-full items-start justify-center p-4 sm:items-center">
+            <div className="w-full max-w-md rounded-lg bg-white p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                 <svg
@@ -653,8 +656,9 @@ export default function ProviderDetailPage({
                 disabled={actionLoading}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                {actionLoading ? "Deleting..." : "Delete Organization"}
+                  {actionLoading ? "Deleting..." : "Delete Organization"}
               </button>
+            </div>
             </div>
           </div>
         </div>
