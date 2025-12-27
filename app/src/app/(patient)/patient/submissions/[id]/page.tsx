@@ -286,7 +286,7 @@ export default function SubmissionDetailPage({
         <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-4 py-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push("/patient/submissions")}
               className="rounded-full p-2 hover:bg-gray-100"
             >
               <svg className="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,7 +299,7 @@ export default function SubmissionDetailPage({
         <div className="px-4 py-12 text-center">
           <p className="text-red-600">{error}</p>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/patient/submissions")}
             className="mt-4 text-teal-600 hover:underline"
           >
             Go back
@@ -320,7 +320,7 @@ export default function SubmissionDetailPage({
         <div className="mx-auto max-w-lg px-4 py-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push("/patient/submissions")}
               className="rounded-full p-2 hover:bg-gray-100"
               aria-label="Go back"
             >

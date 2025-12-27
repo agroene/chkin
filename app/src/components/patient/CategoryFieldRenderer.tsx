@@ -36,6 +36,8 @@ interface CategoryFieldRendererProps {
   profileData?: Record<string, unknown>;
   /** Callback to update multiple fields at once (for composite fields) */
   onMultiFieldChange?: (updates: Record<string, unknown>) => void;
+  /** Callback to notify parent of unsaved nested changes */
+  onNestedUnsavedChanges?: (hasUnsaved: boolean) => void;
 }
 
 export default function CategoryFieldRenderer({
@@ -47,6 +49,7 @@ export default function CategoryFieldRenderer({
   onNaToggle,
   profileData,
   onMultiFieldChange,
+  onNestedUnsavedChanges,
 }: CategoryFieldRendererProps) {
   const stringValue = typeof value === "string" ? value : "";
   const boolValue = typeof value === "boolean" ? value : false;
@@ -72,6 +75,7 @@ export default function CategoryFieldRenderer({
             doctors={savedDoctors}
             isEditing={isEditing}
             onChange={handleDoctorsChange}
+            onUnsavedChanges={onNestedUnsavedChanges}
           />
         </div>
       </div>

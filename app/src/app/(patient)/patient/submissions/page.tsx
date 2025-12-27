@@ -198,7 +198,7 @@ function SubmissionsPageContent() {
         <div className="mx-auto max-w-lg px-4 py-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push("/patient")}
               className="rounded-full p-2 hover:bg-gray-100"
               aria-label="Go back"
             >

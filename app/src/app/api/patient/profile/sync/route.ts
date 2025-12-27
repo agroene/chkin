@@ -11,6 +11,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { logAuditEvent } from "@/lib/audit-log";
+import {
+  extractDoctorFromSubmission,
+  getSavedDoctors,
+  upsertDoctor,
+  SAVED_DOCTORS_FIELD,
+  REFERRAL_DOCTOR_FIELDS,
+} from "@/lib/referral-doctors";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +92,21 @@ export async function POST(request: NextRequest) {
 
     const existingData = profile?.data ? JSON.parse(profile.data) : {};
     const newData = { ...existingData, ...updates };
+
+    // Check if any referral doctor fields are being synced
+    const hasReferralDoctorFields = fields.some((f) =>
+      REFERRAL_DOCTOR_FIELDS.includes(f as typeof REFERRAL_DOCTOR_FIELDS[number])
+    );
+
+    if (hasReferralDoctorFields) {
+      // Extract doctor from submission and add to saved doctors
+      const doctorData = extractDoctorFromSubmission(submissionData);
+      if (doctorData && doctorData.referralDoctorName) {
+        const existingDoctors = getSavedDoctors(newData);
+        const updatedDoctors = upsertDoctor(existingDoctors, doctorData);
+        newData[SAVED_DOCTORS_FIELD] = updatedDoctors;
+      }
+    }
 
     if (profile) {
       profile = await prisma.patientProfile.update({

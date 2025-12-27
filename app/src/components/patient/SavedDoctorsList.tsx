@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ReferralDoctorInput, type SavedDoctor, type ReferralDoctorData } from "@/components/ui/ReferralDoctorInput";
 
 // Specialty options - matches ReferralDoctorInput
@@ -48,17 +48,25 @@ interface SavedDoctorsListProps {
   isEditing: boolean;
   /** Callback when doctors list changes */
   onChange: (doctors: SavedDoctor[]) => void;
+  /** Callback to notify parent of unsaved changes state */
+  onUnsavedChanges?: (hasUnsaved: boolean) => void;
 }
 
 export default function SavedDoctorsList({
   doctors,
   isEditing,
   onChange,
+  onUnsavedChanges,
 }: SavedDoctorsListProps) {
   // Track which doctor is being edited (by id), or "new" for adding
   const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
   // Temporary state for the doctor being edited
   const [editFormData, setEditFormData] = useState<Partial<ReferralDoctorData>>({});
+
+  // Notify parent when editing state changes
+  useEffect(() => {
+    onUnsavedChanges?.(editingDoctorId !== null);
+  }, [editingDoctorId, onUnsavedChanges]);
 
   // Handle starting to edit a doctor
   const handleStartEdit = (doctor: SavedDoctor) => {

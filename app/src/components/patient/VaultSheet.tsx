@@ -71,6 +71,9 @@ export default function VaultSheet({
   // Track N/A fields - stored as _na_fieldName in profile data
   const [naFields, setNaFields] = useState<Record<string, boolean>>({});
 
+  // Track if there are unsaved nested edits (e.g., editing a doctor in SavedDoctorsList)
+  const [hasNestedUnsavedChanges, setHasNestedUnsavedChanges] = useState(false);
+
   // Reset state when category changes or sheet opens
   useEffect(() => {
     if (category && isOpen) {
@@ -78,6 +81,7 @@ export default function VaultSheet({
       setIsEditing(incompleteOnly);
       setEditData({});
       setError(null);
+      setHasNestedUnsavedChanges(false);
 
       // Load existing N/A markers from profile data
       const existingNa: Record<string, boolean> = {};
@@ -138,9 +142,22 @@ export default function VaultSheet({
     }
   }, []);
 
+  // Handle nested unsaved changes notification
+  const handleNestedUnsavedChanges = useCallback((hasUnsaved: boolean) => {
+    setHasNestedUnsavedChanges(hasUnsaved);
+  }, []);
+
   // Handle save
   const handleSave = async () => {
     if (!category) return;
+
+    // Check for unsaved nested edits
+    if (hasNestedUnsavedChanges) {
+      const confirmed = window.confirm(
+        "You have unsaved changes in a doctor form. These changes will be lost if you save now.\n\nClick OK to save anyway, or Cancel to go back and save your doctor changes first."
+      );
+      if (!confirmed) return;
+    }
 
     setSaving(true);
     setError(null);
@@ -377,6 +394,7 @@ export default function VaultSheet({
                       onNaToggle={(isNa) => handleNaToggle(field.name, isNa)}
                       profileData={{ ...profileData, ...editData }}
                       onMultiFieldChange={handleMultiFieldChange}
+                      onNestedUnsavedChanges={handleNestedUnsavedChanges}
                     />
                   ))}
                 </div>

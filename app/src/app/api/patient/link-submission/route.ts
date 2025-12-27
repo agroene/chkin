@@ -12,6 +12,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { logAuditEvent } from "@/lib/audit-log";
+import {
+  extractDoctorFromSubmission,
+  getSavedDoctors,
+  upsertDoctor,
+  SAVED_DOCTORS_FIELD,
+} from "@/lib/referral-doctors";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +100,14 @@ export async function POST(request: NextRequest) {
         mergedData[key] = value;
         newFieldsCount++;
       }
+    }
+
+    // Handle referral doctor - add to saved doctors array if present in submission
+    const doctorData = extractDoctorFromSubmission(submissionData);
+    if (doctorData && doctorData.referralDoctorName) {
+      const existingDoctors = getSavedDoctors(mergedData);
+      const updatedDoctors = upsertDoctor(existingDoctors, doctorData);
+      mergedData[SAVED_DOCTORS_FIELD] = updatedDoctors;
     }
 
     if (profile) {
