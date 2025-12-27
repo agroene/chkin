@@ -557,178 +557,189 @@ export default function QRCodesPage() {
 
       {/* QR Code Display Modal */}
       {selectedQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 p-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {selectedQR.label || `QR Code ${selectedQR.shortCode}`}
-              </h3>
-              <button
-                onClick={() => setSelectedQR(null)}
-                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-              >
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50"
+          onClick={(e) => {
+            // Close modal when clicking backdrop
+            if (e.target === e.currentTarget) setSelectedQR(null);
+          }}
+        >
+          <div className="flex min-h-full items-start justify-center p-4 sm:items-center">
+            <div className="relative w-full max-w-lg rounded-xl bg-white shadow-xl">
+              {/* Modal Header - Sticky on mobile */}
+              <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-white p-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedQR.label || `QR Code ${selectedQR.shortCode}`}
+                </h3>
+                <button
+                  onClick={() => setSelectedQR(null)}
+                  className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6">
-              {/* QR Code Image */}
-              <div className="flex justify-center rounded-lg bg-white p-4">
-                {selectedQR.qrImageDataUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={selectedQR.qrImageDataUrl}
-                    alt="QR Code"
-                    className="h-64 w-64"
-                  />
-                ) : (
-                  <div className="flex h-64 w-64 items-center justify-center">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
-                  </div>
-                )}
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
               </div>
 
-              {/* Form Info */}
-              <div className="mt-4 rounded-lg bg-gray-50 p-4">
-                <p className="text-sm font-medium text-gray-900">
-                  {selectedQR.formTemplate.title}
-                </p>
-                <p className="mt-1 break-all font-mono text-xs text-gray-500">
-                  {selectedQR.formUrl}
-                </p>
-              </div>
-
-              {/* Stats */}
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div className="rounded-lg bg-gray-50 p-3 text-center">
-                  <p className="text-2xl font-bold text-gray-900">
-                    {selectedQR.scanCount}
-                  </p>
-                  <p className="text-sm text-gray-500">Total Scans</p>
+              {/* Modal Body */}
+              <div className="p-4 sm:p-6">
+                {/* QR Code Image - Smaller on mobile */}
+                <div className="flex justify-center rounded-lg bg-white p-2 sm:p-4">
+                  {selectedQR.qrImageDataUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selectedQR.qrImageDataUrl}
+                      alt="QR Code"
+                      className="h-48 w-48 sm:h-64 sm:w-64"
+                    />
+                  ) : (
+                    <div className="flex h-48 w-48 items-center justify-center sm:h-64 sm:w-64">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
+                    </div>
+                  )}
                 </div>
-                <div className="rounded-lg bg-gray-50 p-3 text-center">
+
+                {/* Form Info */}
+                <div className="mt-3 rounded-lg bg-gray-50 p-3 sm:mt-4 sm:p-4">
                   <p className="text-sm font-medium text-gray-900">
-                    {selectedQR.lastScannedAt
-                      ? formatDate(selectedQR.lastScannedAt)
-                      : "Never"}
+                    {selectedQR.formTemplate.title}
                   </p>
-                  <p className="text-sm text-gray-500">Last Scanned</p>
+                  <p className="mt-1 break-all font-mono text-xs text-gray-500">
+                    {selectedQR.formUrl}
+                  </p>
+                </div>
+
+                {/* Stats */}
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4 sm:gap-4">
+                  <div className="rounded-lg bg-gray-50 p-2 text-center sm:p-3">
+                    <p className="text-xl font-bold text-gray-900 sm:text-2xl">
+                      {selectedQR.scanCount}
+                    </p>
+                    <p className="text-xs text-gray-500 sm:text-sm">Total Scans</p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 p-2 text-center sm:p-3">
+                    <p className="text-xs font-medium text-gray-900 sm:text-sm">
+                      {selectedQR.lastScannedAt
+                        ? formatDate(selectedQR.lastScannedAt)
+                        : "Never"}
+                    </p>
+                    <p className="text-xs text-gray-500 sm:text-sm">Last Scanned</p>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="mt-3 flex items-center justify-center gap-2 sm:mt-4">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+                      selectedQR.isActive
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        selectedQR.isActive ? "bg-green-500" : "bg-gray-400"
+                      }`}
+                    />
+                    {selectedQR.isActive ? "Active" : "Inactive"}
+                  </span>
                 </div>
               </div>
 
-              {/* Status */}
-              <div className="mt-4 flex items-center justify-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
-                    selectedQR.isActive
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      selectedQR.isActive ? "bg-green-500" : "bg-gray-400"
-                    }`}
-                  />
-                  {selectedQR.isActive ? "Active" : "Inactive"}
-                </span>
+              {/* Modal Footer - Sticky on mobile */}
+              <div className="sticky bottom-0 rounded-b-xl border-t border-gray-200 bg-white p-3 sm:p-4">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center">
+                  <button
+                    onClick={handleCopyUrl}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 sm:gap-2 sm:px-4 sm:text-sm"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="hidden sm:inline">Copy URL</span>
+                    <span className="sm:hidden">Copy</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadPNG}
+                    disabled={!selectedQR.qrImageDataUrl}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    PNG
+                  </button>
+                  <button
+                    onClick={handleDownloadSVG}
+                    disabled={!selectedQR.qrImageSvg}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    SVG
+                  </button>
+                  <button
+                    onClick={handlePrintPreview}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-3 py-2 text-xs font-medium text-white hover:bg-teal-700 sm:gap-2 sm:px-4 sm:text-sm"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                      />
+                    </svg>
+                    Print
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex flex-wrap items-center justify-center gap-2 border-t border-gray-200 p-4">
-              <button
-                onClick={handleCopyUrl}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                Copy URL
-              </button>
-              <button
-                onClick={handleDownloadPNG}
-                disabled={!selectedQR.qrImageDataUrl}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Download PNG
-              </button>
-              <button
-                onClick={handleDownloadSVG}
-                disabled={!selectedQR.qrImageSvg}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Download SVG
-              </button>
-              <button
-                onClick={handlePrintPreview}
-                className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                  />
-                </svg>
-                Print Display
-              </button>
             </div>
           </div>
         </div>
